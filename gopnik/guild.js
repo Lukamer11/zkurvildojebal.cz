@@ -1,5 +1,12 @@
+// guild.js - SUPABASE SYNC VERSION
 (() => {
   'use strict';
+
+  // ====== SUPABASE CONFIG ======
+  const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
+
+  let supabase = null;
 
   // ====== CONFIG ======
   const CONFIG = {
@@ -8,158 +15,14 @@
     DONATE_COOLDOWN: 30000, // 30s
   };
 
-  // ====== DEFAULT GUILDS ======
-  const DEFAULT_GUILDS = [
-    {
-      id: 'red-army',
-      name: 'RED ARMY',
-      emblem: '�',
-      desc: 'Nejstarší a nejsilnější guilda v regionu. Sdružujeme nejlepší bojovníky.',
-      level: 25,
-      members: 45,
-      maxMembers: 50,
-      power: 12500,
-      vault: { money: 150000, cigs: 3200 },
-      owner: 'BORIS',
-      officers: ['VLADIMIR', 'IGOR'],
-      memberList: [
-        { name: 'BORIS', role: 'Master', level: 45, icon: '👑' },
-        { name: 'VLADIMIR', role: 'Officer', level: 38, icon: '⚔️' },
-        { name: 'IGOR', role: 'Officer', level: 35, icon: '🛡️' },
-        { name: 'SERGEI', role: 'Elite', level: 32, icon: '🔥' },
-        { name: 'DMITRI', role: 'Member', level: 28, icon: '💪' },
-      ]
-    },
-    {
-      id: 'slav-warriors',
-      name: 'SLAV WARRIORS',
-      emblem: '⚡',
-      desc: 'Rychlí jako blesk, tvrdí jako beton. Přežije jen ten, kdo umí squatovat.',
-      level: 22,
-      members: 38,
-      maxMembers: 50,
-      power: 10200,
-      vault: { money: 95000, cigs: 1800 },
-      owner: 'IVAN',
-      officers: ['PETR'],
-      memberList: [
-        { name: 'IVAN', role: 'Master', level: 42, icon: '👑' },
-        { name: 'PETR', role: 'Officer', level: 36, icon: '⚡' },
-        { name: 'OLEG', role: 'Elite', level: 34, icon: '🛡️' },
-        { name: 'MAX', role: 'Member', level: 31, icon: '🔥' },
-        { name: 'YURI', role: 'Member', level: 27, icon: '💪' },
-      ]
-    },
-    {
-      id: 'fire-gopniks',
-      name: 'FIRE GOPNIKS',
-      emblem: '🔥',
-      desc: 'Žhavá parta panelákových žhářů. V aréně nechávají jen popel.',
-      level: 24,
-      members: 42,
-      maxMembers: 50,
-      power: 11800,
-      vault: { money: 125000, cigs: 2500 },
-      owner: 'KIRILL',
-      officers: ['MIKHAIL', 'NIKITA'],
-      memberList: [
-        { name: 'KIRILL', role: 'Master', level: 44, icon: '👑' },
-        { name: 'MIKHAIL', role: 'Officer', level: 37, icon: '⚔️' },
-        { name: 'NIKITA', role: 'Officer', level: 35, icon: '🛡️' },
-        { name: 'ROMAN', role: 'Elite', level: 33, icon: '🔥' },
-        { name: 'STAS', role: 'Member', level: 29, icon: '💪' },
-      ]
-    },
-    {
-      id: 'diamond-squad',
-      name: 'DIAMOND SQUATTERS',
-      emblem: '💎',
-      desc: 'Elitní squatters s diamantovým dripem. Jejich brnění se leskne více než tvoje budoucnost.',
-      level: 30,
-      members: 50,
-      maxMembers: 50,
-      power: 15000,
-      vault: { money: 250000, cigs: 5000 },
-      owner: 'ARTEM',
-      officers: ['LEONID', 'PAVEL'],
-      memberList: [
-        { name: 'ARTEM', role: 'Master', level: 50, icon: '👑' },
-        { name: 'LEONID', role: 'Officer', level: 41, icon: '⚔️' },
-        { name: 'PAVEL', role: 'Officer', level: 39, icon: '🛡️' },
-        { name: 'DENIS', role: 'Elite', level: 36, icon: '🔥' },
-        { name: 'SASHA', role: 'Member', level: 33, icon: '💪' },
-      ]
-    },
-  ];
-
-  // ====== STATE ======
-  class GuildState {
-    constructor() {
-      this.loadFromStorage();
-    }
-
-    loadFromStorage() {
-      try {
-        const saved = localStorage.getItem('gopnik.guild.v3');
-        if (saved) {
-          const data = JSON.parse(saved);
-          this.guilds = data.guilds || [...DEFAULT_GUILDS];
-          this.playerGuild = data.playerGuild || null;
-          this.playerRole = data.playerRole || null;
-          this.lastDonate = data.lastDonate || 0;
-        } else {
-          this.reset();
-        }
-      } catch {
-        this.reset();
-      }
-    }
-
-    reset() {
-      this.guilds = [...DEFAULT_GUILDS];
-      this.playerGuild = null;
-      this.playerRole = null;
-      this.lastDonate = 0;
-      this.save();
-    }
-
-    save() {
-      const data = {
-        guilds: this.guilds,
-        playerGuild: this.playerGuild,
-        playerRole: this.playerRole,
-        lastDonate: this.lastDonate,
-      };
-      localStorage.setItem('gopnik.guild.v3', JSON.stringify(data));
-    }
-
-    getGuild(id) {
-      return this.guilds.find(g => g.id === id);
-    }
-
-    getPlayerGuild() {
-      return this.playerGuild ? this.getGuild(this.playerGuild) : null;
-    }
-
-    isInGuild() {
-      return !!this.playerGuild;
-    }
-
-    isMaster() {
-      return this.playerRole === 'Master';
-    }
-
-    isOfficer() {
-      return this.playerRole === 'Officer';
-    }
-
-    canManage() {
-      return this.isMaster() || this.isOfficer();
-    }
-  }
-
   // ====== PLAYER UTILS ======
   class Player {
+    static getUserId() {
+      return localStorage.getItem("user_id") || 
+             localStorage.getItem("slavFantasyUserId") || 
+             "1";
+    }
+
     static getName() {
       return localStorage.getItem('playerName') || 
              localStorage.getItem('nickname') || 
@@ -182,11 +45,21 @@
     static setMoney(amount) {
       const el = document.getElementById('money');
       if (el) el.textContent = Math.max(0, amount).toLocaleString('cs-CZ');
+      
+      // Sync to SF if available
+      if (window.SF && window.SF.setMoney) {
+        window.SF.setMoney(Math.max(0, amount));
+      }
     }
 
     static setCigs(amount) {
       const el = document.getElementById('cigarettes');
       if (el) el.textContent = Math.max(0, amount).toLocaleString('cs-CZ');
+      
+      // Sync to SF if available
+      if (window.SF && window.SF.setCigarettes) {
+        window.SF.setCigarettes(Math.max(0, amount));
+      }
     }
 
     static getLevel() {
@@ -219,19 +92,344 @@
     static formatNumber(num) {
       return num.toLocaleString('cs-CZ');
     }
+
+    static showLoading() {
+      document.getElementById('loadingScreen').style.display = 'flex';
+      document.getElementById('welcomeScreen').style.display = 'none';
+      document.getElementById('guildBrowser').style.display = 'none';
+      document.getElementById('myGuildView').style.display = 'none';
+    }
+
+    static hideLoading() {
+      document.getElementById('loadingScreen').style.display = 'none';
+    }
+  }
+
+  // ====== SUPABASE MANAGER ======
+  class SupabaseManager {
+    static async init() {
+      console.log('🔥 Initializing Supabase...');
+      
+      const lib = window.supabase;
+      supabase = window.supabaseClient || (lib?.createClient ? lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
+      
+      if (!supabase) {
+        console.error('❌ Supabase not available');
+        return false;
+      }
+      
+      console.log('✅ Supabase initialized');
+      return true;
+    }
+
+    static async loadGuilds() {
+      console.log('📦 Loading guilds from Supabase...');
+      
+      try {
+        const { data, error } = await supabase
+          .from('guilds')
+          .select('*')
+          .order('level', { ascending: false });
+
+        if (error) {
+          console.error('❌ Error loading guilds:', error);
+          return [];
+        }
+
+        console.log('✅ Loaded guilds:', data);
+        return data || [];
+      } catch (err) {
+        console.error('❌ Exception loading guilds:', err);
+        return [];
+      }
+    }
+
+    static async loadPlayerGuild(userId) {
+      console.log('👤 Loading player guild for user:', userId);
+      
+      try {
+        const { data, error } = await supabase
+          .from('guild_members')
+          .select('guild_id, role, last_donate')
+          .eq('user_id', userId)
+          .limit(1)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            console.log('ℹ️ Player not in any guild');
+            return null;
+          }
+          console.error('❌ Error loading player guild:', error);
+          return null;
+        }
+
+        console.log('✅ Player guild data:', data);
+        return data;
+      } catch (err) {
+        console.error('❌ Exception loading player guild:', err);
+        return null;
+      }
+    }
+
+    static async loadGuildMembers(guildId) {
+      console.log('👥 Loading guild members for:', guildId);
+      
+      try {
+        const { data, error } = await supabase
+          .from('guild_members')
+          .select('user_id, role, level, icon')
+          .eq('guild_id', guildId);
+
+        if (error) {
+          console.error('❌ Error loading guild members:', error);
+          return [];
+        }
+
+        console.log('✅ Loaded members:', data);
+        return data || [];
+      } catch (err) {
+        console.error('❌ Exception loading guild members:', err);
+        return [];
+      }
+    }
+
+    static async createGuild(guildData) {
+      console.log('🏗️ Creating guild:', guildData);
+      
+      try {
+        const { data, error } = await supabase
+          .from('guilds')
+          .insert([guildData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Error creating guild:', error);
+          throw error;
+        }
+
+        console.log('✅ Guild created:', data);
+        return data;
+      } catch (err) {
+        console.error('❌ Exception creating guild:', err);
+        throw err;
+      }
+    }
+
+    static async joinGuild(userId, guildId, role = 'Member') {
+      console.log('✅ Joining guild:', { userId, guildId, role });
+      
+      try {
+        const playerName = Player.getName();
+        const playerLevel = Player.getLevel();
+
+        const memberData = {
+          user_id: userId,
+          guild_id: guildId,
+          role: role,
+          level: playerLevel,
+          icon: role === 'Master' ? '👑' : '💪'
+        };
+
+        const { data, error } = await supabase
+          .from('guild_members')
+          .insert([memberData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Error joining guild:', error);
+          throw error;
+        }
+
+        // Update guild member count and power
+        const { error: updateError } = await supabase.rpc('increment_guild_stats', {
+          p_guild_id: guildId,
+          p_members_delta: 1,
+          p_power_delta: playerLevel * 50
+        });
+
+        if (updateError) {
+          console.warn('⚠️ Error updating guild stats:', updateError);
+        }
+
+        console.log('✅ Joined guild:', data);
+        return data;
+      } catch (err) {
+        console.error('❌ Exception joining guild:', err);
+        throw err;
+      }
+    }
+
+    static async leaveGuild(userId, guildId) {
+      console.log('🚪 Leaving guild:', { userId, guildId });
+      
+      try {
+        // Get member data before deleting
+        const { data: memberData } = await supabase
+          .from('guild_members')
+          .select('level')
+          .eq('user_id', userId)
+          .eq('guild_id', guildId)
+          .single();
+
+        const { error } = await supabase
+          .from('guild_members')
+          .delete()
+          .eq('user_id', userId)
+          .eq('guild_id', guildId);
+
+        if (error) {
+          console.error('❌ Error leaving guild:', error);
+          throw error;
+        }
+
+        // Update guild stats
+        if (memberData) {
+          const { error: updateError } = await supabase.rpc('increment_guild_stats', {
+            p_guild_id: guildId,
+            p_members_delta: -1,
+            p_power_delta: -(memberData.level * 50)
+          });
+
+          if (updateError) {
+            console.warn('⚠️ Error updating guild stats:', updateError);
+          }
+        }
+
+        console.log('✅ Left guild');
+        return true;
+      } catch (err) {
+        console.error('❌ Exception leaving guild:', err);
+        throw err;
+      }
+    }
+
+    static async deleteGuild(guildId) {
+      console.log('🗑️ Deleting guild:', guildId);
+      
+      try {
+        // Delete all members first
+        await supabase
+          .from('guild_members')
+          .delete()
+          .eq('guild_id', guildId);
+
+        // Delete guild
+        const { error } = await supabase
+          .from('guilds')
+          .delete()
+          .eq('id', guildId);
+
+        if (error) {
+          console.error('❌ Error deleting guild:', error);
+          throw error;
+        }
+
+        console.log('✅ Guild deleted');
+        return true;
+      } catch (err) {
+        console.error('❌ Exception deleting guild:', err);
+        throw err;
+      }
+    }
+
+    static async donate(guildId, type, amount) {
+      console.log('💰 Donating to guild:', { guildId, type, amount });
+      
+      try {
+        const field = type === 'money' ? 'vault_money' : 'vault_cigs';
+        
+        const { error } = await supabase
+          .from('guilds')
+          .update({ [field]: supabase.sql`${field} + ${amount}` })
+          .eq('id', guildId);
+
+        if (error) {
+          console.error('❌ Error donating:', error);
+          throw error;
+        }
+
+        // Update power
+        const powerDelta = Math.floor(amount / 10);
+        await supabase.rpc('increment_guild_stats', {
+          p_guild_id: guildId,
+          p_members_delta: 0,
+          p_power_delta: powerDelta
+        });
+
+        // Update last_donate timestamp
+        const userId = Player.getUserId();
+        await supabase
+          .from('guild_members')
+          .update({ last_donate: Date.now() })
+          .eq('user_id', userId)
+          .eq('guild_id', guildId);
+
+        console.log('✅ Donation successful');
+        return true;
+      } catch (err) {
+        console.error('❌ Exception donating:', err);
+        throw err;
+      }
+    }
   }
 
   // ====== GUILD MANAGER ======
   class GuildManager {
-    constructor(state) {
-      this.state = state;
+    constructor() {
+      this.guilds = [];
+      this.playerGuild = null;
+      this.playerGuildData = null;
       this.selectedGuildForJoin = null;
     }
 
-    init() {
+    async init() {
+      console.log('🚀 Initializing Guild Manager...');
+      
+      UI.showLoading();
+
+      const supabaseOk = await SupabaseManager.init();
+      if (!supabaseOk) {
+        UI.hideLoading();
+        UI.toast('Nepodařilo se připojit k serveru', 'err');
+        this.showWelcome();
+        return;
+      }
+
+      await this.loadData();
+      
       this.setupEventListeners();
       this.updateView();
-      this.setupMusic();
+      
+      UI.hideLoading();
+      console.log('✅ Guild Manager initialized');
+    }
+
+    async loadData() {
+      console.log('📦 Loading all data...');
+      
+      // Load all guilds
+      this.guilds = await SupabaseManager.loadGuilds();
+      
+      // Load player's guild membership
+      const userId = Player.getUserId();
+      this.playerGuildData = await SupabaseManager.loadPlayerGuild(userId);
+      
+      if (this.playerGuildData) {
+        this.playerGuild = this.guilds.find(g => g.id === this.playerGuildData.guild_id);
+        
+        if (this.playerGuild) {
+          // Load guild members
+          this.playerGuild.memberList = await SupabaseManager.loadGuildMembers(this.playerGuild.id);
+        }
+      }
+      
+      console.log('✅ Data loaded:', {
+        guilds: this.guilds.length,
+        playerGuild: this.playerGuild?.name || 'none'
+      });
     }
 
     setupEventListeners() {
@@ -306,7 +504,7 @@
       browserScreen.style.display = 'none';
       myGuildView.style.display = 'none';
 
-      if (this.state.isInGuild()) {
+      if (this.playerGuild) {
         // Zobrazit mou guildu
         myGuildView.style.display = 'flex';
         this.renderMyGuild();
@@ -335,7 +533,18 @@
 
       container.innerHTML = '';
       
-      this.state.guilds.forEach(guild => {
+      if (this.guilds.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #c9a44a;">
+            <div style="font-size: 60px; margin-bottom: 16px;">😢</div>
+            <div style="font-size: 18px; font-weight: 900;">Zatím žádné guildy</div>
+            <div style="font-size: 14px; margin-top: 8px;">Buď první a založ vlastní guildu!</div>
+          </div>
+        `;
+        return;
+      }
+      
+      this.guilds.forEach(guild => {
         const card = this.createGuildCard(guild);
         container.appendChild(card);
       });
@@ -350,7 +559,7 @@
         <div class="guild-info">
           <div class="guild-name">${guild.name}</div>
           <div class="guild-stats-mini">
-            <span>👥 ${guild.members}/${guild.maxMembers}</span>
+            <span>👥 ${guild.members}/${guild.max_members}</span>
             <span>⚔️ ${UI.formatNumber(guild.power)}</span>
           </div>
         </div>
@@ -361,9 +570,16 @@
       return card;
     }
 
-    showJoinModal(guildId) {
-      const guild = this.state.getGuild(guildId);
+    async showJoinModal(guildId) {
+      const guild = this.guilds.find(g => g.id === guildId);
       if (!guild) return;
+
+      UI.showLoading();
+      
+      // Load guild members
+      const members = await SupabaseManager.loadGuildMembers(guildId);
+      
+      UI.hideLoading();
 
       this.selectedGuildForJoin = guildId;
 
@@ -371,13 +587,13 @@
       if (!modalBody) return;
 
       const bonusXP = Math.floor(guild.level * 0.5) + 5;
-      const members = guild.memberList.slice(0, 6); // Pouze 6 členů
+      const topMembers = members.slice(0, 6);
 
       modalBody.innerHTML = `
         <div class="guild-detail-header">
           <div class="guild-emblem-large">${guild.emblem}</div>
           <div class="guild-detail-name">${guild.name}</div>
-          <div class="guild-detail-desc">${guild.desc}</div>
+          <div class="guild-detail-desc">${guild.description}</div>
         </div>
 
         <div class="guild-stats-detail">
@@ -387,7 +603,7 @@
           </div>
           <div class="stat-item">
             <div class="stat-label">Členové</div>
-            <div class="stat-value">${guild.members}/${guild.maxMembers}</div>
+            <div class="stat-value">${guild.members}/${guild.max_members}</div>
           </div>
           <div class="stat-item">
             <div class="stat-label">Power</div>
@@ -400,27 +616,27 @@
         </div>
 
         <div style="margin-top: 8px;">
-          <h3>👥 TOP ČLENOVÉ</h3>
+          <h3 style="font-size: 13px; font-weight: 900; color: #f1d27a; margin-bottom: 8px;">👥 TOP ČLENOVÉ</h3>
           <div style="display: flex; flex-direction: column; gap: 5px; max-height: 180px; overflow-y: auto;">
-            ${members.map(m => `
+            ${topMembers.length > 0 ? topMembers.map(m => `
               <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(0,0,0,0.3); border: 2px solid #5a4520; border-radius: 8px;">
                 <div style="width: 28px; height: 28px; border-radius: 6px; background: radial-gradient(circle, rgba(80,85,92,0.95), rgba(40,45,50,0.98)); border: 2px solid #c9a44a; display: grid; place-items: center; font-size: 14px;">
                   ${m.icon}
                 </div>
                 <div style="flex: 1;">
-                  <div style="font-size: 11px; font-weight: 900; color: #f1d27a; text-transform: uppercase; line-height: 1.2;">${m.name}</div>
+                  <div style="font-size: 11px; font-weight: 900; color: #f1d27a; text-transform: uppercase; line-height: 1.2;">${m.user_id}</div>
                   <div style="font-size: 9px; color: #c9a44a; line-height: 1;">${m.role}</div>
                 </div>
                 <div style="font-size: 10px; font-weight: 900; color: #4a9eff;">LVL ${m.level}</div>
               </div>
-            `).join('')}
+            `).join('') : '<div style="text-align: center; color: #c9a44a; padding: 20px;">Žádní členové</div>'}
           </div>
         </div>
       `;
 
       const btnJoin = document.getElementById('btnConfirmJoin');
       if (btnJoin) {
-        if (guild.members >= guild.maxMembers) {
+        if (guild.members >= guild.max_members) {
           btnJoin.disabled = true;
           btnJoin.textContent = '🚫 PLNÁ GUILDA';
         } else {
@@ -441,57 +657,61 @@
       return num.toString();
     }
 
-    joinGuild() {
+    async joinGuild() {
       if (!this.selectedGuildForJoin) return;
 
-      const guild = this.state.getGuild(this.selectedGuildForJoin);
+      const guild = this.guilds.find(g => g.id === this.selectedGuildForJoin);
       if (!guild) return;
 
-      if (guild.members >= guild.maxMembers) {
+      if (guild.members >= guild.max_members) {
         UI.toast('Guilda je plná', 'err');
         return;
       }
 
-      const playerName = Player.getName();
-      const playerLevel = Player.getLevel();
+      UI.showLoading();
 
-      guild.members++;
-      guild.power += playerLevel * 50;
-      guild.memberList.push({
-        name: playerName,
-        role: 'Member',
-        level: playerLevel,
-        icon: '💪'
-      });
+      try {
+        const userId = Player.getUserId();
+        await SupabaseManager.joinGuild(userId, guild.id, 'Member');
 
-      this.state.playerGuild = guild.id;
-      this.state.playerRole = 'Member';
-      this.state.save();
-
-      UI.hideModal('joinModal');
-      UI.toast(`Připojil ses do guildy "${guild.name}"! ✅`);
-      
-      this.selectedGuildForJoin = null;
-      this.updateView();
+        UI.toast(`Připojil ses do guildy "${guild.name}"! ✅`);
+        
+        await this.loadData();
+        
+        UI.hideModal('joinModal');
+        UI.hideLoading();
+        
+        this.selectedGuildForJoin = null;
+        this.updateView();
+      } catch (err) {
+        UI.hideLoading();
+        UI.toast('Chyba při připojování k guildě', 'err');
+        console.error(err);
+      }
     }
 
     renderMyGuild() {
-      const guild = this.state.getPlayerGuild();
+      const guild = this.playerGuild;
       if (!guild) return;
 
       const container = document.getElementById('guildDetail');
       if (!container) return;
 
       const bonusXP = Math.floor(guild.level * 0.5) + 5;
-      const members = guild.memberList.slice(0, 10);
-      const canDonate = Date.now() - this.state.lastDonate >= CONFIG.DONATE_COOLDOWN;
-      const cooldownSec = Math.ceil((CONFIG.DONATE_COOLDOWN - (Date.now() - this.state.lastDonate)) / 1000);
+      const members = guild.memberList || [];
+      const topMembers = members.slice(0, 10);
+      
+      const lastDonate = this.playerGuildData?.last_donate || 0;
+      const canDonate = Date.now() - lastDonate >= CONFIG.DONATE_COOLDOWN;
+      const cooldownSec = Math.ceil((CONFIG.DONATE_COOLDOWN - (Date.now() - lastDonate)) / 1000);
+
+      const isMaster = this.playerGuildData?.role === 'Master';
 
       container.innerHTML = `
         <div class="guild-detail-header">
           <div class="guild-emblem-large">${guild.emblem}</div>
           <div class="guild-detail-name">${guild.name}</div>
-          <div class="guild-detail-desc">${guild.desc}</div>
+          <div class="guild-detail-desc">${guild.description}</div>
         </div>
 
         <div class="guild-stats-detail">
@@ -501,7 +721,7 @@
           </div>
           <div class="stat-item">
             <div class="stat-label">Členové</div>
-            <div class="stat-value">${guild.members}/${guild.maxMembers}</div>
+            <div class="stat-value">${guild.members}/${guild.max_members}</div>
           </div>
           <div class="stat-item">
             <div class="stat-label">Power</div>
@@ -520,11 +740,11 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
             <div style="padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; text-align: center;">
               <div style="font-size: 10px; color: #c9a44a; font-weight: 900;">RUBLY</div>
-              <div style="font-size: 18px; font-weight: 900; color: #f1d27a;">₽ ${UI.formatNumber(guild.vault.money)}</div>
+              <div style="font-size: 18px; font-weight: 900; color: #f1d27a;">₽ ${UI.formatNumber(guild.vault_money)}</div>
             </div>
             <div style="padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; text-align: center;">
               <div style="font-size: 10px; color: #c9a44a; font-weight: 900;">CIGARETY</div>
-              <div style="font-size: 18px; font-weight: 900; color: #f1d27a;">🚬 ${UI.formatNumber(guild.vault.cigs)}</div>
+              <div style="font-size: 18px; font-weight: 900; color: #f1d27a;">🚬 ${UI.formatNumber(guild.vault_cigs)}</div>
             </div>
           </div>
           <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 8px;">
@@ -549,260 +769,3 @@
         <div style="margin-top: 12px;">
           <h3 style="font-size: 13px; font-weight: 900; color: #f1d27a; text-transform: uppercase; margin-bottom: 10px;">
             👥 ČLENOVÉ (${guild.members})
-          </h3>
-          <div style="display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding-right: 6px;">
-            ${members.map(m => `
-              <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.3); border: 2px solid #5a4520; border-radius: 10px; transition: all 0.2s ease;">
-                <div style="width: 36px; height: 36px; border-radius: 8px; background: radial-gradient(circle, rgba(80,85,92,0.95), rgba(40,45,50,0.98)); border: 2px solid #c9a44a; display: grid; place-items: center; font-size: 18px;">
-                  ${m.icon}
-                </div>
-                <div style="flex: 1;">
-                  <div style="font-size: 13px; font-weight: 900; color: #f1d27a; text-transform: uppercase;">${m.name}</div>
-                  <div style="font-size: 10px; color: #c9a44a;">${m.role}</div>
-                </div>
-                <div style="font-size: 12px; font-weight: 900; color: #4a9eff;">LVL ${m.level}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="guild-actions" style="margin-top: 14px;">
-          <button class="guild-btn" id="btnGuildInfo">
-            📊 STATISTIKY GUILDY
-          </button>
-          ${this.state.isMaster() ? `
-            <button class="guild-btn danger" id="btnDeleteGuild">
-              🗑️ ROZPUSTIT GUILDU
-            </button>
-          ` : ''}
-          <button class="guild-btn danger" id="btnLeaveGuild">
-            ❌ OPUSTIT GUILDU
-          </button>
-        </div>
-      `;
-    }
-
-    handleDonate(type) {
-      if (Date.now() - this.state.lastDonate < CONFIG.DONATE_COOLDOWN) {
-        UI.toast('Počkej chvíli před dalším příspěvkem', 'err');
-        return;
-      }
-
-      const guild = this.state.getPlayerGuild();
-      if (!guild) return;
-
-      const inputId = type === 'money' ? 'donateMoneyInput' : 'donateCigsInput';
-      const input = document.getElementById(inputId);
-      const amount = Math.max(0, parseInt(input?.value) || 0);
-
-      if (amount <= 0) {
-        UI.toast('Zadej platnou částku', 'err');
-        return;
-      }
-
-      if (type === 'money') {
-        const playerMoney = Player.getMoney();
-        if (playerMoney < amount) {
-          UI.toast('Nemáš tolik rublů', 'err');
-          return;
-        }
-        guild.vault.money += amount;
-        Player.setMoney(playerMoney - amount);
-        UI.toast(`Přispěl jsi ${UI.formatNumber(amount)} ₽ do trezoru`);
-      } else {
-        const playerCigs = Player.getCigs();
-        if (playerCigs < amount) {
-          UI.toast('Nemáš tolik cigaret', 'err');
-          return;
-        }
-        guild.vault.cigs += amount;
-        Player.setCigs(playerCigs - amount);
-        UI.toast(`Přispěl jsi ${UI.formatNumber(amount)} 🚬 do trezoru`);
-      }
-
-      guild.power += Math.floor(amount / 10);
-      this.state.lastDonate = Date.now();
-      this.state.save();
-      
-      if (input) input.value = '';
-      this.renderMyGuild();
-    }
-
-    showCreateModal() {
-      const cost = CONFIG.CREATE_COST_CIGS;
-      if (Player.getCigs() < cost) {
-        UI.toast(`Potřebuješ ${cost} 🚬 cigaret na založení guildy`, 'err');
-        return;
-      }
-
-      UI.showModal('createModal');
-      
-      const nameInput = document.getElementById('inputGuildName');
-      if (nameInput) nameInput.value = '';
-      const descInput = document.getElementById('inputGuildDesc');
-      if (descInput) descInput.value = '';
-      const emojiInput = document.getElementById('inputGuildEmoji');
-      if (emojiInput) emojiInput.value = '🏰';
-    }
-
-    createGuild() {
-      const name = document.getElementById('inputGuildName')?.value.trim() || '';
-      const desc = document.getElementById('inputGuildDesc')?.value.trim() || '';
-      const emblem = document.getElementById('inputGuildEmoji')?.value.trim() || '🏰';
-
-      if (name.length < 3) {
-        UI.toast('Název musí mít alespoň 3 znaky', 'err');
-        return;
-      }
-
-      if (this.state.guilds.some(g => g.name.toLowerCase() === name.toLowerCase())) {
-        UI.toast('Guilda s tímto názvem už existuje', 'err');
-        return;
-      }
-
-      const cost = CONFIG.CREATE_COST_CIGS;
-      const playerCigs = Player.getCigs();
-      if (playerCigs < cost) {
-        UI.toast(`Potřebuješ ${cost} 🚬 cigaret`, 'err');
-        return;
-      }
-
-      const playerName = Player.getName();
-      const playerLevel = Player.getLevel();
-
-      const newGuild = {
-        id: `guild-${Date.now()}`,
-        name: name.toUpperCase(),
-        emblem,
-        desc: desc || 'Nová guilda připravená dobýt svět!',
-        level: 1,
-        members: 1,
-        maxMembers: CONFIG.MAX_MEMBERS,
-        power: playerLevel * 100,
-        vault: { money: 0, cigs: 0 },
-        owner: playerName,
-        officers: [],
-        memberList: [
-          { name: playerName, role: 'Master', level: playerLevel, icon: '👑' }
-        ]
-      };
-
-      this.state.guilds.push(newGuild);
-      this.state.playerGuild = newGuild.id;
-      this.state.playerRole = 'Master';
-      this.state.save();
-
-      Player.setCigs(playerCigs - cost);
-
-      UI.hideModal('createModal');
-      UI.toast(`Guilda "${newGuild.name}" byla vytvořena! 🎉`);
-      
-      this.updateView();
-    }
-
-    leaveGuild() {
-      if (!confirm('Opravdu chceš opustit guildu?')) return;
-
-      const guild = this.state.getPlayerGuild();
-      if (!guild) return;
-
-      const playerName = Player.getName();
-      
-      // Odebrat hráče ze seznamu členů
-      guild.memberList = guild.memberList.filter(m => m.name !== playerName);
-      guild.members--;
-      
-     // Přepočítat power
-      const totalPower = guild.memberList.reduce((sum, m) => sum + (m.level * 50), 0);
-      guild.power = totalPower;
-
-      // Pokud byl Master a guilda má členy, přeřadit guildu prvnímu officerovi nebo členovi
-      if (this.state.isMaster() && guild.members > 0) {
-        const newMaster = guild.memberList[0];
-        if (newMaster) {
-          newMaster.role = 'Master';
-          newMaster.icon = '👑';
-          guild.owner = newMaster.name;
-        }
-      }
-
-      // Pokud guilda zůstala prázdná, smazat ji
-      if (guild.members === 0) {
-        this.state.guilds = this.state.guilds.filter(g => g.id !== guild.id);
-      }
-
-      this.state.playerGuild = null;
-      this.state.playerRole = null;
-      this.state.save();
-
-      UI.toast('Opustil jsi guildu', 'ok');
-      this.updateView();
-    }
-
-    deleteGuild() {
-      if (!this.state.isMaster()) {
-        UI.toast('Pouze Master může rozpustit guildu', 'err');
-        return;
-      }
-
-      if (!confirm('OPRAVDU chceš rozpustit guildu? Tato akce je nevratná!')) return;
-
-      const guild = this.state.getPlayerGuild();
-      if (!guild) return;
-
-      this.state.guilds = this.state.guilds.filter(g => g.id !== guild.id);
-      this.state.playerGuild = null;
-      this.state.playerRole = null;
-      this.state.save();
-
-      UI.toast('Guilda byla rozpuštěna', 'ok');
-      this.updateView();
-    }
-
-    showGuildInfo() {
-      const guild = this.state.getPlayerGuild();
-      if (!guild) return;
-
-      const totalDonations = guild.vault.money + guild.vault.cigs;
-      const avgLevel = Math.floor(guild.memberList.reduce((sum, m) => sum + m.level, 0) / guild.members);
-      const bonusXP = Math.floor(guild.level * 0.5) + 5;
-
-      UI.toast(`📊 ${guild.name} | Level ${guild.level} | Členů: ${guild.members} | Power: ${UI.formatNumber(guild.power)} | Průměrný level: ${avgLevel} | Bonus XP: +${bonusXP}%`, 'ok');
-    }
-
-    setupMusic() {
-      const music = document.getElementById('bgMusic');
-      if (music) {
-        music.volume = 0.3;
-        
-        // Pokus o automatické přehrání
-        const playPromise = music.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // Automatické přehrání selhalo, přehrát po interakci
-            document.addEventListener('click', () => {
-              music.play().catch(() => {});
-            }, { once: true });
-          });
-        }
-      }
-    }
-  }
-
-  // ====== INITIALIZATION ======
-  const state = new GuildState();
-  const manager = new GuildManager(state);
-  
-  document.addEventListener('DOMContentLoaded', () => {
-    manager.init();
-  });
-
-  // Pokud je DOM již načten
-  if (document.readyState === 'loading') {
-    // Čeká na DOMContentLoaded
-  } else {
-    // DOM už je načten
-    manager.init();
-  }
-
-})();
