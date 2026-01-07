@@ -4,14 +4,19 @@
 (function() {
   "use strict";
 
-  // ===== SUPABASE CLIENT =====
+  // ===== SUPABASE CLIENT - NOVÝ KLÍČ! =====
   function getSupabase() {
-    const SUPABASE_URL = 'https://bmmaijlbpwgzhrxzxphf.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbWFpamxicHdnemhyeHp4cGhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NjQ5MDcsImV4cCI6MjA4MjQ0MDkwN30.s0YQVnAjMXFu1pSI1NXZ2naSab179N0vQPglsmy3Pgw';
+    const SUPABASE_URL = 'https://jbfvoxlcociwtyobaοtz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
     
     if (!window._supabaseClient) {
+      if (!window.supabase) {
+        console.error('❌ Supabase library není načtená! Přidej <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>');
+        return null;
+      }
       const { createClient } = window.supabase;
       window._supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('✅ Supabase client vytvořen');
     }
     return window._supabaseClient;
   }
@@ -134,7 +139,10 @@
     }
 
     async initialize() {
-      if (this.initialized) return true;
+      if (this.initialized) {
+        console.log('✅ GameState už je inicializovaný');
+        return true;
+      }
 
       try {
         console.log('🔄 Inicializuji GameState...');
@@ -146,11 +154,22 @@
           userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
           localStorage.setItem('slavFantasyUserId', userId);
           localStorage.setItem('user_id', userId);
+          console.log('🆕 Vytvořen nový user_id:', userId);
+        } else {
+          console.log('✅ Načten user_id:', userId);
         }
         
         this.state.userId = userId;
         
         const sb = getSupabase();
+        if (!sb) {
+          console.error('❌ Supabase client není dostupný!');
+          this.initialized = true;
+          this.notifyListeners();
+          return false;
+        }
+        
+        console.log('📥 Načítám data ze Supabase...');
         const { data, error } = await sb
           .from('player_stats')
           .select('*')
@@ -158,11 +177,11 @@
           .single();
         
         if (error && error.code !== 'PGRST116') {
-          console.error('Error loading from Supabase:', error);
+          console.error('❌ Error loading from Supabase:', error);
         }
         
         if (data) {
-          console.log('✅ Data loaded from Supabase:', data);
+          console.log('✅ Data načtena ze Supabase:', data);
           
           this.state.level = data.level || 1;
           this.state.xp = data.xp || 0;
@@ -199,10 +218,11 @@
           if (this.state.hp > this.state.maxHp) {
             console.warn('⚠️ HP bylo větší než maxHP, opravuji:', this.state.hp, '->', this.state.maxHp);
             this.state.hp = this.state.maxHp;
-            await this.save(); // Ulož opravu
+            await this.save();
           }
           
           console.log('✅ Final HP:', this.state.hp, '/', this.state.maxHp);
+          console.log('✅ Stats:', this.state.stats);
           
         } else {
           console.log('🆕 Nový hráč - vytvářím základní data');
@@ -216,10 +236,13 @@
         this.initialized = true;
         this.notifyListeners();
         
+        console.log('🎮 GameState inicializován:', this.state);
         return true;
         
       } catch (error) {
-        console.error('Error initializing GameState:', error);
+        console.error('❌ Error initializing GameState:', error);
+        this.initialized = true;
+        this.notifyListeners();
         return false;
       }
     }
@@ -227,6 +250,10 @@
     async save() {
       try {
         const sb = getSupabase();
+        if (!sb) {
+          console.error('❌ Supabase není dostupný, nelze uložit');
+          return false;
+        }
         
         this.state.maxHp = this.calculateMaxHP();
         
@@ -254,20 +281,22 @@
           updated_at: new Date().toISOString()
         };
         
+        console.log('💾 Ukládám do Supabase...', payload);
+        
         const { error } = await sb
           .from('player_stats')
           .upsert(payload, { onConflict: 'user_id' });
         
         if (error) {
-          console.error('Error saving to Supabase:', error);
+          console.error('❌ Error saving to Supabase:', error);
           return false;
         }
         
-        console.log('💾 Saved to Supabase');
+        console.log('✅ Uloženo do Supabase');
         return true;
         
       } catch (error) {
-        console.error('Error saving:', error);
+        console.error('❌ Error saving:', error);
         return false;
       }
     }
@@ -366,6 +395,7 @@
       }
       
       this.state.hp = Math.max(0, Math.min(hp, this.state.maxHp));
+      console.log('💚 HP updated:', this.state.hp, '/', this.state.maxHp);
       this.notifyListeners();
       this.autoSave();
     }
@@ -373,6 +403,7 @@
     healToFull() {
       this.state.maxHp = this.calculateMaxHP();
       this.state.hp = this.state.maxHp;
+      console.log('💚 HP healed to full:', this.state.hp);
       this.notifyListeners();
       this.autoSave();
     }
@@ -394,7 +425,7 @@
         try {
           callback(this.state);
         } catch (error) {
-          console.error('Error in listener:', error);
+          console.error('❌ Error in listener:', error);
         }
       });
     }
