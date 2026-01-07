@@ -1,1 +1,0 @@
-# zkurvildojebal.cz
