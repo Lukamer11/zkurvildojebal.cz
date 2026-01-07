@@ -39,6 +39,38 @@
   display: flex;
 }
 
+/* ===== LOADING STATE ===== */
+.guild-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: 
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 14px;
+  box-shadow: 0 15px 45px rgba(0,0,0,.8);
+}
+
+.loading-spinner {
+  text-align: center;
+  color: #f1d27a;
+}
+
+.loading-spinner-icon {
+  font-size: 80px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ===== ÚVODNÍ OBRAZOVKA ===== */
 .guild-welcome {
   flex: 1;
@@ -714,140 +746,6 @@
   gap: 10px;
   margin-top: 12px;
   flex-shrink: 0;
-}
-
-/* ===== GUILD DETAIL V MODALU - KOMPAKTNÍ ===== */
-.guild-detail-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background: rgba(0,0,0,0.4);
-  border-radius: 12px;
-  border: 2px solid #5a4520;
-  flex-shrink: 0;
-}
-
-.guild-emblem-large {
-  width: 70px;
-  height: 70px;
-  border-radius: 12px;
-  background: radial-gradient(circle, rgba(80,85,92,0.95), rgba(40,45,50,0.98));
-  border: 3px solid #c9a44a;
-  display: grid;
-  place-items: center;
-  font-size: 40px;
-  box-shadow: 
-    inset 0 0 20px rgba(0, 0, 0, 0.5),
-    0 6px 15px rgba(0, 0, 0, 0.6);
-}
-
-.guild-detail-name {
-  font-size: 18px;
-  font-weight: 900;
-  color: #f1d27a;
-  text-shadow: 0 2px 6px rgba(0,0,0,.8);
-  text-transform: uppercase;
-  text-align: center;
-  letter-spacing: 1.5px;
-  line-height: 1.2;
-}
-
-.guild-detail-desc {
-  font-size: 11px;
-  color: #c9a44a;
-  text-align: center;
-  line-height: 1.4;
-  max-height: 3.6em;
-  overflow: hidden;
-}
-
-.guild-stats-detail {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.stat-item {
-  padding: 8px 6px;
-  background: url('tlacitko.jpg');
-  background-size: cover;
-  border: 2px solid #5a4520;
-  border-radius: 8px;
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.stat-item:hover {
-  transform: translateY(-1px);
-  border-color: #c9a44a;
-}
-
-.stat-label {
-  font-size: 9px;
-  color: #c9a44a;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.stat-value {
-  font-size: 15px;
-  font-weight: 900;
-  color: #f1d27a;
-  text-shadow: 0 2px 4px rgba(0,0,0,.8);
-  line-height: 1;
-}
-
-/* Členové v modalu - kompaktní seznam */
-.modal-body h3 {
-  font-size: 11px;
-  font-weight: 900;
-  color: #f1d27a;
-  text-transform: uppercase;
-  margin: 8px 0 6px 0;
-  letter-spacing: 0.5px;
-}
-
-.modal-body > div[style*="flex-direction: column"] {
-  max-height: 180px !important;
-  overflow-y: auto;
-}
-
-.modal-body > div[style*="flex-direction: column"]::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal-body > div[style*="flex-direction: column"]::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-}
-
-/* Kompaktní členské karty */
-.modal-body div[style*="display: flex"][style*="align-items: center"] {
-  padding: 6px 8px !important;
-  gap: 8px !important;
-}
-
-.modal-body div[style*="display: flex"][style*="align-items: center"] > div:first-child {
-  width: 28px !important;
-  height: 28px !important;
-  font-size: 14px !important;
-}
-
-.modal-body div[style*="display: flex"][style*="align-items: center"] > div:nth-child(2) > div:first-child {
-  font-size: 11px !important;
-}
-
-.modal-body div[style*="display: flex"][style*="align-items: center"] > div:nth-child(2) > div:last-child {
-  font-size: 9px !important;
-}
-
-.modal-body div[style*="display: flex"][style*="align-items: center"] > div:last-child {
-  font-size: 10px !important;
 }
 
 /* ===== TOAST ===== */
