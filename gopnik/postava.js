@@ -263,6 +263,9 @@
       return false;
     } catch (error) {
       console.error('❌ Error saving to Supabase:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('Error message:', error?.message);
+      console.error('Error code:', error?.code);
       return false;
     }
   }
