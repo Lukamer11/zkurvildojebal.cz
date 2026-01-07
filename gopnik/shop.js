@@ -1,4 +1,4 @@
-// ===== SUPABASE SETUP =====
+// ===== SUPABASE SETUP - OPRAVENO NA NOVÝ =====
 const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
 
@@ -6,14 +6,12 @@ const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ===== CONSTANTS =====
-const INVENTORY_SIZE = 8; // Změněno z 24 na 8
-const SHOP_ROTATION_HOURS = 5; // Rotace každých 5 hodin
-const ITEMS_PER_CATEGORY = 4; // Kolik itemů zobrazit v každé kategorii
-// ===== GRIND TUNING =====
-const ITEM_LEVEL_SCALE = 0.08;     // ~ +8% statů za level
-const ITEM_ROLL_MIN = 0.90;        // náhodný roll
+const INVENTORY_SIZE = 8;
+const SHOP_ROTATION_HOURS = 5;
+const ITEMS_PER_CATEGORY = 4;
+const ITEM_LEVEL_SCALE = 0.08;
+const ITEM_ROLL_MIN = 0.90;
 const ITEM_ROLL_MAX = 1.15;
-
 
 // ===== GAME STATE =====
 let gameState = {
@@ -65,7 +63,12 @@ function getAllItems() {
 }
 
 function getItemById(itemId) {
-  // 1) instance v current shopu
+  // Pokud je itemId objekt (instance), vrať ho
+  if (typeof itemId === 'object' && itemId !== null) {
+    return itemId;
+  }
+  
+  // 1) Hledej v current shopu
   const allShop = [
     ...(gameState.currentShopItems?.weapons || []),
     ...(gameState.currentShopItems?.armor || []),
@@ -74,46 +77,36 @@ function getItemById(itemId) {
   const foundInst = allShop.find(i => i.instance_id === itemId || i.id === itemId);
   if (foundInst) return foundInst;
 
-  // 2) instance v inventáři
-  const foundInv = (gameState.inventory || []).find(i => i && typeof i === 'object' && (i.instance_id === itemId || i.id === itemId));
+  // 2) Hledej v inventáři
+  const foundInv = (gameState.inventory || []).find(i => {
+    if (!i) return false;
+    if (typeof i === 'object') return i.instance_id === itemId || i.id === itemId;
+    return i === itemId;
+  });
   if (foundInv) return foundInv;
 
-  // 3) fallback: base item podle id (starý styl)
+  // 3) Fallback: base item
   return getAllItems().find(item => item.id === itemId);
-}
-
-
-
-function resolveItem(ref){
-  // ref může být string (starý styl) nebo objekt (instance)
-  if (!ref) return null;
-  if (typeof ref === 'string') return getAllItems().find(i => i.id === ref) || null;
-  return ref; // instance
 }
 
 function makeItemInstance(baseItem, level){
   const roll = ITEM_ROLL_MIN + Math.random() * (ITEM_ROLL_MAX - ITEM_ROLL_MIN);
   const scale = 1 + (Math.max(1, level) - 1) * ITEM_LEVEL_SCALE;
 
-  const inst = JSON.parse(JSON.stringify(baseItem)); // deep clone
+  const inst = JSON.parse(JSON.stringify(baseItem));
   inst.instance_id = 'it_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   inst.base_id = baseItem.id;
 
-  // scaling bonusů
   if (inst.bonuses) {
     Object.keys(inst.bonuses).forEach(stat => {
       inst.bonuses[stat] = Math.max(0, Math.round(inst.bonuses[stat] * scale * roll));
     });
   }
 
-  // scaling ceny
   inst.price = Math.floor((baseItem.price || 0) * (0.9 + scale) * roll);
-
-  // info do tooltipu
   inst.level_roll = level;
   return inst;
 }
-
 
 function calculateStatBonus(stat, value) {
   switch(stat) {
@@ -157,10 +150,10 @@ function rotateShopItems() {
   console.log('🔄 Rotace itemů v shopu...');
   
   gameState.currentShopItems = {
-  weapons: getRandomItems(window.SHOP_ITEMS.weapons, ITEMS_PER_CATEGORY).map(it => makeItemInstance(it, gameState.level)),
-  armor:   getRandomItems(window.SHOP_ITEMS.armor,   ITEMS_PER_CATEGORY).map(it => makeItemInstance(it, gameState.level)),
-  special: getRandomItems(window.SHOP_ITEMS.special, ITEMS_PER_CATEGORY).map(it => makeItemInstance(it, gameState.level))
-};
+    weapons: getRandomItems(window.SHOP_ITEMS.weapons, ITEMS_PER_CATEGORY).map(it => makeItemInstance(it, gameState.level)),
+    armor: getRandomItems(window.SHOP_ITEMS.armor, ITEMS_PER_CATEGORY).map(it => makeItemInstance(it, gameState.level)),
+    special: getRandomItems(window.SHOP_ITEMS.special, ITEMS_PER_CATEGORY).map(it => makeItemInstance(it, gameState.level))
+  };
   
   gameState.lastShopRotation = new Date().toISOString();
   
@@ -185,15 +178,17 @@ function getTimeUntilNextRotation() {
 // ===== SUPABASE FUNCTIONS =====
 async function initUser() {
   try {
-    // User ID: primárně Supabase auth user_id (sjednocení se stránkami arena/mail/menu)
     let userId = localStorage.getItem('user_id') || localStorage.getItem('slavFantasyUserId');
     
     if (!userId) {
       userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       localStorage.setItem('slavFantasyUserId', userId);
+      localStorage.setItem('user_id', userId);
     }
     
     gameState.userId = userId;
+    
+    console.log('🔄 Loading from Supabase for user:', userId);
     
     const { data, error } = await supabaseClient
       .from('player_stats')
@@ -207,25 +202,24 @@ async function initUser() {
     }
     
     if (data) {
-      gameState.level = data.level;
-      gameState.xp = data.xp;
-      gameState.money = data.money;
-      gameState.cigarettes = data.cigarettes;
-      gameState.stats = data.stats;
+      gameState.level = data.level || 1;
+      gameState.xp = data.xp || 0;
+      gameState.money = data.money || 3170;
+      gameState.cigarettes = data.cigarettes || 42;
+      gameState.stats = data.stats || gameState.stats;
       gameState.inventory = data.inventory || [];
       gameState.equipped = data.equipped || gameState.equipped;
       gameState.lastShopRotation = data.last_shop_rotation;
       gameState.currentShopItems = data.current_shop_items || gameState.currentShopItems;
       
-      console.log('Loaded from Supabase:', data);
+      console.log('✅ Loaded from Supabase:', data);
+      console.log('📦 Inventory:', gameState.inventory);
     } else {
-      // New user
+      console.log('🆕 New user, rotating shop...');
       rotateShopItems();
       await saveToSupabase();
-      console.log('New user created:', userId);
     }
     
-    // Check if shop should rotate
     if (shouldRotateShop()) {
       rotateShopItems();
       await saveToSupabase();
@@ -233,14 +227,16 @@ async function initUser() {
     }
     
   } catch (error) {
-    console.error('Error initializing user:', error);
+    console.error('❌ Error initializing user:', error);
     showNotification('Chyba při načítání hry', 'error');
   }
 }
 
 async function saveToSupabase() {
-  // Robustní uložení: pokud v DB chybí sloupec (PGRST204), odstraníme ho z payloadu a zkusíme znovu.
   try {
+    console.log('💾 Ukládám do Supabase...');
+    console.log('📦 Inventory před uložením:', gameState.inventory);
+
     const basePayload = {
       user_id: gameState.userId,
       level: gameState.level,
@@ -250,7 +246,6 @@ async function saveToSupabase() {
       stats: gameState.stats,
       inventory: gameState.inventory,
       equipped: gameState.equipped,
-      // shop-only: pokud tyhle sloupce v DB nejsou, fallback níže je vyhodí z payloadu
       last_shop_rotation: gameState.lastShopRotation,
       current_shop_items: gameState.currentShopItems,
       updated_at: new Date().toISOString()
@@ -264,11 +259,14 @@ async function saveToSupabase() {
         .upsert(payload, { onConflict: 'user_id' });
 
       if (!error) {
-        console.log('Saved to Supabase successfully');
+        console.log('✅ Saved to Supabase successfully');
         return true;
       }
 
       const msg = String(error?.message || '');
+      console.error('❌ Supabase error:', error);
+      console.error('Error message:', msg);
+      
       const match = msg.match(/Could not find the '([^']+)' column/);
       if (error?.code === 'PGRST204' && match) {
         const missing = match[1];
@@ -285,14 +283,14 @@ async function saveToSupabase() {
     console.warn('Supabase: nepodařilo se uložit ani po ořezání payloadu.');
     return false;
   } catch (error) {
-    console.error('Error saving to Supabase:', error);
+    console.error('❌ Error saving to Supabase:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     showNotification('Chyba ukládání do cloudu', 'error');
     return false;
   }
 }
 
 // ===== TOOLTIP SYSTEM =====
-
 let tooltip = null;
 
 function createTooltip() {
@@ -367,30 +365,35 @@ function renderShopItems() {
   
   if (!shopGrid) return;
   
-  shopGrid.innerHTML = items.map(item => `
-    <div class="shop-item" data-item-id="${item.id}">
-      <div class="item-icon">
-        ${item.icon.endsWith('.jpg') ? 
-          `<img src="${item.icon}" alt="${item.name}">` : 
-          item.icon}
-      </div>
-      <div class="item-details">
-        <h3>${item.name}</h3>
-        <p class="item-desc">${item.description}</p>
-        <div class="item-price">
-          <span class="price">${item.price}₽</span>
-          <button class="buy-btn" onclick="buyItem('${item.id}')">
-            KOUPIT
-          </button>
+  shopGrid.innerHTML = items.map(item => {
+    const itemId = item.instance_id || item.id;
+    return `
+      <div class="shop-item" data-item-id="${itemId}">
+        <div class="item-icon">
+          ${item.icon.endsWith('.jpg') ? 
+            `<img src="${item.icon}" alt="${item.name}">` : 
+            item.icon}
+        </div>
+        <div class="item-details">
+          <h3>${item.name}</h3>
+          <p class="item-desc">${item.description}</p>
+          <div class="item-price">
+            <span class="price">${item.price}₽</span>
+            <button class="buy-btn" onclick="buyItem('${itemId}')">
+              KOUPIT
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
   
   // Add tooltip listeners
   document.querySelectorAll('.shop-item').forEach(itemEl => {
     const itemId = itemEl.dataset.itemId;
     const item = getItemById(itemId);
+    
+    if (!item) return;
     
     itemEl.addEventListener('mouseenter', (e) => {
       showTooltip(item, e.clientX, e.clientY);
@@ -413,23 +416,29 @@ function renderInventory() {
   const inventoryGrid = document.getElementById('inventoryGrid');
   if (!inventoryGrid) return;
   
+  console.log('🎨 Renderuji inventář:', gameState.inventory);
+  
   inventoryGrid.innerHTML = '';
   
   // Render filled slots
-  gameState.inventory.forEach((itemId, index) => {
-    const item = getItemById(itemId);
-    if (!item) return;
+  gameState.inventory.forEach((itemRef, index) => {
+    const item = getItemById(itemRef);
+    if (!item) {
+      console.warn('⚠️ Item not found:', itemRef);
+      return;
+    }
     
     const slot = document.createElement('div');
     slot.className = 'inv-slot filled';
     slot.draggable = true;
+    const itemId = item.instance_id || item.id;
     slot.dataset.itemId = itemId;
     slot.dataset.invIndex = index;
     
-    if (item.icon.endsWith('.jpg')) {
+    if (item.icon && item.icon.endsWith('.jpg')) {
       slot.innerHTML = `<img src="${item.icon}" alt="${item.name}">`;
     } else {
-      slot.textContent = item.icon;
+      slot.textContent = item.icon || '❓';
     }
     
     // Tooltip
@@ -467,22 +476,26 @@ function renderInventory() {
   if (invCount) {
     invCount.textContent = gameState.inventory.length;
   }
+  
+  console.log('✅ Inventář vyrenderován');
 }
 
 function renderEquippedItems() {
   Object.keys(gameState.equipped).forEach(slotName => {
-    const itemId = gameState.equipped[slotName];
+    const itemRef = gameState.equipped[slotName];
     const slotElement = document.querySelector(`[data-slot="${slotName}"]`);
     
     if (!slotElement) return;
     
-    if (itemId) {
-      const item = getItemById(itemId);
+    if (itemRef) {
+      const item = getItemById(itemRef);
       if (!item) return;
       
       slotElement.classList.add('has-item');
       
-      if (item.icon.endsWith('.jpg')) {
+      const itemId = item.instance_id || item.id;
+      
+      if (item.icon && item.icon.endsWith('.jpg')) {
         slotElement.innerHTML = `<img src="${item.icon}" alt="${item.name}" class="slot-item" draggable="true" data-item-id="${itemId}" data-from-slot="${slotName}">`;
       } else {
         slotElement.innerHTML = `<span class="slot-item" draggable="true" data-item-id="${itemId}" data-from-slot="${slotName}">${item.icon}</span>`;
@@ -504,7 +517,7 @@ function renderEquippedItems() {
         hideTooltip();
       });
       
-      // Add drag events to equipped items
+      // Add drag events
       const itemElement = slotElement.querySelector('.slot-item');
       if (itemElement) {
         itemElement.addEventListener('dragstart', handleEquippedDragStart);
@@ -565,19 +578,16 @@ function getSlotEmoji(slotName) {
 }
 
 function updateUI() {
-  // Update level
   const levelDisplay = document.getElementById('levelDisplay');
   const levelShop = document.getElementById('levelShop');
   if (levelDisplay) levelDisplay.textContent = gameState.level;
   if (levelShop) levelShop.textContent = `Level ${gameState.level}`;
   
-  // Update money
   const money = document.getElementById('money');
   const cigarettes = document.getElementById('cigarettes');
-  if (money) money.textContent = gameState.money.toLocaleString();
+  if (money) money.textContent = gameState.money.toLocaleString('cs-CZ');
   if (cigarettes) cigarettes.textContent = gameState.cigarettes;
   
-  // Update XP bar
   const requiredXP = getRequiredXP(gameState.level);
   const xpPercent = (gameState.xp / requiredXP) * 100;
   const xpFill = document.getElementById('xpFill');
@@ -585,12 +595,9 @@ function updateUI() {
   if (xpFill) xpFill.style.width = `${xpPercent}%`;
   if (xpText) xpText.textContent = `${gameState.xp} / ${requiredXP}`;
   
-  // Render all sections
   renderInventory();
   renderEquippedItems();
   renderCharacterStats();
-  
-  // Update shop rotation timer
   updateRotationTimer();
 }
 
@@ -611,9 +618,9 @@ function calculateTotalBonuses() {
     luck: 0
   };
   
-  Object.values(gameState.equipped).forEach(itemId => {
-    if (!itemId) return;
-    const item = getItemById(itemId);
+  Object.values(gameState.equipped).forEach(itemRef => {
+    if (!itemRef) return;
+    const item = getItemById(itemRef);
     if (!item || !item.bonuses) return;
     
     Object.keys(item.bonuses).forEach(stat => {
@@ -626,12 +633,17 @@ function calculateTotalBonuses() {
 
 // ===== SHOP FUNCTIONS =====
 async function buyItem(itemId) {
+  console.log('💰 Kupuji item:', itemId);
+  
   const item = getItemById(itemId);
   
   if (!item) {
+    console.error('❌ Item nenalezen:', itemId);
     showNotification('Item nenalezen!', 'error');
     return;
   }
+  
+  console.log('✅ Item nalezen:', item);
   
   if (gameState.money < item.price) {
     showNotification('Nemáš dost peněz!', 'error');
@@ -643,16 +655,25 @@ async function buyItem(itemId) {
     return;
   }
   
-  // Purchase
+  // Purchase - ULOŽÍME CELÝ OBJEKT (instance)
   gameState.money -= item.price;
-  gameState.inventory.push(item); // uloží celou instanci se scaled bonusy
-
+  gameState.inventory.push(item);
+  
+  console.log('📦 Item přidán do inventáře');
+  console.log('📦 Inventář po koupi:', gameState.inventory);
   
   // Save and update
-  await saveToSupabase();
-  updateUI();
+  const saved = await saveToSupabase();
   
-  showNotification(`${item.name} koupen za ${item.price}₽!`, 'success');
+  if (saved) {
+    updateUI();
+    showNotification(`${item.name} koupen za ${item.price}₽!`, 'success');
+  } else {
+    // Rollback pokud se neuložilo
+    gameState.money += item.price;
+    gameState.inventory.pop();
+    showNotification('Chyba při ukládání!', 'error');
+  }
 }
 
 // ===== DRAG & DROP =====
@@ -706,40 +727,29 @@ async function handleDrop(e) {
   
   if (!item) return;
   
-  // Check if item can be equipped in this slot
   if (item.slot !== targetSlot) {
     showNotification(`${item.name} nelze nasadit do slotu ${targetSlot}!`, 'error');
     return;
   }
   
-  // Handle equipping from inventory
   if (dragSource === 'inventory') {
-    // If slot has item, swap
     const currentItem = gameState.equipped[targetSlot];
     if (currentItem) {
       gameState.inventory[draggedItem.invIndex] = currentItem;
     } else {
-      // Remove from inventory
       gameState.inventory.splice(draggedItem.invIndex, 1);
     }
     
-    // Equip new item
-    gameState.equipped[targetSlot] = draggedItem.itemId;
-    
+    gameState.equipped[targetSlot] = item;
     showNotification(`${item.name} nasazen!`, 'success');
   }
-  
-  // Handle moving between equipment slots
   else if (dragSource === 'equipped') {
-    // Swap items
     const temp = gameState.equipped[targetSlot];
     gameState.equipped[targetSlot] = draggedItem.itemId;
     gameState.equipped[draggedItem.fromSlot] = temp;
-    
     showNotification(`Položky přesunuty!`, 'success');
   }
   
-  // Save and update
   await saveToSupabase();
   updateUI();
   
@@ -748,21 +758,21 @@ async function handleDrop(e) {
 }
 
 async function unequipItem(slotName) {
-  const itemId = gameState.equipped[slotName];
-  if (!itemId) return;
+  const itemRef = gameState.equipped[slotName];
+  if (!itemRef) return;
   
   if (gameState.inventory.length >= INVENTORY_SIZE) {
     showNotification('Inventář je plný!', 'error');
     return;
   }
   
+  const item = getItemById(itemRef);
   gameState.equipped[slotName] = null;
-  gameState.inventory.push(itemId);
+  gameState.inventory.push(itemRef);
   
   await saveToSupabase();
   updateUI();
   
-  const item = getItemById(itemId);
   showNotification(`${item.name} odebrán z výbavy`, 'success');
 }
 
@@ -812,11 +822,10 @@ function showNotification(message, type) {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Initializing shop...');
+  console.log('🚀 Initializing shop...');
   
-  // Check if SHOP_ITEMS is loaded
   if (!window.SHOP_ITEMS) {
-    console.error('SHOP_ITEMS not loaded! Make sure items.js is included before shop.js');
+    console.error('❌ SHOP_ITEMS not loaded!');
     showNotification('Chyba: items.js není načten!', 'error');
     return;
   }
@@ -852,7 +861,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(() => {
     updateRotationTimer();
     
-    // Check if shop should rotate
     if (shouldRotateShop()) {
       rotateShopItems();
       saveToSupabase();
@@ -863,16 +871,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   showNotification('Obchod načten!', 'success');
   
-  console.log('Shop initialized!', gameState);
+  console.log('✅ Shop initialized!', gameState);
 });
 
 // ===== AUTO-SAVE =====
 setInterval(async () => {
   await saveToSupabase();
-  console.log('Auto-save completed');
+  console.log('💾 Auto-save completed');
 }, 30000);
 
 // ===== EXPOSE FOR HTML =====
 window.buyItem = buyItem;
 
-console.log('Shop system loaded!');
+console.log('✅ Shop system loaded!');
