@@ -1,4 +1,4 @@
-// arena.js – arena fight s POSTUPNOU animací (show weapon → fire → hide → THEN hit)
+// arena.js – arena fight s POSTUPNOU animací + SPRÁVNÉ STATS A HP
 (() => {
   "use strict";
 
@@ -8,17 +8,14 @@
 
   const nextBtn = document.getElementById("nextEnemyBtn");
   const attackBtn = document.getElementById("attackBtn");
-
   const resultModal = document.getElementById("resultModal");
   const resultTitle = document.getElementById("resultTitle");
   const resultText  = document.getElementById("resultText");
   const resultContinue = document.getElementById("resultContinue");
-
   const playerHealthFill = document.getElementById("playerHealthFill");
   const playerHealthText = document.getElementById("playerHealthText");
   const playerLevelText = document.getElementById("playerLevelText");
   const playerDmgEl = document.getElementById("playerDmg");
-
   const enemyNameEl = document.getElementById("enemyName");
   const enemyLevelEl = document.getElementById("enemyLevel");
   const enemyHealthFill = document.getElementById("enemyHealthFill");
@@ -60,15 +57,7 @@
     if (!fillEl || !textEl) return;
     const pct = max <= 0 ? 0 : Math.max(0, Math.min(100, (cur / max) * 100));
     fillEl.style.width = pct + "%";
-    textEl.textContent = `HP ${fmtInt(cur)} / ${fmtInt(max)}`;
-  }
-
-  function showDmg(el, dmg) {
-    if (!el) return;
-    el.textContent = `-${fmtInt(dmg)}`;
-    el.classList.remove("show");
-    void el.offsetWidth;
-    el.classList.add("show");
+    textEl.textContent = `HP ${fmtInt(Math.floor(cur))} / ${fmtInt(Math.floor(max))}`;
   }
 
   function clampHp(v) {
@@ -134,8 +123,8 @@
     // PŘEPOČET MAX HP podle constitution + equipment bonusů
     playerMaxHp = computeMaxHpFromCore(playerTotal, cls);
     
-    // Aktualizace UI atributů
-    const map = {
+    // ===== AKTUALIZACE UI STATS V ARÉNĚ =====
+    const statElements = {
       pStr: playerTotal.strength,
       pDef: playerTotal.defense,
       pDex: playerTotal.dexterity,
@@ -143,38 +132,45 @@
       pCon: playerTotal.constitution,
       pLuck: playerTotal.luck
     };
-    Object.keys(map).forEach((id) => {
+    
+    Object.keys(statElements).forEach((id) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = String(map[id]);
+      if (el) {
+        el.textContent = String(statElements[id]);
+        console.log(`📊 Updated ${id}: ${statElements[id]}`);
+      }
     });
 
-    console.log('✅ Player totals recomputed:', playerTotal);
+    console.log('✅ Player totals:', playerTotal);
     console.log('💪 Max HP:', playerMaxHp, 'Current HP:', playerCurrentHp);
   }
 
   function healPlayerToFull() {
     recomputePlayerTotals();
     
-    // Heal to full HP based on new max
+    // Heal to full HP
     playerCurrentHp = playerMaxHp;
     
     if (window.SF) {
       window.SF.setHp(playerCurrentHp, playerMaxHp);
     }
     
+    // ===== UPDATE HEALTH BAR S SPRÁVNÝMI HODNOTAMI =====
     setBar(playerHealthFill, playerHealthText, playerCurrentHp, playerMaxHp);
-    if (playerLevelText) playerLevelText.textContent = `Level ${playerTotal.level}`;
     
-    console.log('🏥 Player healed to full:', playerCurrentHp, '/', playerMaxHp);
+    if (playerLevelText) {
+      playerLevelText.textContent = `Level ${playerTotal.level}`;
+    }
+    
+    console.log('🏥 Player healed:', playerCurrentHp, '/', playerMaxHp);
   }
 
   function renderEnemy() {
     const e = enemies[enemyIndex % enemies.length];
     const clsPool = ["padouch","rvac","mozek"];
     if (!e._class) e._class = clsPool[randInt(0, clsPool.length-1)];
-    enemyCurHp = e.hp;
+    
     enemyMaxHp = e.hp;
-
     if (e._class === "rvac")  enemyMaxHp = clampHp(enemyMaxHp * 1.25);
     if (e._class === "mozek") enemyMaxHp = clampHp(enemyMaxHp * 0.8);
     enemyCurHp = enemyMaxHp;
@@ -182,6 +178,28 @@
     if (enemyNameEl) enemyNameEl.textContent = e.name;
     if (enemyLevelEl) enemyLevelEl.textContent = `Level ${e.level}`;
     setBar(enemyHealthFill, enemyHealthText, enemyCurHp, enemyMaxHp);
+
+    // Enemy stats (náhodné podle levelu)
+    const eStr = 10 + (e.level * 3) + randInt(0, 5);
+    const eDef = 8 + (e.level * 2) + randInt(0, 4);
+    const eDex = 6 + (e.level * 2) + randInt(0, 3);
+    const eInt = 5 + e.level + randInt(0, 2);
+    const eCon = 12 + (e.level * 2) + randInt(0, 4);
+    const eLuck = 3 + e.level + randInt(0, 2);
+
+    const enemyStatElements = {
+      eStr: eStr,
+      eDef: eDef,
+      eDex: eDex,
+      eInt: eInt,
+      eCon: eCon,
+      eLuck: eLuck
+    };
+
+    Object.keys(enemyStatElements).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(enemyStatElements[id]);
+    });
 
     renderEnemyClassBadge(e._class);
   }
@@ -223,10 +241,10 @@
 
     if (win) {
       if (resultTitle) resultTitle.textContent = "Vyhrál jsi!";
-      if (resultText)  resultText.textContent  = `Dostal jsi pár grošů... +${txtAmount}`;
+      if (resultText)  resultText.textContent  = `Dostal jsi pár grošů... +${txtAmount}₽`;
     } else {
       if (resultTitle) resultTitle.textContent = "Prohrál jsi!";
-      if (resultText)  resultText.textContent  = `Přišel jsi o groše... -${txtAmount}`;
+      if (resultText)  resultText.textContent  = `Přišel jsi o groše... -${txtAmount}₽`;
     }
 
     resultModal.classList.add("show");
@@ -262,10 +280,6 @@
     return Math.max(1, dmg);
   }
 
-  // ========================================
-  // NOVÝ SYSTÉM ANIMACÍ - POSTUPNĚ
-  // ========================================
-  
   function showWeapon(isPlayer) {
     return new Promise(resolve => {
       const weaponSelector = isPlayer ? ".weapon-player" : ".weapon-enemy";
@@ -274,7 +288,6 @@
       
       weapon.src = "zbran1.png";
       weapon.classList.add("show-weapon");
-      
       setTimeout(resolve, 400);
     });
   }
@@ -286,7 +299,6 @@
       if (!weapon) return resolve();
       
       weapon.src = "zbran2.png";
-      
       setTimeout(() => {
         weapon.src = "zbran1.png";
         resolve();
@@ -301,7 +313,6 @@
       if (!weapon) return resolve();
       
       weapon.classList.remove("show-weapon");
-      
       setTimeout(resolve, 200);
     });
   }
@@ -318,7 +329,6 @@
       target.classList.add("hit-shake");
 
       const holes = Array.from(target.querySelectorAll(".hit-overlay"));
-      
       holes.forEach(h => {
         h.classList.remove("show-hit");
         h.style.opacity = "0";
@@ -340,7 +350,6 @@
             defender.hp = clampHp(defender.hp - damage);
             setBar(fillEl, textEl, defender.hp, maxHp);
           }, 200);
-          
           return;
         }
 
@@ -355,7 +364,6 @@
         const y = 90 + Math.random() * 140;
         hole.style.left = x + "px";
         hole.style.top = y + "px";
-
         hole.classList.add("show-hit");
 
         step++;
@@ -366,20 +374,15 @@
 
       setTimeout(() => {
         target.classList.remove("hit-shake");
-        
         holes.forEach(h => {
           h.classList.remove("show-hit");
           setTimeout(() => { h.style.opacity = "0"; }, 300);
         });
-        
         resolve();
       }, 1400);
     });
   }
 
-  // ========================================
-  // PERFORM ATTACK - SEKVENČNĚ
-  // ========================================
   async function performAttack(attacker, defender, isPlayer, attackerTotal, defenderInfo) {
     const cls = isPlayer ? String(attackerTotal._class || "padouch").toLowerCase() : String(defenderInfo._class || "padouch").toLowerCase();
     const dmgScale = 1;
@@ -390,8 +393,6 @@
     } else {
       damage = computeEnemyHit(Number(defenderInfo.level ?? 1), cls, dmgScale);
     }
-
-    console.log(`${isPlayer ? "Player" : "Enemy"} attacks for ${damage} damage`);
 
     await showWeapon(isPlayer);
     await fireWeapon(isPlayer);
@@ -411,7 +412,6 @@
       enemyCurHp = enemyObj.hp;
     } else {
       const playerObj = { hp: playerCurrentHp };
-      
       await showHitAnimation(
         ".player-section .character-arena",
         "#playerDmg",
@@ -421,12 +421,8 @@
         playerHealthText,
         playerMaxHp
       );
-      
       playerCurrentHp = playerObj.hp;
-      
-      if (window.SF) {
-        window.SF.setHp(playerCurrentHp, playerMaxHp);
-      }
+      if (window.SF) window.SF.setHp(playerCurrentHp, playerMaxHp);
     }
   }
 
@@ -439,7 +435,6 @@
 
     recomputePlayerTotals();
     
-    // Load current HP from SF
     const st = window.SF.getStats();
     playerCurrentHp = clampHp(st.hp ?? playerMaxHp);
     playerCurrentHp = Math.min(playerCurrentHp, playerMaxHp);
@@ -450,7 +445,6 @@
 
     let attacker = Math.random() < 0.5 ? "player" : "enemy";
 
-    let turn = 0;
     const step = async () => {
       if (!fightRunning) return;
 
@@ -461,26 +455,12 @@
       }
 
       if (attacker === "player") {
-        await performAttack(
-          { name: "Player" },
-          { name: "Enemy" },
-          true,
-          playerTotal,
-          { level: enemyLvl, _class: enemyCls }
-        );
+        await performAttack({ name: "Player" }, { name: "Enemy" }, true, playerTotal, { level: enemyLvl, _class: enemyCls });
         attacker = "enemy";
       } else {
-        await performAttack(
-          { name: "Enemy" },
-          { name: "Player" },
-          false,
-          { level: enemyLvl, _class: enemyCls },
-          { level: playerTotal.level, _class: playerTotal._class }
-        );
+        await performAttack({ name: "Enemy" }, { name: "Player" }, false, { level: enemyLvl, _class: enemyCls }, { level: playerTotal.level, _class: playerTotal._class });
         attacker = "player";
       }
-
-      turn++;
 
       if (playerCurrentHp <= 0 || enemyCurHp <= 0) {
         const win = enemyCurHp <= 0 && playerCurrentHp > 0;
@@ -495,7 +475,6 @@
       try { window.SF.setHp(playerHpEnd, playerMaxEnd); } catch {}
 
       const hasMissionRewards = window.missionRewards && window.missionName;
-      
       let reward, loss;
       
       if (hasMissionRewards) {
@@ -510,10 +489,8 @@
 
       if (win) {
         try { window.SF.addMoney(reward); } catch {}
-        
         if (hasMissionRewards) {
           try { window.SF.addExp(window.missionRewards.exp); } catch {}
-          
           const missionData = JSON.parse(localStorage.getItem('missionData') || '{}');
           missionData.completed = (missionData.completed || 0) + 1;
           missionData.totalExp = (missionData.totalExp || 0) + window.missionRewards.exp;
@@ -522,30 +499,17 @@
           missionData.wins = (missionData.wins || 0) + 1;
           localStorage.setItem('missionData', JSON.stringify(missionData));
         }
-        
         finishFight(true, reward);
-        
-        if (hasMissionRewards) {
-          setTimeout(() => {
-            window.location.href = 'mise.html';
-          }, 3000);
-        }
+        if (hasMissionRewards) setTimeout(() => window.location.href = 'mise.html', 3000);
       } else {
         try { window.SF.addMoney(-loss); } catch {}
-        
         if (hasMissionRewards) {
           const missionData = JSON.parse(localStorage.getItem('missionData') || '{}');
           missionData.battles = (missionData.battles || 0) + 1;
           localStorage.setItem('missionData', JSON.stringify(missionData));
         }
-        
         finishFight(false, loss);
-        
-        if (hasMissionRewards) {
-          setTimeout(() => {
-            window.location.href = 'mise.html';
-          }, 3000);
-        }
+        if (hasMissionRewards) setTimeout(() => window.location.href = 'mise.html', 3000);
       }
       
       delete window.missionRewards;
@@ -555,141 +519,18 @@
     setTimeout(step, 900);
   }
 
-  function boot() {
-    const cryptaDataStr = localStorage.getItem('cryptaBossFight');
-    let autoStartFight = false;
-    let cryptaBossData = null;
-    
-    if (cryptaDataStr) {
-      try {
-        cryptaBossData = JSON.parse(cryptaDataStr);
-        if (cryptaBossData.fromCrypta && cryptaBossData.boss) {
-          const cryptaBoss = {
-            name: cryptaBossData.boss.name,
-            level: cryptaBossData.boss.level,
-            hp: cryptaBossData.boss.hp,
-            _class: "padouch"
-          };
-          
-          enemies[enemyIndex] = cryptaBoss;
-          
-          if (cryptaBossData.boss.background) {
-            document.body.style.backgroundImage = `url('${cryptaBossData.boss.background}')`;
-          }
-          
-          const enemyAvatar = document.querySelector('.enemy-section .character-arena img:not(.hit-overlay):not(.weapon)');
-          if (enemyAvatar && cryptaBossData.boss.avatar) {
-            enemyAvatar.src = cryptaBossData.boss.avatar;
-          }
-          
-          if (cryptaBossData.autoStart) {
-            autoStartFight = true;
-          }
-          
-          localStorage.removeItem('cryptaBossFight');
-          
-          window.cryptaRewards = {
-            reward: cryptaBossData.reward,
-            bossIndex: cryptaBossData.bossIndex
-          };
-        }
-      } catch (e) {
-        console.error('Failed to load crypta boss:', e);
-      }
-    }
-    
-    const missionDataStr = localStorage.getItem('arenaFromMission');
-    
-    if (!cryptaDataStr && missionDataStr) {
-      try {
-        const missionData = JSON.parse(missionDataStr);
-        if (missionData.fromMission && missionData.enemy) {
-          const missionEnemy = {
-            name: missionData.enemy.name.toUpperCase(),
-            level: Math.floor(missionData.enemy.hp / 80),
-            hp: missionData.enemy.hp,
-            _class: "padouch"
-          };
-          
-          enemies[enemyIndex] = missionEnemy;
-          autoStartFight = true;
-          localStorage.removeItem('arenaFromMission');
-          
-          window.missionRewards = missionData.rewards;
-          window.missionName = missionData.missionName;
-        }
-      } catch (e) {
-        console.error('Failed to load mission data:', e);
-      }
-    }
-    
-    hydratePlayerFromPostava().finally(() => {
-      renderClassBadgeOnAvatar();
-      healPlayerToFull();
-      renderEnemy();
-      
-      if (autoStartFight) {
-        setButtonsVisible(false);
-        
-        console.log("AUTO-STARTING FIGHT!");
-        
-        setTimeout(() => {
-          startFight();
-        }, 800);
-      }
-    });
-
-    if (nextBtn) {
-      nextBtn.addEventListener("click", () => {
-        if (fightRunning) return;
-        nextEnemy();
-      });
-    }
-
-    if (attackBtn) {
-      attackBtn.addEventListener("click", () => {
-        startFight();
-      });
-    }
-
-    if (resultContinue) {
-      resultContinue.addEventListener("click", () => {
-        closeResult();
-        
-        if (window.cryptaRewards) {
-          window.location.href = "auto.html";
-        } else {
-          window.location.href = "postava.html";
-        }
-      });
-    }
-
-    if (window.SF?.sb?.channel) {
-      window.addEventListener("storage", (e) => {
-        if (!e.key) return;
-        if (String(e.key).startsWith("sf_stats_")) {
-          healPlayerToFull();
-        }
-      });
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", boot);
-
   async function hydratePlayerFromPostava() {
     try {
-      console.log('🔄 Loading player stats from Supabase...');
+      console.log('🔄 Loading from Supabase...');
       
       const lib = window.supabase;
       const sb = window.supabaseClient || (lib?.createClient ? lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
 
       const uid = localStorage.getItem("user_id") || localStorage.getItem("slavFantasyUserId") || "1";
       if (!sb) {
-        console.warn('⚠️ Supabase client not available');
+        console.warn('⚠️ Supabase not available');
         return;
       }
-
-      console.log('👤 Loading data for user:', uid);
 
       const { data, error } = await sb
         .from("player_stats")
@@ -704,27 +545,22 @@
       
       const row = data?.[0];
       if (!row) {
-        console.warn('⚠️ No player data found');
+        console.warn('⚠️ No data found');
         return;
       }
 
-      console.log('✅ Player data loaded:', row);
-
       const st = row.stats || {};
       playerCore = {
-        strength: Number(st.strength ?? playerCore.strength),
-        defense: Number(st.defense ?? playerCore.defense),
-        dexterity: Number(st.dexterity ?? playerCore.dexterity),
-        intelligence: Number(st.intelligence ?? playerCore.intelligence),
-        constitution: Number(st.constitution ?? playerCore.constitution),
-        luck: Number(st.luck ?? playerCore.luck),
-        level: Number(row.level ?? playerCore.level)
+        strength: Number(st.strength ?? 18),
+        defense: Number(st.defense ?? 14),
+        dexterity: Number(st.dexterity ?? 11),
+        intelligence: Number(st.intelligence ?? 11),
+        constitution: Number(st.constitution ?? 16),
+        luck: Number(st.luck ?? 9),
+        level: Number(row.level ?? 1)
       };
 
       playerEquipped = row.equipped || null;
-
-      console.log('💪 Player core stats:', playerCore);
-      console.log('🎒 Player equipment:', playerEquipped);
 
       const dbCls = String(st.player_class || "").toLowerCase();
       if (dbCls) {
@@ -732,9 +568,10 @@
         localStorage.setItem("sf_class", dbCls);
       }
 
+      console.log('✅ Loaded:', playerCore);
       recomputePlayerTotals();
     } catch (err) {
-      console.error('❌ Error loading player stats:', err);
+      console.error('❌ Error:', err);
     }
   }
 
@@ -759,4 +596,24 @@
     badge.textContent = m.icon;
     badge.title = m.label;
   }
+
+  function boot() {
+    hydratePlayerFromPostava().finally(() => {
+      renderClassBadgeOnAvatar();
+      healPlayerToFull();
+      renderEnemy();
+    });
+
+    if (nextBtn) nextBtn.addEventListener("click", () => { if (!fightRunning) nextEnemy(); });
+    if (attackBtn) attackBtn.addEventListener("click", startFight);
+    if (resultContinue) {
+      resultContinue.addEventListener("click", () => {
+        closeResult();
+        if (window.cryptaRewards) window.location.href = "auto.html";
+        else window.location.href = "postava.html";
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
 })();
