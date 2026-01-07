@@ -67,6 +67,15 @@
   }
 
   function getItemById(itemId) {
+    // itemId může být: string (starý styl), instance_id, nebo celý objekt
+    if (!itemId) return null;
+    
+    // Pokud je to už objekt s bonusy, vrať ho
+    if (typeof itemId === 'object' && itemId.id) {
+      return itemId;
+    }
+    
+    // Pokud je to string, najdi base item
     return getAllItems().find(item => item.id === itemId);
   }
 
@@ -352,6 +361,9 @@
     
     // Render class badge
     renderClassBadgeOnMainAvatar();
+    
+    // Render equipped items
+    renderEquippedItems();
     
     console.log('✅ UI aktualizováno');
   }
