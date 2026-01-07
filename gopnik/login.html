@@ -19,7 +19,6 @@
       min-height: 100vh;
     }
 
-    /* Pozadí s vignetou */
     .bg-layer {
       position: fixed;
       inset: 0;
@@ -35,7 +34,6 @@
       z-index: 1;
     }
 
-    /* Layout */
     .auth-container {
       position: relative;
       z-index: 2;
@@ -48,7 +46,6 @@
       gap: 30px;
     }
 
-    /* Logo */
     .game-logo {
       font-size: 64px;
       font-weight: 900;
@@ -89,7 +86,6 @@
       text-align: center;
     }
 
-    /* Auth panel */
     .auth-panel {
       background: linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99));
       border: 4px solid;
@@ -103,7 +99,6 @@
       max-width: 500px;
     }
 
-    /* Tabs */
     .auth-tabs {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -139,7 +134,6 @@
         inset 0 2px 8px rgba(0,0,0,0.3);
     }
 
-    /* Form */
     .auth-form {
       display: none;
     }
@@ -188,7 +182,6 @@
       color: rgba(255,255,255,0.4);
     }
 
-    /* Submit button */
     .submit-btn {
       width: 100%;
       padding: 16px;
@@ -222,53 +215,6 @@
       filter: grayscale(0.5);
     }
 
-    /* Helper buttons */
-    .helper-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .helper-btn {
-      padding: 10px;
-      background: rgba(0,0,0,0.3);
-      border: 2px solid rgba(255, 215, 100, 0.2);
-      border-radius: 8px;
-      color: #c9a44a;
-      font-size: 12px;
-      font-weight: 900;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .helper-btn:hover {
-      background: rgba(0,0,0,0.5);
-      border-color: #c9a44a;
-      transform: translateY(-1px);
-    }
-
-    /* Hint */
-    .form-hint {
-      margin-top: 15px;
-      padding: 12px;
-      background: rgba(0,0,0,0.3);
-      border: 2px dashed rgba(201,164,74,0.3);
-      border-radius: 8px;
-      font-size: 11px;
-      color: rgba(255,255,255,0.7);
-      line-height: 1.5;
-    }
-
-    .form-hint code {
-      color: #f1d27a;
-      background: rgba(0,0,0,0.3);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 900;
-    }
-
-    /* Message */
     .message {
       padding: 12px 16px;
       border-radius: 10px;
@@ -293,7 +239,6 @@
       color: #ef4444;
     }
 
-    /* Footer */
     .auth-footer {
       margin-top: 20px;
       padding-top: 20px;
@@ -314,7 +259,6 @@
       font-weight: 900;
     }
 
-    /* Notifications */
     .notification {
       position: fixed;
       top: 20px;
@@ -368,13 +312,11 @@
     </div>
 
     <div class="auth-panel">
-      <!-- Tabs -->
       <div class="auth-tabs">
         <button class="tab-btn active" data-tab="login">Přihlášení</button>
         <button class="tab-btn" data-tab="register">Registrace</button>
       </div>
 
-      <!-- Message -->
       <div class="message" id="message"></div>
 
       <!-- LOGIN FORM -->
@@ -406,16 +348,6 @@
         <button type="submit" class="submit-btn" id="loginBtn">
           ⚔️ Vstoupit do arény
         </button>
-
-        <div class="helper-buttons">
-          
-          </button>
-          
-          </button>
-        </div>
-
-        
-        </div>
       </form>
 
       <!-- REGISTER FORM -->
@@ -459,12 +391,8 @@
         <button type="submit" class="submit-btn" id="registerBtn">
           ⚔️ Založit účet
         </button>
-
-       
-        </div>
       </form>
 
-      <!-- Footer -->
       <div class="auth-footer">
         <div>Supabase auth + player_stats</div>
         <div>redirect: <code id="nextUrl">postava.html</code></div>
@@ -474,9 +402,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ===== CONFIG =====
-    const SUPABASE_URL = 'https://bmmaijlbpwgzhrxzxphf.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbWFpamxicHdnemhyeHp4cGhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NjQ5MDcsImV4cCI6MjA4MjQ0MDkwN30.s0YQVnAjMXFu1pSI1NXZ2naSab179N0vQPglsmy3Pgw';
+    // ===== NOVÝ SUPABASE CONFIG =====
+    const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
     const NEXT_URL = 'postava.html';
 
     localStorage.setItem('SUPABASE_URL', SUPABASE_URL);
@@ -484,7 +412,6 @@
 
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ===== ELEMENTS =====
     const tabBtns = document.querySelectorAll('.tab-btn');
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
@@ -493,7 +420,6 @@
 
     nextUrlEl.textContent = NEXT_URL;
 
-    // ===== UTILITY FUNCTIONS =====
     function showMessage(text, type = 'success') {
       messageEl.textContent = text;
       messageEl.className = `message ${type}`;
@@ -519,7 +445,6 @@
       document.getElementById('registerBtn').disabled = isBusy;
     }
 
-    // ===== TAB SWITCHING =====
     tabBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const targetTab = btn.dataset.tab;
@@ -543,6 +468,8 @@
 
     // ===== PLAYER STATS BOOTSTRAP =====
     async function ensurePlayerStats(userId, email, nickname) {
+      console.log('🔧 Ensuring player stats for:', userId);
+      
       const { data: existing, error: selErr } = await sb
         .from('player_stats')
         .select('*')
@@ -554,22 +481,48 @@
         return null;
       }
 
-      if (existing && existing.length) return existing[0];
+      if (existing && existing.length) {
+        console.log('✅ Player stats already exist');
+        return existing[0];
+      }
+
+      console.log('🆕 Creating new player stats...');
 
       const payload = {
         user_id: userId,
         level: 1,
         xp: 0,
-        money: 100,
-        cigarettes: 0,
+        money: 3170,
+        cigarettes: 42,
+        energy: 100,
+        max_energy: 100,
         stats: {
-          strength: 1,
-          defense: 1,
-          dexterity: 1,
-          intelligence: 1,
-          constitution: 1,
-          luck: 1,
+          strength: 18,
+          defense: 14,
+          dexterity: 11,
+          intelligence: 11,
+          constitution: 16,
+          luck: 9,
           player_class: null
+        },
+        upgrade_costs: {
+          strength: 100,
+          defense: 100,
+          dexterity: 100,
+          intelligence: 100,
+          constitution: 100,
+          luck: 100
+        },
+        inventory: [],
+        equipped: {
+          weapon: null,
+          shield: null,
+          ring: null,
+          backpack: null,
+          helmet: null,
+          armor: null,
+          boots: null,
+          gloves: null
         }
       };
 
@@ -580,10 +533,11 @@
         .single();
 
       if (insErr) {
-        console.warn('player_stats insert error:', insErr);
+        console.error('❌ player_stats insert error:', insErr);
         return null;
       }
 
+      console.log('✅ Player stats created:', ins);
       return ins;
     }
 
@@ -593,6 +547,7 @@
       const clsDb = (playerRow?.stats?.player_class || '').toLowerCase();
       
       if (!clsLs && !clsDb) {
+        console.log('🎭 No class selected, redirecting to vyber.html');
         window.location.href = 'vyber.html';
         return;
       }
@@ -602,6 +557,7 @@
         localStorage.setItem('sf_class', clsDb);
       }
       
+      console.log('🎮 Redirecting to game...');
       window.location.href = NEXT_URL;
     }
 
@@ -620,6 +576,7 @@
       setBusy(true);
       
       try {
+        console.log('🔑 Signing in...');
         const { data, error } = await sb.auth.signInWithPassword({ 
           email, 
           password 
@@ -630,8 +587,11 @@
         const user = data.user;
         if (!user) throw new Error('Chybí user data ze Supabase.');
 
+        console.log('✅ Logged in:', user.id);
+
         localStorage.setItem('user_id', user.id);
         localStorage.setItem('user_email', user.email || email);
+        localStorage.setItem('slavFantasyUserId', user.id);
 
         const row = await ensurePlayerStats(user.id, user.email || email, null);
 
@@ -640,7 +600,7 @@
         
         setTimeout(() => goToGame(row), 1500);
       } catch (error) {
-        console.error(error);
+        console.error('❌ Login error:', error);
         showMessage(error?.message || 'Chyba přihlášení!', 'error');
       } finally {
         setBusy(false);
@@ -668,17 +628,20 @@
       setBusy(true);
       
       try {
+        console.log('📝 Signing up...');
         const { data, error } = await sb.auth.signUp({
           email,
           password,
           options: {
-            data: { nickname }
+            data: { nickname },
+            emailRedirectTo: window.location.origin + '/postava.html'
           }
         });
         
         if (error) throw error;
 
         const user = data.user;
+        console.log('✅ Signed up:', user);
 
         if (!user) {
           showMessage('Registrace hotová! Zkontroluj email a potvrď účet, pak se přihlas.', 'success');
@@ -690,6 +653,7 @@
 
         localStorage.setItem('user_id', user.id);
         localStorage.setItem('user_email', user.email || email);
+        localStorage.setItem('slavFantasyUserId', user.id);
 
         const row = await ensurePlayerStats(user.id, user.email || email, nickname);
 
@@ -698,45 +662,35 @@
         
         setTimeout(() => goToGame(row), 1500);
       } catch (error) {
-        console.error(error);
+        console.error('❌ Register error:', error);
         showMessage(error?.message || 'Chyba registrace!', 'error');
       } finally {
         setBusy(false);
       }
     });
 
-    // ===== DEV FILL =====
-    document.getElementById('devFillBtn').addEventListener('click', () => {
-      document.getElementById('loginEmail').value = `test${Math.floor(Math.random()*9999)}@arena.ru`;
-      document.getElementById('loginPassword').value = '12345678';
-      showNotification('Vyplněno testovacími údaji!', 'success');
-    });
-
-    // ===== LOGOUT =====
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await sb.auth.signOut();
-      localStorage.removeItem('user_id');
-      localStorage.removeItem('user_email');
-      showNotification('Odhlášeno!', 'success');
-    });
-
     // ===== AUTO-REDIRECT =====
     (async function autoRedirect() {
       try {
+        console.log('🔍 Checking session...');
         const { data } = await sb.auth.getSession();
         const sess = data?.session;
         
         if (sess?.user) {
+          console.log('✅ Session found:', sess.user.id);
           localStorage.setItem('user_id', sess.user.id);
           localStorage.setItem('user_email', sess.user.email || '');
+          localStorage.setItem('slavFantasyUserId', sess.user.id);
           
           const row = await ensurePlayerStats(sess.user.id, sess.user.email || '', null);
           
           showNotification('Již jsi přihlášen! Přesměrování...', 'success');
           setTimeout(() => goToGame(row), 1000);
+        } else {
+          console.log('ℹ️ No active session');
         }
       } catch (error) {
-        console.warn('Auto session check:', error);
+        console.warn('⚠️ Auto session check:', error);
       }
     })();
   </script>
