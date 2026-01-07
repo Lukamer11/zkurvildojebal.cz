@@ -1,0 +1,171 @@
+<!-- mail.html -->
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mail</title>
+
+  <link rel="stylesheet" href="mail.css">
+
+  <!-- SUPABASE (nutné, jinak mail.js nemá z čeho vytvořit klienta) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="menu.css">
+  <script src="menu.js"></script>
+</head>
+
+<body>
+
+<div class="layout">
+
+  <!-- LEVÝ PANEL – STEJNÝ JAKO MISE -->
+<aside class="left-panel">
+
+  <!-- TOP: Avatar + Stats -->
+  <div class="menu-top">
+    <div class="avatar-box">
+      <img src="avatar.jpg" alt="avatar">
+      <div class="level-pill">
+        <div class="level-number" id="levelDisplay">1</div>
+      </div>
+    </div>
+
+    <div class="currency-col">
+      <div class="currency-line">
+        <span class="cur-icon">₽</span>
+        <b id="money">0</b>
+      </div>
+      <div class="currency-line">
+        <span class="cur-icon">🚬</span>
+        <b id="cigarettes">0</b>
+      </div>
+      <div class="currency-line energy">
+        <span class="cur-icon">⚡</span>
+        <b id="energy">100</b>
+      </div>
+    </div>
+  </div>
+
+  <!-- XP BAR -->
+  <div class="xp-bar">
+    <div class="xp-fill" id="xpFill" style="width:0%"></div>
+    <span class="xp-text" id="xpText">0 / 100</span>
+  </div>
+
+  <!-- ENERGY BAR -->
+  <div class="xp-bar energy-bar">
+    <div class="xp-fill energy-fill" id="energyFill" style="width:100%"></div>
+    <span class="xp-text" id="energyText">100 / 100</span>
+  </div>
+
+  <!-- NAV -->
+  <div class="menu-frame">
+    <a href="postava.html" class="sf-btn" data-icon="🍺">POSTAVA</a>
+    <a href="arena.html" class="sf-btn" data-icon="⚔️">ARENA</a>
+    <a href="shop.html" class="sf-btn" data-icon="🗡️">SHOP</a>
+    <a href="auto.html" class="sf-btn" data-icon="🚗">CRYPTA</a>
+    <a href="guild.html" class="sf-btn" data-icon="👥">GUILD</a>
+    <a href="mail.html" class="sf-btn active" data-icon="✉️">MAIL</a>
+    <a href="zebricek.html" class="sf-btn" data-icon="🏆">ŽEBŘÍČEK</a>
+    <a href="mise.html" class="sf-btn" data-icon="🎯">MISE</a>
+    <a href="gopnik.html" class="sf-btn sf-btn--last" data-icon="🎮">SLAV CLICKER</a>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="menu-bottom">
+    <button class="gear-btn">⚙️</button>
+  </div>
+
+</aside>
+
+
+  <!-- MAIL AREA -->
+  <main class="mail-area">
+
+    <div class="mail-title">📬 POŠTA</div>
+
+    <div class="mail-container">
+
+      <!-- LIST -->
+      <section class="mail-list-section">
+        <div class="section-header">
+          <h2>✉️ ZPRÁVY</h2>
+
+         <div class="mail-tabs-row">
+  <div class="mail-tabs">
+    <button class="tab-btn active" type="button">Všechny</button>
+    <button class="tab-btn" type="button">Nepřečtené</button>
+    <button class="tab-btn" type="button">Důležité</button>
+  </div>
+
+  <button class="compose-open-btn" type="button">✍️ NAPSAT ZPRÁVU</button>
+</div>
+
+<!-- COMPOSE PANEL -->
+<div class="compose-panel" id="composePanel" aria-hidden="true">
+  <div class="compose-header">
+    <div class="compose-title">✉️ Napsat zprávu</div>
+    <button class="compose-close action-btn" type="button" title="Zavřít">✖</button>
+  </div>
+
+  <div class="compose-grid">
+    <label class="compose-label">
+      <span>Adresát</span>
+      <input id="composeTo" class="compose-input" type="text" placeholder="Zadejte adresáta…">
+    </label>
+
+    <label class="compose-label">
+      <span>Předmět</span>
+      <input id="composeSubject" class="compose-input" type="text" placeholder="Zadejte předmět…">
+    </label>
+
+    <label class="compose-label compose-full">
+      <span>Zpráva</span>
+      <textarea id="composeBody" class="compose-textarea" rows="6" placeholder="Zadejte text zprávy…"></textarea>
+    </label>
+  </div>
+
+  <div class="compose-actions">
+    <button class="reply-btn primary" id="composeSend" type="button">📨 ODESLAT</button>
+    <button class="reply-btn" id="composeCancel" type="button">ZAVŘÍT</button>
+  </div>
+
+  <div class="compose-hint">
+    Tip: adresát může být cokoliv (nick / e-mail / „BORIS“).
+  </div>
+</div>
+
+
+        <div class="mail-list">
+          <!-- mail.js to naplní -->
+          <div class="mail-item">
+            <div class="mail-icon">📩</div>
+            <div class="mail-info">
+              <div class="mail-from">Načítám…</div>
+              <div class="mail-subject">Prosím čekej</div>
+              <div class="mail-preview">Připojuji Supabase a tahám data.</div>
+            </div>
+            <div class="mail-meta">
+              <div class="mail-time">…</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DETAIL -->
+      <section class="mail-detail-section">
+        <div class="mail-detail-body">
+          <p>Vyber zprávu vlevo.</p>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script src="mail.js"></script>
+</body>
+</html>
+

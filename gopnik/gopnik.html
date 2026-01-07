@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slav Clicker</title>
+  <link rel="stylesheet" href="gopnik.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="menu.css">
+  <script src="menu.js"></script>
+</head>
+
+<body>
+
+<div class="layout">
+<aside class="left-panel">
+    
+    <!-- TOP: Avatar + Stats -->
+    <div class="menu-top">
+      <div class="avatar-box">
+        <img src="avatar.jpg" alt="avatar">
+        <div class="level-pill">
+          <div class="level-number" id="levelDisplay">1</div>
+        </div>
+      </div>
+
+      <div class="currency-col">
+        <div class="currency-line">
+          <span class="cur-icon">₽</span>
+          <b id="money">3,170</b>
+        </div>
+        <div class="currency-line">
+          <span class="cur-icon">🚬</span>
+          <b id="cigarettes">42</b>
+        </div>
+        <div class="currency-line energy">
+          <span class="cur-icon">⚡</span>
+          <b id="energy">100</b>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- XP BAR -->
+    <div class="xp-bar">
+      <div class="xp-fill" id="xpFill" style="width:0%"></div>
+      <span class="xp-text" id="xpText">0 / 100</span>
+    </div>
+
+    <!-- ENERGY BAR -->
+    <div class="xp-bar energy-bar">
+      <div class="xp-fill energy-fill" id="energyFill" style="width:100%"></div>
+      <span class="xp-text" id="energyText">100 / 100</span>
+    </div>
+
+    <!-- NAV BUTTONS -->
+    <div class="menu-frame">
+      <a href="postava.html" class="sf-btn" data-icon="🍺">POSTAVA</a>
+      <a href="arena.html" class="sf-btn" data-icon="⚔️">ARENA</a>
+      <a href="shop.html" class="sf-btn" data-icon="🗡️">SHOP</a>
+      <a href="auto.html" class="sf-btn" data-icon="🚗">CRYPTA</a>
+      <a href="guild.html" class="sf-btn" data-icon="👥">GUILD</a>
+      <a href="mail.html" class="sf-btn" data-icon="✉️">MAIL</a>
+      <a href="zebricek.html" class="sf-btn" data-icon="🏆">ŽEBŘÍČEK</a>
+      <a href="mise.html" class="sf-btn" data-icon="🎯">MISE</a>
+      <a href="gopnik.html" class="sf-btn sf-btn--last active" data-icon="🎮">SLAV CLICKER</a>
+    </div>
+
+    <!-- BOTTOM GEAR -->
+    <div class="menu-bottom">
+      <button class="gear-btn">⚙️</button>
+    </div>
+
+  </aside>
+<main class="content">
+
+  <!-- AUDIO -->
+  <audio id="clickSnd" src="go.mp3" preload="auto"></audio>
+  <audio id="bgMusic" src="go.mp3" preload="auto" loop></audio>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="modal" aria-hidden="true">
+    <div class="modalBox">
+      <div class="modalHeader">
+        <div id="t_settingsTitle" class="modalTitle">Nastavení</div>
+        <button id="btnCloseSettings" class="iconBtn" title="Zavřít" aria-label="Zavřít">✖</button>
+      </div>
+
+      <div class="modalRow">
+        <label class="switchRow">
+          <input type="checkbox" id="musicToggle" checked>
+          <span id="t_musicLabel">Hudba</span>
+        </label>
+      </div>
+
+      <div class="modalRow">
+        <label for="langSelect" id="t_langLabel">Jazyk</label>
+        <select id="langSelect" class="select">
+          <option value="cs">Čeština</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="wrap">
+
+    <!-- LEVÝ SLOUPEC - PANÁČEK DOLE -->
+    <div class="leftcol">
+      <div class="ring" id="gopnik">
+        <img id="gopnikImg" src="gopnik_A.png" alt="gopnik">
+      </div>
+    </div>
+
+    <!-- PRAVÝ PANEL -->
+    <div class="panel">
+
+      <div class="panelTop">
+        <button id="btnSettings" class="iconBtn skinBtn" title="Nastavení" aria-label="Nastavení">⚙️</button>
+      </div>
+
+      <div class="money-section">
+        <h2 id="t_moneyTitle">💰 PENÍZE</h2>
+        <div class="stat"><span id="t_moneyLabel">Peníze:</span><b id="clickerMoney">0</b></div>
+        <div class="stat"><span id="t_cpcLabel">Za klik:</span><b id="clickerCpc">1</b></div>
+        <div class="stat"><span id="t_cpsLabel">Za sekundu:</span><b id="clickerCps">0</b></div>
+      </div>
+
+      <div class="hud-section">
+        <div class="hud">
+          <div class="hudLine"><span id="t_comboLabel">Combo:</span> <b id="combo">x1.00</b></div>
+          <div class="hudLine"><span id="t_critLabel">Krit:</span> <b id="crit">10%</b></div>
+          <div class="hudLine hudEvent" id="eventLine">—</div>
+        </div>
+      </div>
+
+      <div class="shop-section-clicker">
+        <h2 id="t_shopTitle">🛒 OBCHOD</h2>
+
+        <div class="item">
+          <b id="t_itemCursor">Kurzor</b> • +0.2 / s
+          <button id="buyCursor" class="skinBtn">Koupit (25)</button>
+        </div>
+
+        <div class="item">
+          <b id="t_itemGranny">Babička</b> • +2 / s
+          <button id="buyGranny" class="skinBtn">Koupit (150)</button>
+        </div>
+
+        <div class="item">
+          <b id="t_itemClick">Síla kliku</b> • +1 za klik
+          <button id="buyClick" class="skinBtn">Vylepšit (80)</button>
+        </div>
+      </div>
+
+      <div class="prestige-section">
+        <h2 id="t_prestigeTitle">⭐ PRESTIGE</h2>
+
+        <div class="item prestigeBox">
+          <div class="prestigeStat"><span id="t_spLabel">Slav Points:</span><b id="sp">0</b></div>
+          <div class="prestigeStat"><span id="t_bonusLabel">Bonus celkem:</span><b id="bonus">+0%</b></div>
+
+          <div class="prestigeBonus">
+            <span id="t_gainLabel">Získáš při prestiži:</span> <b id="spGain">0</b>
+          </div>
+
+          <button id="btnPrestige" class="prestigeBtn skinBtn" disabled>
+            Prestige (reset)
+          </button>
+
+          <small id="t_prestigeHint" class="prestigeHint">
+            Resetuje peníze a upgradey, ale dá trvalý bonus.
+          </small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="gopnik.js"></script>
+  
+  <script>
+    const music = document.getElementById("bgMusic");
+
+    function safePlay(){
+      if(!music) return;
+      const p = music.play();
+      if(p && typeof p.catch === 'function') p.catch(() => {});
+    }
+
+    if (localStorage.getItem("musicPlaying") === "true") {
+      music.currentTime = parseFloat(localStorage.getItem("musicTime")) || 0;
+      music.volume = 0.4;
+      safePlay();
+    }
+
+    document.addEventListener("click", () => {
+      if (music.paused) {
+        safePlay();
+        localStorage.setItem("musicPlaying", "true");
+      }
+    }, { once: true });
+
+    setInterval(() => {
+      if (!music.paused) {
+        localStorage.setItem("musicTime", music.currentTime);
+      }
+    }, 500);
+  </script>
+
+</main>
+</div>
+</body>
+</html>

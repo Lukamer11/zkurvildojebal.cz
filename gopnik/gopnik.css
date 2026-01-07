@@ -1,0 +1,422 @@
+/* gopnik.css */
+@import url("mise.css");
+
+/* ===== RESET ===== */
+*{ box-sizing:border-box; }
+html, body{
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  font-family: system-ui, sans-serif;
+  background:#1b1b1b;
+  overflow:hidden;
+}
+
+body{
+  background-image: url('background.jpg');
+  background-repeat:no-repeat;
+  background-position:center top;
+  background-size:cover;
+  background-attachment:fixed;
+}
+
+/* ===== LAYOUT ===== */
+.wrap{
+  display:grid;
+  grid-template-columns: 1fr 380px;
+  gap:20px;
+  padding:16px;
+  height:100%;
+  position:relative;
+  z-index:1;
+}
+
+/* ===== LEVÝ SLOUPEC - PANÁČEK DOLE ===== */
+.leftcol{ 
+  position:relative; 
+  height:100%; 
+  display:flex; 
+  align-items:flex-end;
+  justify-content:center;
+  padding-bottom:60px;
+}
+
+/* ===== GOPNIK CLICK ===== */
+.ring{
+  width:min(400px, 70vw);
+  aspect-ratio:1/1;
+  border-radius:0;
+  border:none;
+  box-shadow:none;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  overflow:visible;
+  background:transparent;
+  
+  position:relative;
+  z-index:5;
+  transition: transform 0.1s ease;
+}
+
+.ring:hover{
+  transform: scale(1.03);
+}
+
+.ring:active{
+  transform: scale(0.96);
+}
+
+#gopnikImg{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:50% 100%;
+  pointer-events:none;
+  filter:drop-shadow(0 18px 18px rgba(0,0,0,.55));
+  transition:transform 80ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* ===== PRAVÝ PANEL - SHOPOVÝ STYL ===== */
+.panel{
+  position: relative;
+  padding: 16px;
+  border-radius: 14px;
+  overflow: hidden;
+  
+  background: 
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  
+  box-shadow: 
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,215,100,0.1);
+  
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+  z-index:10;
+  
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  max-height: calc(100vh - 32px);
+}
+
+.panelTop{ 
+  display:flex;
+  justify-content:flex-end;
+  flex-shrink: 0;
+}
+
+.panel h2{
+  margin: 0;
+  padding: 6px 12px;
+  color: #f1d27a;
+  background: rgba(0,0,0,.55);
+  border: 2px solid rgba(201,164,74,.65);
+  box-shadow: 0 8px 20px rgba(0,0,0,.55);
+  display:inline-block;
+  border-radius:8px;
+  letter-spacing:.6px;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* ===== SEKCE BEZ SCROLLOVÁNÍ ===== */
+.money-section,
+.hud-section,
+.shop-section-clicker,
+.prestige-section {
+  flex-shrink: 0;
+}
+
+.stat{
+  display:flex;
+  justify-content:space-between;
+  align-items: center;
+  margin:4px 0;
+  color:#ffffff;
+  font-weight:800;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  
+  background-image: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  border: 2px solid rgba(201,164,74,.55);
+  box-shadow: 0 3px 8px rgba(0,0,0,.3);
+  transition: all 0.2s ease;
+}
+
+.stat:hover{
+  transform: translateX(3px);
+  border-color: #f1d27a;
+}
+
+.stat b{ 
+  font-weight:900;
+  color: #f1d27a;
+}
+
+.hud{
+  padding:8px;
+  background: rgba(0,0,0,.3);
+  border-radius:10px;
+  border: 1px solid rgba(255,255,255,.1);
+}
+
+.hudLine{
+  display:flex;
+  justify-content:space-between;
+  margin:3px 0;
+  font-size:12px;
+  font-weight:700;
+}
+
+.hudEvent{
+  color:#ffd700;
+  font-weight:900;
+}
+
+.item{
+  background-image: url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  border: 3px solid #5a4520;
+  box-shadow: 0 5px 15px rgba(0,0,0,.5);
+  border-radius:10px;
+  padding:10px;
+  margin-top:6px;
+  font-size: 13px;
+  
+  display: flex;
+  flex-direction: column;
+  gap:4px;
+  
+  transition: all 0.2s ease;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.item:hover{
+  transform: translateY(-2px);
+  border-color: #c9a44a;
+  box-shadow: 0 8px 20px rgba(0,0,0,.6);
+}
+
+.item b{
+  color: #f1d27a;
+  font-weight: 900;
+}
+
+button{
+  background-image: url('tlacitko_shopik.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  color:#f1d27a;
+  border: 3px solid rgba(255, 215, 100, 0.6);
+  padding:7px 12px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:900;
+  font-size: 12px;
+  text-transform: uppercase;
+  
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,.5);
+  
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+button:hover{
+  filter: brightness(1.2);
+  transform: translateY(-2px);
+  border-color: #f1d27a;
+}
+
+button:active{ 
+  transform: translateY(1px);
+  filter: brightness(0.95);
+}
+
+button:disabled{ 
+  opacity:.5; 
+  cursor:not-allowed; 
+  transform: none;
+  filter: grayscale(0.5);
+}
+
+button:disabled:hover{ 
+  transform: none;
+  filter: grayscale(0.5);
+}
+
+.iconBtn{
+  width:40px;
+  height:40px;
+  border-radius:12px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  font-size:18px;
+}
+
+.skinBtn{
+  width: 100%;
+  margin-top: 4px;
+}
+
+.prestigeBox{
+  background: rgba(50,30,20,.6);
+  border: 3px solid rgba(201,164,74,.4);
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.prestigeStat{
+  display:flex;
+  justify-content:space-between;
+  margin:3px 0;
+  font-weight:900;
+  font-size: 13px;
+}
+
+.prestigeBonus{
+  margin:6px 0;
+  padding:6px;
+  background: rgba(255,215,0,.2);
+  border-radius:8px;
+  font-weight:900;
+  font-size: 12px;
+  border:1px solid rgba(255,215,0,.3);
+}
+
+.prestigeBtn{
+  width:100%;
+  margin-top:4px;
+  padding:8px;
+}
+
+.prestigeHint{
+  display:block;
+  margin-top:6px;
+  opacity:.7;
+  font-size:10px;
+}
+
+/* ===== MODAL ===== */
+.modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  place-items:center;
+  z-index:10000;
+}
+
+.modal.show{ 
+  display:grid; 
+}
+
+.modal::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  backdrop-filter: blur(3px);
+}
+
+.modalBox{
+  position:relative;
+  width:min(420px, 92vw);
+  padding:20px;
+  border-radius:16px;
+  background: rgba(255,255,255,.95);
+  border: 2px solid rgba(0,0,0,.2);
+  color:#333;
+  text-shadow:none;
+}
+
+.modalHeader{ 
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between; 
+  margin-bottom:12px; 
+}
+
+.modalTitle{ 
+  font-weight:900; 
+  font-size:22px;
+  color:#333;
+}
+
+.modalRow{
+  margin-top:12px;
+  background: rgba(255,255,255,.9);
+  border: 2px solid rgba(0,0,0,.1);
+  border-radius:10px;
+  padding:12px;
+}
+
+.switchRow{ 
+  display:flex; 
+  align-items:center; 
+  gap:10px; 
+  font-weight:800;
+  color:#333;
+}
+
+.select{
+  width:100%;
+  margin-top:8px;
+  padding:8px 10px;
+  border-radius:8px;
+  border:2px solid rgba(0,0,0,.12);
+  background: rgba(255,255,255,.95);
+  font-weight:700;
+  cursor:pointer;
+  font-size:14px;
+}
+
+/* ===== SCROLLBAR ===== */
+.panel::-webkit-scrollbar{ width:6px; }
+.panel::-webkit-scrollbar-track{ background: rgba(0,0,0,.2); border-radius:10px; }
+.panel::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.3); border-radius:10px; }
+.panel::-webkit-scrollbar-thumb:hover{ background: rgba(255,255,255,.4); }
+
+/* ===== MOBILE ===== */
+@media (max-width:980px){
+  html, body{ overflow:auto; }
+  .wrap{ 
+    grid-template-columns:1fr; 
+    gap:16px; 
+    padding:14px; 
+    height:auto; 
+  }
+  .leftcol{
+    min-height:400px;
+    padding-bottom:60px;
+  }
+  .panel{ 
+    max-height:none;
+  }
+}

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <title>Crypta Panelāků - Boss Fights</title>
+  <link rel="stylesheet" href="auto.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="items.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <script src="menu.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+
+  <!-- LEVÉ PANEL -->
+  <aside class="left-panel">
+    
+    <!-- TOP: Avatar + Stats -->
+    <div class="menu-top">
+      <div class="avatar-box">
+        <img src="avatar.jpg" alt="avatar">
+        <div class="level-pill">
+          <div class="level-number" id="levelDisplay">1</div>
+        </div>
+      </div>
+
+      <div class="currency-col">
+        <div class="currency-line">
+          <span class="cur-icon">₽</span>
+          <b id="money">3,170</b>
+        </div>
+        <div class="currency-line">
+          <span class="cur-icon">🚬</span>
+          <b id="cigarettes">42</b>
+        </div>
+        <div class="currency-line energy">
+          <span class="cur-icon">⚡</span>
+          <b id="energy">100</b>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- XP BAR -->
+    <div class="xp-bar">
+      <div class="xp-fill" id="xpFill" style="width:0%"></div>
+      <span class="xp-text" id="xpText">0 / 100</span>
+    </div>
+
+    <!-- ENERGY BAR -->
+    <div class="xp-bar energy-bar">
+      <div class="xp-fill energy-fill" id="energyFill" style="width:100%"></div>
+      <span class="xp-text" id="energyText">100 / 100</span>
+    </div>
+
+    <!-- NAV BUTTONS -->
+    <div class="menu-frame">
+      <a href="postava.html" class="sf-btn" data-icon="🍺">POSTAVA</a>
+      <a href="arena.html" class="sf-btn" data-icon="⚔️">ARENA</a>
+      <a href="shop.html" class="sf-btn" data-icon="🗡️">SHOP</a>
+      <a href="auto.html" class="sf-btn active" data-icon="🚗">CRYPTA</a>
+      <a href="guild.html" class="sf-btn" data-icon="👥">GUILD</a>
+      <a href="mail.html" class="sf-btn" data-icon="✉️">MAIL</a>
+      <a href="zebricek.html" class="sf-btn" data-icon="🏆">ŽEBŘÍČEK</a>
+      <a href="mise.html" class="sf-btn" data-icon="🎯">MISE</a>
+      <a href="gopnik.html" class="sf-btn sf-btn--last" data-icon="🎮">SLAV CLICKER</a>
+    </div>
+
+    <!-- BOTTOM GEAR -->
+    <div class="menu-bottom">
+      <button class="gear-btn">⚙️</button>
+    </div>
+
+  </aside>
+
+  <!-- STŘED - CRYPTA -->
+  <main class="stable-area">
+
+    <!-- NÃZEV -->
+    <div class="stable-title">💀 CRYPTA PANELÃKŮ 💀</div>
+
+    <!-- Progress Bar -->
+    <div class="crypta-progress">
+      <div class="progress-text">
+        <span>Postup v Cryptě:</span>
+        <b id="cryptaProgress">0 / 10</b>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <div class="stable-container" id="cryptaContainer">
+      <!-- Will be filled by JS -->
+    </div>
+
+  </main>
+
+</div>
+
+<!-- BOSS STORY MODAL -->
+<div id="bossModal" class="boss-modal" aria-hidden="true">
+  <div class="boss-modal-content">
+    <button class="boss-modal-close" id="bossModalClose">×</button>
+    
+    <div class="boss-story-section">
+      <!-- Boss Avatar -->
+      <div class="boss-avatar-container">
+        <img id="bossAvatar" src="boss1.jpg" alt="Boss" class="boss-avatar-img">
+      </div>
+      
+      <!-- Boss Title -->
+      <div class="boss-story-title" id="bossStoryTitle">STARÝ DĚDEK GOMEZ</div>
+      
+      <!-- Boss Story -->
+      <div class="boss-story-box">
+        <h3>📜 Příběh</h3>
+        <p id="bossStoryText">V první cryptě panelāku č.1 sedí starý dědek Gomez...</p>
+      </div>
+      
+      <!-- Encounter Text -->
+      <div class="boss-encounter-box">
+        <h3>⚠️ Setkāní</h3>
+        <p id="bossEncounterText">Vstupuješ do zaprāšené crypty...</p>
+      </div>
+      
+      <!-- Fight Button -->
+      <button class="boss-fight-btn" id="bossFightBtn">
+        ⚔️ VSTOUPIT DO ARÉNY ⚔️
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="auto.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+
+function safePlay(){
+  if(!music) return;
+  const p = music.play();
+  if(p && typeof p.catch === 'function') p.catch(() => {});
+}
+
+if (localStorage.getItem("musicPlaying") === "true") {
+  music.currentTime = parseFloat(localStorage.getItem("musicTime")) || 0;
+  music.volume = 0.4;
+  safePlay();
+}
+
+document.addEventListener("click", () => {
+  if (music.paused) {
+    safePlay();
+    localStorage.setItem("musicPlaying", "true");
+  }
+}, { once: true });
+
+setInterval(() => {
+  if (!music.paused) {
+    localStorage.setItem("musicTime", music.currentTime);
+  }
+}, 500);
+</script>
+
+</body>
+</html>
