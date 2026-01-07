@@ -769,3 +769,261 @@
         <div style="margin-top: 12px;">
           <h3 style="font-size: 13px; font-weight: 900; color: #f1d27a; text-transform: uppercase; margin-bottom: 10px;">
             👥 ČLENOVÉ (${guild.members})
+          </h3>
+          <div style="display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding-right: 6px;">
+            ${topMembers.map(m => `
+              <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.3); border: 2px solid #5a4520; border-radius: 10px; transition: all 0.2s ease;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: radial-gradient(circle, rgba(80,85,92,0.95), rgba(40,45,50,0.98)); border: 2px solid #c9a44a; display: grid; place-items: center; font-size: 18px;">
+                  ${m.icon}
+                </div>
+                <div style="flex: 1;">
+                  <div style="font-size: 13px; font-weight: 900; color: #f1d27a; text-transform: uppercase;">${m.user_id}</div>
+                  <div style="font-size: 10px; color: #c9a44a;">${m.role}</div>
+                </div>
+                <div style="font-size: 12px; font-weight: 900; color: #4a9eff;">LVL ${m.level}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="guild-actions" style="margin-top: 14px;">
+          <button class="guild-btn" id="btnGuildInfo">
+            📊 STATISTIKY GUILDY
+          </button>
+          ${isMaster ? `
+            <button class="guild-btn danger" id="btnDeleteGuild">
+              🗑️ ROZPUSTIT GUILDU
+            </button>
+          ` : ''}
+          <button class="guild-btn danger" id="btnLeaveGuild">
+            ❌ OPUSTIT GUILDU
+          </button>
+        </div>
+      `;
+    }
+
+    async handleDonate(type) {
+      const lastDonate = this.playerGuildData?.last_donate || 0;
+      
+      if (Date.now() - lastDonate < CONFIG.DONATE_COOLDOWN) {
+        UI.toast('Počkej chvíli před dalším příspěvkem', 'err');
+        return;
+      }
+
+      const guild = this.playerGuild;
+      if (!guild) return;
+
+      const inputId = type === 'money' ? 'donateMoneyInput' : 'donateCigsInput';
+      const input = document.getElementById(inputId);
+      const amount = Math.max(0, parseInt(input?.value) || 0);
+
+      if (amount <= 0) {
+        UI.toast('Zadej platnou částku', 'err');
+        return;
+      }
+
+      if (type === 'money') {
+        const playerMoney = Player.getMoney();
+        if (playerMoney < amount) {
+          UI.toast('Nemáš tolik rublů', 'err');
+          return;
+        }
+      } else {
+        const playerCigs = Player.getCigs();
+        if (playerCigs < amount) {
+          UI.toast('Nemáš tolik cigaret', 'err');
+          return;
+        }
+      }
+
+      UI.showLoading();
+
+      try {
+        await SupabaseManager.donate(guild.id, type, amount);
+
+        if (type === 'money') {
+          const playerMoney = Player.getMoney();
+          Player.setMoney(playerMoney - amount);
+          UI.toast(`Přispěl jsi ${UI.formatNumber(amount)} ₽ do trezoru`);
+        } else {
+          const playerCigs = Player.getCigs();
+          Player.setCigs(playerCigs - amount);
+          UI.toast(`Přispěl jsi ${UI.formatNumber(amount)} 🚬 do trezoru`);
+        }
+
+        if (input) input.value = '';
+        
+        await this.loadData();
+        this.renderMyGuild();
+        
+        UI.hideLoading();
+      } catch (err) {
+        UI.hideLoading();
+        UI.toast('Chyba při vkládání příspěvku', 'err');
+        console.error(err);
+      }
+    }
+
+    showCreateModal() {
+      const cost = CONFIG.CREATE_COST_CIGS;
+      if (Player.getCigs() < cost) {
+        UI.toast(`Potřebuješ ${cost} 🚬 cigaret na založení guildy`, 'err');
+        return;
+      }
+
+      UI.showModal('createModal');
+      
+      const nameInput = document.getElementById('inputGuildName');
+      if (nameInput) nameInput.value = '';
+      const descInput = document.getElementById('inputGuildDesc');
+      if (descInput) descInput.value = '';
+      const emojiInput = document.getElementById('inputGuildEmoji');
+      if (emojiInput) emojiInput.value = '🏰';
+    }
+
+    async createGuild() {
+      const name = document.getElementById('inputGuildName')?.value.trim() || '';
+      const desc = document.getElementById('inputGuildDesc')?.value.trim() || '';
+      const emblem = document.getElementById('inputGuildEmoji')?.value.trim() || '🏰';
+
+      if (name.length < 3) {
+        UI.toast('Název musí mít alespoň 3 znaky', 'err');
+        return;
+      }
+
+      if (this.guilds.some(g => g.name.toLowerCase() === name.toLowerCase())) {
+        UI.toast('Guilda s tímto názvem už existuje', 'err');
+        return;
+      }
+
+      const cost = CONFIG.CREATE_COST_CIGS;
+      const playerCigs = Player.getCigs();
+      if (playerCigs < cost) {
+        UI.toast(`Potřebuješ ${cost} 🚬 cigaret`, 'err');
+        return;
+      }
+
+      UI.showLoading();
+
+      try {
+        const playerLevel = Player.getLevel();
+        const userId = Player.getUserId();
+
+        const newGuild = {
+          name: name.toUpperCase(),
+          emblem,
+          description: desc || 'Nová guilda připravená dobýt svět!',
+          level: 1,
+          members: 1,
+          max_members: CONFIG.MAX_MEMBERS,
+          power: playerLevel * 100,
+          vault_money: 0,
+          vault_cigs: 0,
+          owner: userId
+        };
+
+        const createdGuild = await SupabaseManager.createGuild(newGuild);
+        await SupabaseManager.joinGuild(userId, createdGuild.id, 'Master');
+
+        Player.setCigs(playerCigs - cost);
+
+        UI.toast(`Guilda "${createdGuild.name}" byla vytvořena! 🎉`);
+        
+        await this.loadData();
+        
+        UI.hideModal('createModal');
+        UI.hideLoading();
+        
+        this.updateView();
+      } catch (err) {
+        UI.hideLoading();
+        UI.toast('Chyba při vytváření guildy', 'err');
+        console.error(err);
+      }
+    }
+
+    async leaveGuild() {
+      if (!confirm('Opravdu chceš opustit guildu?')) return;
+
+      const guild = this.playerGuild;
+      if (!guild) return;
+
+      UI.showLoading();
+
+      try {
+        const userId = Player.getUserId();
+        await SupabaseManager.leaveGuild(userId, guild.id);
+
+        UI.toast('Opustil jsi guildu', 'ok');
+        
+        await this.loadData();
+        
+        UI.hideLoading();
+        this.updateView();
+      } catch (err) {
+        UI.hideLoading();
+        UI.toast('Chyba při opouštění guildy', 'err');
+        console.error(err);
+      }
+    }
+
+    async deleteGuild() {
+      if (this.playerGuildData?.role !== 'Master') {
+        UI.toast('Pouze Master může rozpustit guildu', 'err');
+        return;
+      }
+
+      if (!confirm('OPRAVDU chceš rozpustit guildu? Tato akce je nevratná!')) return;
+
+      const guild = this.playerGuild;
+      if (!guild) return;
+
+      UI.showLoading();
+
+      try {
+        await SupabaseManager.deleteGuild(guild.id);
+
+        UI.toast('Guilda byla rozpuštěna', 'ok');
+        
+        await this.loadData();
+        
+        UI.hideLoading();
+        this.updateView();
+      } catch (err) {
+        UI.hideLoading();
+        UI.toast('Chyba při rozpouštění guildy', 'err');
+        console.error(err);
+      }
+    }
+
+    showGuildInfo() {
+      const guild = this.playerGuild;
+      if (!guild) return;
+
+      const totalDonations = guild.vault_money + guild.vault_cigs;
+      const avgLevel = guild.memberList.length > 0 
+        ? Math.floor(guild.memberList.reduce((sum, m) => sum + m.level, 0) / guild.members)
+        : 0;
+      const bonusXP = Math.floor(guild.level * 0.5) + 5;
+
+      UI.toast(`📊 ${guild.name} | Level ${guild.level} | Členů: ${guild.members} | Power: ${UI.formatNumber(guild.power)} | Průměrný level: ${avgLevel} | Bonus XP: +${bonusXP}%`, 'ok');
+    }
+  }
+
+  // ====== INITIALIZATION ======
+  const manager = new GuildManager();
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    manager.init();
+  });
+
+  // Pokud je DOM již načten
+  if (document.readyState === 'loading') {
+    // Čeká na DOMContentLoaded
+  } else {
+    // DOM už je načten
+    manager.init();
+  }
+
+})();</h3>
+          <div style="display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding
