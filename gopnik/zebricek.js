@@ -1,14 +1,3 @@
-
-// === FORCE GLOBAL STATS OVERRIDE ===
-['money','level','xp','cigs'].forEach(k=>{
-  try{
-    Object.defineProperty(window,k,{
-      get(){ return GAME_STATE.stats[k]; },
-      set(v){ GAME_STATE.stats[k]=v; saveGameState(); }
-    });
-  }catch(e){}
-});
-
 // ===== SUPABASE SETUP =====
 // Konfigurace se načítá z config.js (nebude v GIT)
 const { createClient } = supabase;

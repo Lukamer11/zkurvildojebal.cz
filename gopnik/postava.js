@@ -193,15 +193,10 @@ function calculateStatBonus(stat, value) {
 }
     case 'intelligence':
       return `+${Math.floor(value * 1.5)}% Magie`;
-    case 'constitution': {
-      const baseHp = 500 + (value * 25);
-      const cls = (getPlayerClass ? getPlayerClass() : (localStorage.getItem('sf_class') || 'padouch')).toLowerCase();
-      let hp = Math.floor(baseHp);
-      if (cls === 'rvac') hp = Math.floor(hp * 1.25);
-      if (cls === 'mozek') hp = Math.floor(hp * 0.8);
+    case 'constitution':
+      const hp = 500 + (value * 25);
       return `${hp} HP`;
-    }
-case 'luck':
+    case 'luck':
       const luckPercent = Math.min(value, 100);
       return `${luckPercent}% / 100%`;
     default:
@@ -522,8 +517,6 @@ gameState.upgradeCosts[stat] = Math.floor((cost * UPGRADE_COST_MULT) + UPGRADE_C
   } else {
     showNotification('Nemáš dost peněz!', 'error');
   }
-  try { sfSyncFromLocalState(gameState); } catch {}
-
 }
 
 // ===== ADD XP & LEVEL UP =====
@@ -554,8 +547,6 @@ function addXP(amount) {
       addXP(0);
     }
   }
-  try { sfSyncFromLocalState(gameState); } catch {}
-
 }
 
 // ===== DRAG & DROP =====
@@ -637,8 +628,6 @@ async function unequipItem(slotName) {
   updateUI();
   
   showNotification(`${item.name} odebrán z výbavy`, 'success');
-  try { sfSyncFromLocalState(gameState); } catch {}
-
 }
 
 // ===== NOTIFICATIONS =====
@@ -788,29 +777,3 @@ console.log('✅ Postava system loaded with equipment support!');
 const sb = getSupabase();
 
 GameState.subscribe(stats=>{ console.log('Stats sync',stats); });
-
-
-// === SF GLOBAL SYNC HELPERS (no UI changes) ===
-function sfComputeMaxHpFromStats(stats){
-  const cls = String((window.SF?.getPlayerClass ? window.SF.getPlayerClass() : (localStorage.getItem('sf_class')||'padouch'))||'padouch').toLowerCase();
-  const con = Number(stats?.constitution ?? 0);
-  let maxHp = Math.max(1, Math.floor(500 + con * 25));
-  if (cls === 'rvac')  maxHp = Math.max(1, Math.floor(maxHp * 1.25));
-  if (cls === 'mozek') maxHp = Math.max(1, Math.floor(maxHp * 0.8));
-  return maxHp;
-}
-function sfSyncFromLocalState(gs){
-  try{
-    if(!window.SF?.setStats) return;
-    window.SF.setStats({
-      level: Number(gs.level ?? 1),
-      xp: Number(gs.xp ?? 0),
-      money: Number(gs.money ?? 0),
-      cigarettes: Number(gs.cigarettes ?? 0),
-      stats: gs.stats,
-      equipped: gs.equipped
-    }, { save: true, sync: true });
-    const maxHp = sfComputeMaxHpFromStats(gs.stats);
-    window.SF.setHp(maxHp, maxHp);
-  }catch(e){}
-}

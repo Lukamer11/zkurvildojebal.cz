@@ -633,12 +633,6 @@
         localStorage.setItem('user_id', user.id);
         localStorage.setItem('user_email', user.email || email);
 
-        // clear any previous class selection so first account always goes to vyber.html
-        try {
-          localStorage.removeItem('sf_class');
-          localStorage.removeItem(`sf_class_${user.id}`);
-        } catch {}
-
         const row = await ensurePlayerStats(user.id, user.email || email, null);
 
         showMessage('Přihlášeno! Vstupuješ do arény...', 'success');

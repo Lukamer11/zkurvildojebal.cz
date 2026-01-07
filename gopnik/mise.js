@@ -1,14 +1,3 @@
-
-// === FORCE GLOBAL STATS OVERRIDE ===
-['money','level','xp','cigs'].forEach(k=>{
-  try{
-    Object.defineProperty(window,k,{
-      get(){ return GAME_STATE.stats[k]; },
-      set(v){ GAME_STATE.stats[k]=v; saveGameState(); }
-    });
-  }catch(e){}
-});
-
 // Mission System - Gopnik Style v2.0
 let playerLevel = 1;
 let playerMoney = 3170;
