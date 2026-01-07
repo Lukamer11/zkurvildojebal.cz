@@ -43,6 +43,44 @@
       height: 48px;
       object-fit: contain;
     }
+
+    /* Ikona třídy na avataru (pravý horní roh) */
+    .character {
+      position: relative;
+    }
+    
+    .character .class-badge {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      background: rgba(0,0,0,0.55);
+      border: 2px solid rgba(201,164,74,.85);
+      border-radius: 12px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.55);
+      text-shadow: 0 2px 8px rgba(0,0,0,.95);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Tooltip */
+    .item-tooltip {
+      position: fixed;
+      background: linear-gradient(135deg, rgba(40,30,20,0.98), rgba(25,18,12,0.99));
+      border: 3px solid #c9a44a;
+      border-radius: 12px;
+      padding: 14px;
+      pointer-events: none;
+      z-index: 10000;
+      display: none;
+      min-width: 250px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
   </style>
   <link rel="stylesheet" href="menu.css">
   <script src="menu.js"></script>
