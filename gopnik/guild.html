@@ -5,6 +5,7 @@
   <title>Guild System</title>
   <link rel="stylesheet" href="guild.css">
   <link rel="stylesheet" href="menu.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="menu.js"></script>
 </head>
 <body>
@@ -77,8 +78,17 @@
     <div class="guild-title">👥 GUILD SYSTEM 👥</div>
 
     <div class="guild-container" id="guildContainer">
+      
+      <!-- LOADING STATE -->
+      <div class="guild-loading" id="loadingScreen" style="display: flex;">
+        <div class="loading-spinner">
+          <div class="loading-spinner-icon">⚙️</div>
+          <div style="font-size: 18px; font-weight: 900; margin-top: 16px;">Načítání guild...</div>
+        </div>
+      </div>
+
       <!-- ÚVODNÍ OBRAZOVKA - 2 TLAČÍTKA -->
-      <div class="guild-welcome" id="welcomeScreen">
+      <div class="guild-welcome" id="welcomeScreen" style="display: none;">
         <div class="welcome-content">
           <div class="welcome-icon">👥</div>
           <h2 class="welcome-heading">GUILD SYSTEM</h2>
@@ -156,5 +166,38 @@
 </div>
 
 <script src="guild.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+
+function safePlay(){
+  if(!music) return;
+  const p = music.play();
+  if(p && typeof p.catch === 'function'){
+    p.catch(() => {
+      // Autoplay blokováno
+    });
+  }
+}
+
+if (localStorage.getItem("musicPlaying") === "true") {
+  music.currentTime = parseFloat(localStorage.getItem("musicTime")) || 0;
+  music.volume = 0.4;
+  safePlay();
+}
+
+document.addEventListener("click", () => {
+  if (music.paused) {
+    safePlay();
+    localStorage.setItem("musicPlaying", "true");
+  }
+}, { once: true });
+
+setInterval(() => {
+  if (!music.paused) {
+    localStorage.setItem("musicTime", music.currentTime);
+  }
+}, 500);
+</script>
+
 </body>
 </html>
