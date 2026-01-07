@@ -1,8 +1,7 @@
-// arena.js – arena fight s POSTUPNOU animací + SPRÁVNÉ STATS A HP
+// arena.js – VERZE S EXTRA DEBUG LOGY
 (() => {
   "use strict";
 
-  // ===== NOVÉ SUPABASE CREDENTIALS =====
   const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
 
@@ -10,7 +9,7 @@
   const attackBtn = document.getElementById("attackBtn");
   const resultModal = document.getElementById("resultModal");
   const resultTitle = document.getElementById("resultTitle");
-  const resultText  = document.getElementById("resultText");
+  const resultText = document.getElementById("resultText");
   const resultContinue = document.getElementById("resultContinue");
   const playerHealthFill = document.getElementById("playerHealthFill");
   const playerHealthText = document.getElementById("playerHealthText");
@@ -73,8 +72,9 @@
   function computeMaxHpFromCore(core, cls) {
     const base = 500 + (Number(core.constitution ?? 0) * 25);
     let maxHp = clampHp(base);
-    if (cls === "rvac")  maxHp = clampHp(maxHp * 1.25);
+    if (cls === "rvac") maxHp = clampHp(maxHp * 1.25);
     if (cls === "mozek") maxHp = clampHp(maxHp * 0.8);
+    console.log(`💪 computeMaxHpFromCore: con=${core.constitution}, cls=${cls}, maxHp=${maxHp}`);
     return Math.max(1, maxHp);
   }
 
@@ -120,11 +120,16 @@
       _class: cls
     };
 
-    // PŘEPOČET MAX HP podle constitution + equipment bonusů
     playerMaxHp = computeMaxHpFromCore(playerTotal, cls);
     
-    // ===== AKTUALIZACE UI STATS V ARÉNĚ =====
-    const statElements = {
+    console.log('🔥 === RECOMPUTE PLAYER TOTALS ===');
+    console.log('playerCore:', playerCore);
+    console.log('equipBonus:', equipBonus);
+    console.log('playerTotal:', playerTotal);
+    console.log('playerMaxHp:', playerMaxHp);
+    
+    // UPDATE UI ELEMENTS
+    const statMap = {
       pStr: playerTotal.strength,
       pDef: playerTotal.defense,
       pDex: playerTotal.dexterity,
@@ -133,36 +138,40 @@
       pLuck: playerTotal.luck
     };
     
-    Object.keys(statElements).forEach((id) => {
+    console.log('📊 Updating UI elements...');
+    Object.keys(statMap).forEach((id) => {
       const el = document.getElementById(id);
       if (el) {
-        el.textContent = String(statElements[id]);
-        console.log(`📊 Updated ${id}: ${statElements[id]}`);
+        el.textContent = String(statMap[id]);
+        console.log(`  ✅ ${id}: ${statMap[id]}`);
+      } else {
+        console.warn(`  ⚠️ Element not found: ${id}`);
       }
     });
 
-    console.log('✅ Player totals:', playerTotal);
-    console.log('💪 Max HP:', playerMaxHp, 'Current HP:', playerCurrentHp);
+    console.log('=================================');
   }
 
   function healPlayerToFull() {
+    console.log('🏥 === HEAL PLAYER TO FULL ===');
     recomputePlayerTotals();
     
-    // Heal to full HP
     playerCurrentHp = playerMaxHp;
     
     if (window.SF) {
       window.SF.setHp(playerCurrentHp, playerMaxHp);
+      console.log('  💉 SF.setHp called:', playerCurrentHp, '/', playerMaxHp);
     }
     
-    // ===== UPDATE HEALTH BAR S SPRÁVNÝMI HODNOTAMI =====
     setBar(playerHealthFill, playerHealthText, playerCurrentHp, playerMaxHp);
+    console.log('  💚 Health bar set:', playerCurrentHp, '/', playerMaxHp);
     
     if (playerLevelText) {
       playerLevelText.textContent = `Level ${playerTotal.level}`;
+      console.log('  📊 Level text set:', playerTotal.level);
     }
     
-    console.log('🏥 Player healed:', playerCurrentHp, '/', playerMaxHp);
+    console.log('=============================');
   }
 
   function renderEnemy() {
@@ -171,7 +180,7 @@
     if (!e._class) e._class = clsPool[randInt(0, clsPool.length-1)];
     
     enemyMaxHp = e.hp;
-    if (e._class === "rvac")  enemyMaxHp = clampHp(enemyMaxHp * 1.25);
+    if (e._class === "rvac") enemyMaxHp = clampHp(enemyMaxHp * 1.25);
     if (e._class === "mozek") enemyMaxHp = clampHp(enemyMaxHp * 0.8);
     enemyCurHp = enemyMaxHp;
 
@@ -179,7 +188,6 @@
     if (enemyLevelEl) enemyLevelEl.textContent = `Level ${e.level}`;
     setBar(enemyHealthFill, enemyHealthText, enemyCurHp, enemyMaxHp);
 
-    // Enemy stats (náhodné podle levelu)
     const eStr = 10 + (e.level * 3) + randInt(0, 5);
     const eDef = 8 + (e.level * 2) + randInt(0, 4);
     const eDex = 6 + (e.level * 2) + randInt(0, 3);
@@ -241,10 +249,10 @@
 
     if (win) {
       if (resultTitle) resultTitle.textContent = "Vyhrál jsi!";
-      if (resultText)  resultText.textContent  = `Dostal jsi pár grošů... +${txtAmount}₽`;
+      if (resultText) resultText.textContent = `Dostal jsi pár grošů... +${txtAmount}₽`;
     } else {
       if (resultTitle) resultTitle.textContent = "Prohrál jsi!";
-      if (resultText)  resultText.textContent  = `Přišel jsi o groše... -${txtAmount}₽`;
+      if (resultText) resultText.textContent = `Přišel jsi o groše... -${txtAmount}₽`;
     }
 
     resultModal.classList.add("show");
@@ -268,7 +276,7 @@
     const base = (str * 2) + (lvl * 3) + 10;
     let dmg = clampHp((base + randInt(-6, 14)) * dmgScale);
     if (cls === "mozek") dmg = clampHp(dmg * 1.2);
-    if (cls === "rvac")  dmg = clampHp(dmg * 0.85);
+    if (cls === "rvac") dmg = clampHp(dmg * 0.85);
     return Math.max(1, dmg);
   }
 
@@ -276,7 +284,7 @@
     const base = 30 + (lvl * 7);
     let dmg = clampHp((base + randInt(-10, 18)) * dmgScale);
     if (cls === "mozek") dmg = clampHp(dmg * 1.15);
-    if (cls === "rvac")  dmg = clampHp(dmg * 0.85);
+    if (cls === "rvac") dmg = clampHp(dmg * 0.85);
     return Math.max(1, dmg);
   }
 
@@ -521,12 +529,15 @@
 
   async function hydratePlayerFromPostava() {
     try {
-      console.log('🔄 Loading from Supabase...');
+      console.log('🔥 === HYDRATE PLAYER FROM SUPABASE ===');
       
       const lib = window.supabase;
       const sb = window.supabaseClient || (lib?.createClient ? lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
 
       const uid = localStorage.getItem("user_id") || localStorage.getItem("slavFantasyUserId") || "1";
+      
+      console.log('👤 User ID:', uid);
+      
       if (!sb) {
         console.warn('⚠️ Supabase not available');
         return;
@@ -543,13 +554,19 @@
         return;
       }
       
+      console.log('📦 Raw Supabase data:', data);
+      
       const row = data?.[0];
       if (!row) {
-        console.warn('⚠️ No data found');
+        console.warn('⚠️ No data found for user');
         return;
       }
 
+      console.log('📊 Row data:', row);
+      console.log('📊 Stats from DB:', row.stats);
+
       const st = row.stats || {};
+      
       playerCore = {
         strength: Number(st.strength ?? 18),
         defense: Number(st.defense ?? 14),
@@ -560,18 +577,22 @@
         level: Number(row.level ?? 1)
       };
 
+      console.log('💪 playerCore after load:', playerCore);
+
       playerEquipped = row.equipped || null;
+      console.log('🎒 playerEquipped:', playerEquipped);
 
       const dbCls = String(st.player_class || "").toLowerCase();
       if (dbCls) {
         try { window.SF?.setPlayerClass?.(dbCls); } catch {}
         localStorage.setItem("sf_class", dbCls);
+        console.log('🎭 Class set:', dbCls);
       }
 
-      console.log('✅ Loaded:', playerCore);
       recomputePlayerTotals();
+      console.log('======================================');
     } catch (err) {
-      console.error('❌ Error:', err);
+      console.error('❌ Error in hydratePlayerFromPostava:', err);
     }
   }
 
@@ -598,10 +619,14 @@
   }
 
   function boot() {
+    console.log('🚀 === ARENA BOOT ===');
+    
     hydratePlayerFromPostava().finally(() => {
+      console.log('✅ Hydration complete, rendering...');
       renderClassBadgeOnAvatar();
       healPlayerToFull();
       renderEnemy();
+      console.log('✅ Boot complete!');
     });
 
     if (nextBtn) nextBtn.addEventListener("click", () => { if (!fightRunning) nextEnemy(); });
