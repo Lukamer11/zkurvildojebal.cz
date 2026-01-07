@@ -191,6 +191,14 @@
       gap: 12px;
     }
 
+    .section-header h2 {
+      font-size: 20px;
+      color: #f1d27a;
+      text-shadow: 0 2px 6px rgba(0,0,0,.8);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
     .stat-box {
       padding: 12px 16px;
       background-image: url('tlacitko.jpg');
@@ -297,6 +305,41 @@
       transform: scale(1.05);
       box-shadow: 0 0 20px rgba(241, 210, 122, 0.6);
     }
+
+    .xp-bar {
+      width: 100%;
+      height: 20px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      border: 2px solid rgba(255,215,100,0.3);
+    }
+
+    .xp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4af, #2af);
+      transition: width 0.3s ease;
+    }
+
+    .xp-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 11px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,.8);
+    }
+
+    .energy-bar {
+      margin-top: 8px;
+    }
+
+    .energy-fill {
+      background: linear-gradient(90deg, #f1d27a, #c9a44a);
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="items.js"></script>
@@ -311,14 +354,6 @@
   <aside class="left-panel">
     
     <div class="menu-top">
-      
-      <div class="xp-bar-container">
-        <div class="xp-bar">
-          <div class="xp-fill" id="xpFill"></div>
-          <span class="xp-text" id="xpText">0 / 100</span>
-        </div>
-      </div>
-
       <div class="avatar-box">
         <img src="avatar.jpg" alt="avatar">
         <div class="level-pill">
@@ -329,26 +364,41 @@
       <div class="currency-col">
         <div class="currency-line">
           <span class="cur-icon">₽</span>
-          <b id="money">3170</b>
+          <b id="money">0</b>
         </div>
         <div class="currency-line">
           <span class="cur-icon">🚬</span>
-          <b id="cigarettes">42</b>
+          <b id="cigarettes">0</b>
+        </div>
+        <div class="currency-line energy">
+          <span class="cur-icon">⚡</span>
+          <b id="energy">100</b>
         </div>
       </div>
+    </div>
 
+    <!-- XP BAR -->
+    <div class="xp-bar">
+      <div class="xp-fill" id="xpFill" style="width:0%"></div>
+      <span class="xp-text" id="xpText">0 / 100</span>
+    </div>
+
+    <!-- ENERGY BAR -->
+    <div class="xp-bar energy-bar">
+      <div class="xp-fill energy-fill" id="energyFill" style="width:100%"></div>
+      <span class="xp-text" id="energyText">100 / 100</span>
     </div>
 
     <div class="menu-frame">
-      <a href="postava.html" class="sf-btn" data-icon="🧺">POSTAVA</a>
+      <a href="postava.html" class="sf-btn" data-icon="🍺">POSTAVA</a>
       <a href="arena.html" class="sf-btn" data-icon="⚔️">ARENA</a>
       <a href="shop.html" class="sf-btn" data-icon="🗡️">SHOP</a>
       <a href="auto.html" class="sf-btn" data-icon="🚗">CRYPTA</a>
       <a href="guild.html" class="sf-btn" data-icon="👥">GUILD</a>
       <a href="mail.html" class="sf-btn" data-icon="✉️">MAIL</a>
       <a href="zebricek.html" class="sf-btn" data-icon="🏆">ŽEBŘÍČEK</a>
-      <button class="sf-btn" data-icon="🧙" type="button">TOČO MORO</button>
-<a href="mise.html" class="sf-btn" data-icon="🎯">MISE</a>
+      <a href="kolo.html" class="sf-btn active" data-icon="🎰">KOLO ŠTĚSTÍ</a>
+      <a href="mise.html" class="sf-btn" data-icon="🎯">MISE</a>
       <a href="gopnik.html" class="sf-btn sf-btn--last" data-icon="🎮">SLAV CLICKER</a>
     </div>
       
@@ -436,414 +486,7 @@
   <button onclick="closePrizeDisplay()">POKRAČOVAT</button>
 </div>
 
-<script>
-// ===== SUPABASE SETUP =====
-const SUPABASE_URL = 'https://bmmaijlbpwgzhrxzxphf.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbWFpamxicHdnemhyeHp4cGhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NjQ5MDcsImV4cCI6MjA4MjQ0MDkwN30.s0YQVnAjMXFu1pSI1NXZ2naSab179N0vQPglsmy3Pgw';
-
-const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ===== WHEEL CONFIG =====
-const WHEEL_PRIZES = [
-  { name: '1000₽', icon: '💰', value: 1000, type: 'money', chance: 15, color: '#f1d27a' },
-  { name: '50🚬', icon: '🚬', value: 50, type: 'cigarettes', chance: 15, color: '#c9a44a' },
-  { name: '500₽', icon: '💵', value: 500, type: 'money', chance: 20, color: '#7a5a23' },
-  { name: '20🚬', icon: '🚬', value: 20, type: 'cigarettes', chance: 20, color: '#5a4520' },
-  { name: '100₽', icon: '💸', value: 100, type: 'money', chance: 15, color: '#8b6914' },
-  { name: '10🚬', icon: '🚬', value: 10, type: 'cigarettes', chance: 10, color: '#6b5320' },
-  { name: 'Nic', icon: '😢', value: 0, type: 'nothing', chance: 5, color: '#3a2820' }
-];
-
-const SPIN_COST_MONEY = 50;
-const SPIN_COST_CIGARETTES = 5;
-const FREE_SPINS_DAILY = 3;
-
-// ===== GAME STATE =====
-let gameState = {
-  userId: null,
-  level: 1,
-  xp: 0,
-  money: 3170,
-  cigarettes: 42,
-  wheelStats: {
-    totalSpins: 0,
-    totalWon: 0,
-    bestWin: { name: '—', value: 0 },
-    history: [],
-    freeSpins: FREE_SPINS_DAILY,
-    lastFreeSpinReset: null
-  }
-};
-
-let isSpinning = false;
-let currentRotation = 0;
-
-// ===== CANVAS & DRAWING =====
-const canvas = document.getElementById('wheelCanvas');
-const ctx = canvas.getContext('2d');
-
-function drawWheel() {
-  const centerX = canvas.width / 2;
-  const centerY = canvas.height / 2;
-  const radius = canvas.width / 2 - 10;
-  
-  const sliceAngle = (Math.PI * 2) / WHEEL_PRIZES.length;
-  
-  WHEEL_PRIZES.forEach((prize, i) => {
-    const startAngle = i * sliceAngle + currentRotation;
-    const endAngle = startAngle + sliceAngle;
-    
-    // Draw slice
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-    ctx.closePath();
-    ctx.fillStyle = prize.color;
-    ctx.fill();
-    ctx.strokeStyle = '#2b1a0f';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    
-    // Draw text
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.rotate(startAngle + sliceAngle / 2);
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px system-ui';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 4;
-    ctx.fillText(prize.icon, radius * 0.7, 10);
-    ctx.font = 'bold 16px system-ui';
-    ctx.fillText(prize.name, radius * 0.7, -15);
-    ctx.restore();
-  });
-}
-
-// ===== SPIN LOGIC =====
-function getRandomPrize() {
-  const total = WHEEL_PRIZES.reduce((sum, p) => sum + p.chance, 0);
-  let random = Math.random() * total;
-  
-  for (const prize of WHEEL_PRIZES) {
-    random -= prize.chance;
-    if (random <= 0) return prize;
-  }
-  
-  return WHEEL_PRIZES[WHEEL_PRIZES.length - 1];
-}
-
-async function spinWheel() {
-  if (isSpinning) return;
-  
-  // Check if can spin
-  const hasFreeSpins = gameState.wheelStats.freeSpins > 0;
-  const hasMoneyForSpin = gameState.money >= SPIN_COST_MONEY;
-  const hasCigarettesForSpin = gameState.cigarettes >= SPIN_COST_CIGARETTES;
-  
-  if (!hasFreeSpins && !hasMoneyForSpin && !hasCigarettesForSpin) {
-    showNotification('Nemáš dost peněz ani cigaret!', 'error');
-    return;
-  }
-  
-  isSpinning = true;
-  document.getElementById('spinBtn').disabled = true;
-  
-  // Deduct cost
-  if (hasFreeSpins) {
-    gameState.wheelStats.freeSpins--;
-  } else if (hasMoneyForSpin) {
-    gameState.money -= SPIN_COST_MONEY;
-  } else {
-    gameState.cigarettes -= SPIN_COST_CIGARETTES;
-  }
-  
-  // Select prize
-  const prize = getRandomPrize();
-  const prizeIndex = WHEEL_PRIZES.indexOf(prize);
-  
-  // Calculate rotation
-  const sliceAngle = (Math.PI * 2) / WHEEL_PRIZES.length;
-  const targetAngle = prizeIndex * sliceAngle + sliceAngle / 2;
-  const spins = 5; // Number of full rotations
-  const totalRotation = (Math.PI * 2 * spins) + targetAngle;
-  
-  // Animate
-  const startRotation = currentRotation;
-  const startTime = Date.now();
-  const duration = 4000;
-  
-  function animate() {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    
-    // Easing function
-    const eased = 1 - Math.pow(1 - progress, 3);
-    
-    currentRotation = startRotation + totalRotation * eased;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawWheel();
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    } else {
-      // Normalize rotation
-      currentRotation = currentRotation % (Math.PI * 2);
-      
-      // Award prize
-      awardPrize(prize);
-      
-      isSpinning = false;
-      document.getElementById('spinBtn').disabled = false;
-    }
-  }
-  
-  animate();
-  
-  // Update stats
-  gameState.wheelStats.totalSpins++;
-  updateUI();
-  await saveToSupabase();
-}
-
-function awardPrize(prize) {
-  if (prize.type === 'money') {
-    gameState.money += prize.value;
-    gameState.wheelStats.totalWon += prize.value;
-  } else if (prize.type === 'cigarettes') {
-    gameState.cigarettes += prize.value;
-  }
-  
-  // Update best win
-  if (prize.value > gameState.wheelStats.bestWin.value) {
-    gameState.wheelStats.bestWin = { name: prize.name, value: prize.value };
-  }
-  
-  // Add to history
-  gameState.wheelStats.history.unshift({
-    prize: prize.name,
-    icon: prize.icon,
-    timestamp: new Date().toISOString()
-  });
-  
-  // Keep only last 10
-  if (gameState.wheelStats.history.length > 10) {
-    gameState.wheelStats.history = gameState.wheelStats.history.slice(0, 10);
-  }
-  
-  // Show prize
-  showPrize(prize);
-  
-  updateUI();
-  saveToSupabase();
-}
-
-function showPrize(prize) {
-  const display = document.getElementById('prizeDisplay');
-  document.getElementById('prizeIcon').textContent = prize.icon;
-  document.getElementById('prizeName').textContent = `Vyhráli jste: ${prize.name}!`;
-  display.classList.add('show');
-}
-
-function closePrizeDisplay() {
-  document.getElementById('prizeDisplay').classList.remove('show');
-}
-
-// ===== UI UPDATES =====
-function updateUI() {
-  // Update currencies
-  document.getElementById('money').textContent = gameState.money.toLocaleString();
-  document.getElementById('cigarettes').textContent = gameState.cigarettes;
-  
-  // Update level
-  document.getElementById('levelDisplay').textContent = gameState.level;
-  
-  // Update XP
-  const requiredXP = Math.floor(100 * Math.pow(1.5, gameState.level - 1));
-  const xpPercent = (gameState.xp / requiredXP) * 100;
-  document.getElementById('xpFill').style.width = `${xpPercent}%`;
-  document.getElementById('xpText').textContent = `${gameState.xp} / ${requiredXP}`;
-  
-  // Update wheel stats
-  document.getElementById('totalSpins').textContent = gameState.wheelStats.totalSpins;
-  document.getElementById('totalWon').textContent = gameState.wheelStats.totalWon + '₽';
-  document.getElementById('bestWin').textContent = gameState.wheelStats.bestWin.name;
-  document.getElementById('freeSpins').textContent = `🎁 Volné točení: ${gameState.wheelStats.freeSpins}`;
-  
-  // Update luck today
-  const todaySpins = gameState.wheelStats.totalSpins % 100;
-  document.getElementById('luckToday').textContent = todaySpins > 0 ? `${todaySpins}/100` : '—';
-  
-  // Update history
-  const historyList = document.getElementById('historyList');
-  if (gameState.wheelStats.history.length > 0) {
-    historyList.innerHTML = gameState.wheelStats.history.map(h => {
-      const isWin = !h.prize.includes('Nic');
-      return `<div class="history-item ${isWin ? 'win' : ''}">${h.icon} ${h.prize}</div>`;
-    }).join('');
-  }
-}
-
-// ===== SUPABASE =====
-async function initUser() {
-  try {
-    let userId = localStorage.getItem('user_id') || localStorage.getItem('slavFantasyUserId');
-    
-    if (!userId) {
-      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('slavFantasyUserId', userId);
-    }
-    
-    gameState.userId = userId;
-    
-    const { data, error } = await supabaseClient
-      .from('player_stats')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error loading from Supabase:', error);
-    }
-    
-    if (data) {
-      gameState.level = data.level || 1;
-      gameState.xp = data.xp || 0;
-      gameState.money = data.money || 3170;
-      gameState.cigarettes = data.cigarettes || 42;
-      gameState.wheelStats = data.wheel_stats || gameState.wheelStats;
-      
-      // Check if free spins should reset (daily)
-      checkFreeSpinReset();
-    } else {
-      await saveToSupabase();
-    }
-    
-  } catch (error) {
-    console.error('Error initializing user:', error);
-  }
-}
-
-function checkFreeSpinReset() {
-  const lastReset = gameState.wheelStats.lastFreeSpinReset;
-  if (!lastReset) {
-    gameState.wheelStats.lastFreeSpinReset = new Date().toISOString();
-    return;
-  }
-  
-  const now = new Date();
-  const last = new Date(lastReset);
-  const hoursSince = (now - last) / (1000 * 60 * 60);
-  
-  if (hoursSince >= 24) {
-    gameState.wheelStats.freeSpins = FREE_SPINS_DAILY;
-    gameState.wheelStats.lastFreeSpinReset = now.toISOString();
-    showNotification('🎁 Získali jste nové volné točení!', 'success');
-  }
-}
-
-async function saveToSupabase() {
-  try {
-    const basePayload = {
-      user_id: gameState.userId,
-      level: gameState.level,
-      xp: gameState.xp,
-      money: gameState.money,
-      cigarettes: gameState.cigarettes,
-      wheel_stats: gameState.wheelStats,
-      updated_at: new Date().toISOString()
-    };
-
-    let payload = { ...basePayload };
-
-    for (let attempts = 0; attempts < 6; attempts++) {
-      const { error } = await supabaseClient
-        .from('player_stats')
-        .upsert(payload, { onConflict: 'user_id' });
-
-      if (!error) return true;
-
-      const msg = String(error?.message || '');
-      const match = msg.match(/Could not find the '([^']+)' column/);
-      if (error?.code === 'PGRST204' && match) {
-        const missing = match[1];
-        if (missing in payload) {
-          console.warn('Supabase: chybí sloupec, zahazuji z payloadu:', missing);
-          delete payload[missing];
-          continue;
-        }
-      }
-
-      throw error;
-    }
-
-    console.warn('Supabase: nepodařilo se uložit ani po ořezání payloadu.');
-    return false;
-  } catch (error) {
-    console.error('Error saving to Supabase:', error);
-    return false;
-  }
-}
-
-// ===== NOTIFICATIONS =====
-function showNotification(message, type) {
-  const notification = document.createElement('div');
-  notification.className = `notification ${type}`;
-  notification.textContent = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 16px 24px;
-    background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)'};
-    color: white;
-    border-radius: 12px;
-    font-weight: 900;
-    font-size: 14px;
-    box-shadow: 0 8px 20px rgba(0,0,0,.6);
-    z-index: 10000;
-    animation: slideIn 0.3s ease;
-  `;
-  
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
-}
-
-// ===== INIT =====
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Initializing wheel...');
-  
-  await initUser();
-  
-  drawWheel();
-  updateUI();
-  
-  // Spin button
-  document.getElementById('spinBtn').addEventListener('click', spinWheel);
-  
-  // Auto-save every 30s
-  setInterval(async () => {
-    await saveToSupabase();
-  }, 30000);
-  
-  // Check free spin reset every minute
-  setInterval(() => {
-    checkFreeSpinReset();
-    updateUI();
-  }, 60000);
-  
-  showNotification('Kolo štěstí připraveno!', 'success');
-});
-
-// Expose functions
-window.closePrizeDisplay = closePrizeDisplay;
-</script>
+<script src="kolo.js"></script>
 
 <script>
 const music = document.getElementById("bgMusic");
