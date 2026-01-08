@@ -1,21 +1,16 @@
-// menu.js — jednotné levé menu + globální sync (LOCAL + SUPABASE) + navigace
+// menu.js — jediný globální init (Supabase auth + player_stats + HUD + realtime)
+// Použití: načti supabase-js v HTML, pak načti tento soubor na KAŽDÉ stránce.
+
 (() => {
   "use strict";
 
   // -------------------------
-  // SUPABASE + USER
+  // KONFIG (můžeš přepsat přes window.* nebo localStorage)
   // -------------------------
-  const DEFAULT_SUPABASE_URL = "https://bmmaijlbpwgzhrxzxphf.supabase.co";
+  const DEFAULT_SUPABASE_URL = "https://jbfvoxlcociwtyobaotz.supabase.co";
   const DEFAULT_SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbWFpamxicHdnemhyeng6eHB"
-    + "oZiIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzI0NDEzNzY3LCJleHAiOjIwODI0NDA5MDcwfQ.s0YQVnAjMXFu1pSI1NXZ2naSab179N0vQPglsmy3Pgw";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA";
 
-  const userId =
-    localStorage.getItem("slavFantasyUserId") ||
-    localStorage.getItem("user_id") ||
-    "1";
-
-  // Umožní přepsat zvenku (např. loginem), ale má to i defaulty
   const SUPABASE_URL =
     window.SUPABASE_URL ||
     localStorage.getItem("SUPABASE_URL") ||
@@ -26,588 +21,260 @@
     localStorage.getItem("SUPABASE_ANON_KEY") ||
     DEFAULT_SUPABASE_ANON_KEY;
 
-  function getSbClient() {
-    if (window.supabaseClient) return window.supabaseClient;
-
-    const lib = window.supabase;
-    if (!lib || typeof lib.createClient !== "function") return null;
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
-
-    window.supabaseClient = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage }
-    });
-    return window.supabaseClient;
-  }
-
-  const sb = getSbClient();
-
-  // -------------------------
-  // SF (globální) API pro ostatní stránky
-  // -------------------------
-  window.SF = window.SF || {};
-  window.SF.sb = sb;
-
-  // Promise, na kterou se můžou ostatní skripty navázat (jistota, že známe usera + máme načtené stats)
-  window.SFReady = window.SFReady || (async () => {
-    try {
-      // ulož URL/KEY, ať to máš i po reloadu
-      if (SUPABASE_URL) localStorage.setItem("SUPABASE_URL", SUPABASE_URL);
-      if (SUPABASE_ANON_KEY) localStorage.setItem("SUPABASE_ANON_KEY", SUPABASE_ANON_KEY);
-
-      // session
-      if (!sb || !sb.auth) return null;
-      const { data: sessData } = await sb.auth.getSession();
-      const user = sessData?.session?.user || null;
-
-      const isLogin = /login\.html$/i.test(location.pathname) || /login/i.test(location.pathname);
-      if (!user && !isLogin) {
-        location.href = "login.html";
-        return null;
-      }
-
-      window.SF.user = user;
-      window.SF.userId = user?.id || null;
-
-      // cache klíč per-user
-      const cacheKey = user?.id ? `sf_stats_${user.id}` : "sf_stats_anon";
-      window.SF.cacheKey = cacheKey;
-
-      // rychlá cache -> do UI
-      const cachedRaw = localStorage.getItem(cacheKey);
-      if (cachedRaw) {
-        try { window.SF.stats = JSON.parse(cachedRaw); } catch {}
-      }
-
-      // fresh load z DB
-      if (user?.id) {
-        const { data: row } = await sb.from("player_stats").select("*").eq("user_id", user.id).single();
-        if (row) {
-          window.SF.stats = row;
-          localStorage.setItem(cacheKey, JSON.stringify(row));
-        }
-      }
-
-      // realtime (pokud existuje core/realtime.js)
-      // menu.js je non-module, ale můžeme spoléhat na supabase realtime kanál přímo:
-      if (user?.id && sb?.channel) {
-        sb.channel("player_stats:"+user.id)
-          .on("postgres_changes",
-            { event:"*", schema:"public", table:"player_stats", filter:`user_id=eq.${user.id}`},
-            payload => {
-              if (payload?.new) {
-                window.SF.stats = { ...(window.SF.stats||{}), ...payload.new };
-                localStorage.setItem(cacheKey, JSON.stringify(window.SF.stats));
-                document.dispatchEvent(new CustomEvent("sf:stats", { detail: window.SF.stats }));
-              }
-            }
-          ).subscribe();
-      }
-
-      // sync mezi taby/stránkami přes localStorage
-      window.addEventListener("storage", (e) => {
-        if (e.key === cacheKey && e.newValue) {
-          try {
-            const next = JSON.parse(e.newValue);
-            window.SF.stats = next;
-            document.dispatchEvent(new CustomEvent("sf:stats", { detail: next }));
-          } catch {}
-        }
-      });
-
-      // helper na update + persist (debounce)
-      let persistT = null;
-      window.SF.updateStats = (patch, delayMs = 250) => {
-        window.SF.stats = { ...(window.SF.stats||{}), ...(patch||{}) };
-        localStorage.setItem(cacheKey, JSON.stringify(window.SF.stats));
-        document.dispatchEvent(new CustomEvent("sf:stats", { detail: window.SF.stats }));
-
-        if (!user?.id) return;
-        clearTimeout(persistT);
-        persistT = setTimeout(async () => {
-          try {
-            const payload = { ...window.SF.stats, user_id: user.id };
-            const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
-            if (error) console.warn("SF upsert error:", error);
-          } catch (err) {
-            console.warn("SF persist exception:", err);
-          }
-        }, delayMs);
-      };
-
-      return { user };
-    } catch (e) {
-      console.warn("SFReady init failed:", e);
-      return null;
-    }
-  })();
-
-
-  // -------------------------
-  // DOM (HUD)
-  // -------------------------
-  const moneyEl = document.getElementById("money");
-  const cigEl = document.getElementById("cigarettes");
-  const levelEl =
-    document.getElementById("levelDisplay") ||
-    document.querySelector(".level-number");
-
-  const xpFillEl = document.getElementById("xpFill");
-  const xpTextEl = document.getElementById("xpText");
+  const LOGIN_PAGE = "login.html";
 
   // -------------------------
   // HELPERS
   // -------------------------
+  function isLoginPage() {
+    return location.pathname.endsWith("/" + LOGIN_PAGE) || location.pathname.endsWith(LOGIN_PAGE);
+  }
+
+  function deepMerge(base, patch) {
+    if (!patch || typeof patch !== "object") return base;
+    const out = Array.isArray(base) ? [...base] : { ...(base || {}) };
+    for (const k of Object.keys(patch)) {
+      const pv = patch[k];
+      const bv = out[k];
+      if (pv && typeof pv === "object" && !Array.isArray(pv) && bv && typeof bv === "object" && !Array.isArray(bv)) {
+        out[k] = deepMerge(bv, pv);
+      } else {
+        out[k] = pv;
+      }
+    }
+    return out;
+  }
+
+  function emitStats() {
+    try {
+      document.dispatchEvent(
+        new CustomEvent("sf:stats", {
+          detail: structuredClone(window.SF.stats),
+        })
+      );
+    } catch {
+      // structuredClone nemusí být všude → fallback
+      document.dispatchEvent(new CustomEvent("sf:stats", { detail: window.SF.stats }));
+    }
+  }
+
   function fmtInt(n) {
     const x = Number(n ?? 0);
-    return x.toLocaleString("cs-CZ");
-  }
-
-  function toast(msg) {
-    try {
-      const el = document.createElement("div");
-      el.textContent = msg;
-      el.style.cssText = `
-        position: fixed; left: 50%; top: 18px; transform: translateX(-50%);
-        background: rgba(0,0,0,.75);
-        border: 2px solid rgba(201,164,74,.6);
-        color: #f1d27a;
-        font-weight: 1000;
-        padding: 10px 14px;
-        border-radius: 12px;
-        z-index: 99999;
-        box-shadow: 0 10px 30px rgba(0,0,0,.6);
-        max-width: min(720px, 92vw);
-        text-align: center;
-      `;
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 1600);
-    } catch {}
-  }
-
-  function safeJsonParse(s, fallback) {
-    try { return JSON.parse(s); } catch { return fallback; }
+    return Number.isFinite(x) ? x.toLocaleString("cs-CZ") : "0";
   }
 
   // -------------------------
-  // NAV — sjednocené odkazy
+  // HUD (volitelné prvky napříč stránkami)
   // -------------------------
-  const LABEL_TO_HREF = {
-    "postava": "postava.html",
-    "arena": "arena.html",
-    "shop": "shop.html",
-    "magic shop": "crypta.html",
-    "stable": "auto.html",
-    "guild": "guild.html",
-    "mail": "mail.html",
-    "hall of fame": "zebricek.html",
-    "slav clicker": "gopnik.html",
-    "dr. abawuwu": null
-  };
+  function updateHud(stats) {
+    if (!stats) return;
 
-  function normalizeLabel(txt) {
-    return String(txt || "")
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .trim();
+    const moneyEl = document.getElementById("money");
+    const cigEl = document.getElementById("cigarettes");
+    const levelEl = document.getElementById("levelDisplay") || document.querySelector(".level-number");
+    const xpFillEl = document.getElementById("xpFill");
+    const xpTextEl = document.getElementById("xpText");
+
+    if (moneyEl) moneyEl.textContent = fmtInt(stats.money);
+    if (cigEl) cigEl.textContent = fmtInt(stats.cigarettes);
+    if (levelEl) levelEl.textContent = fmtInt(stats.level);
+
+    // XP bar (pokud existuje)
+    const level = Number(stats.level ?? 1);
+    const xp = Number(stats.xp ?? 0);
+    const req = Math.floor(100 * Math.pow(1.5, Math.max(0, level - 1)));
+    const pct = req > 0 ? Math.max(0, Math.min(100, (xp / req) * 100)) : 0;
+    if (xpFillEl) xpFillEl.style.width = pct + "%";
+    if (xpTextEl) xpTextEl.textContent = `${fmtInt(xp)} / ${fmtInt(req)}`;
   }
 
-  function wireNavClicks() {
-    // Pokud je v HTML <button> místo <a>, tak to přesměrujeme
-    document.querySelectorAll(".sf-btn").forEach((el) => {
-      if (el.tagName === "A") return;
-
-      el.addEventListener("click", () => {
-        const key = normalizeLabel(el.textContent);
-        const href = LABEL_TO_HREF[key];
-        if (!href) return; // disabled
-        window.location.href = href;
-      });
-    });
-  }
-
-  function setActiveNav() {
-    const file = (location.pathname.split("/").pop() || "").toLowerCase();
-    document.querySelectorAll(".sf-btn").forEach((el) => {
-      el.classList.remove("active");
-      const href = (el.getAttribute("href") || "").toLowerCase();
-      if (href && href === file) el.classList.add("active");
-      if (!href) {
-        // button bez href: porovnej label
-        const key = normalizeLabel(el.textContent);
-        if (LABEL_TO_HREF[key] && LABEL_TO_HREF[key].toLowerCase() === file) {
-          el.classList.add("active");
-        }
+  document.addEventListener("sf:stats", (e) => updateHud(e.detail));
 
   // -------------------------
-  // MENU RULES (např. skrýt ŽEBŘÍČEK když jsi v guildě)
+  // SUPABASE CLIENT
   // -------------------------
-  function applyMenuRules() {
-    try {
-      const guildRaw = localStorage.getItem('gopnik.guild.state.v1');
-      const guildState = guildRaw ? JSON.parse(guildRaw) : null;
-      const inGuild = !!(guildState && guildState.joinedGuild);
+  function getSbClient() {
+    if (window.SF?.sb) return window.SF.sb;
+    const lib = window.supabase;
+    if (!lib || typeof lib.createClient !== "function") return null;
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
 
-      // najdi tlačítko/odkaz na ŽEBŘÍČEK
-      document.querySelectorAll('.sf-btn').forEach((el) => {
-        const key = normalizeLabel(el.textContent);
-        if (key === 'žebříček' || key === 'zebricek' || key === 'hall of fame') {
-          el.style.display = inGuild ? 'none' : '';
-        }
-      });
-    } catch {}
-  }
-
-      }
+    return lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage,
+      },
     });
   }
 
   // -------------------------
-  // STATS (LOCAL CACHE)
+  // GLOBAL SF API
   // -------------------------
-  const LS_KEY = `sf_stats_${userId}`;
-
-  // třída postavy (lokálně) — používá se na ikony a základní balanc
-  const CLASS_LS_KEY = `sf_class_${userId}`;
-  const CLASS_META = {
-    padouch: { label: "Padouch", icon: "👻" },
-    rvac:    { label: "Rváč",    icon: "✊" },
-    mozek:   { label: "Mozek",   icon: "💡" }
-  };
-
-  function getPlayerClass() {
-    const v = (localStorage.getItem(CLASS_LS_KEY) || localStorage.getItem("sf_class") || "padouch").toLowerCase();
-    return CLASS_META[v] ? v : "padouch";
+  if (!window.SF) {
+    window.SF = {
+      sb: null,
+      user: null,
+      stats: null,
+      updateStats: null,
+    };
   }
 
-  function setPlayerClass(cls) {
-    const key = String(cls || "").toLowerCase();
-    const normalized = CLASS_META[key] ? key : "padouch";
-    localStorage.setItem(CLASS_LS_KEY, normalized);
-    localStorage.setItem("sf_class", normalized);
-    renderClassBadge(normalized);
-    return normalized;
-  }
-
-  function renderClassBadge(clsKey = getPlayerClass()) {
-    const meta = CLASS_META[clsKey] || CLASS_META.padouch;
-    const box = document.querySelector(".avatar-box");
-    if (!box) return;
-    let badge = box.querySelector(".class-badge");
-    if (!badge) {
-      badge = document.createElement("div");
-      badge.className = "class-badge";
-      box.appendChild(badge);
-    }
-    badge.textContent = meta.icon;
-    badge.title = meta.label;
-  }
-
-  // "kanonická" struktura — další fields (inventář, equipped...) necháme projít
-  const DEFAULT_STATS = {
-    user_id: userId,
-    level: 1,
-    xp: 0,
-    money: 0,
-    cigarettes: 0,
-    hp: 1000,
-    max_hp: 1000
-  };
-
-  let state = {
-    ...DEFAULT_STATS,
-    ...(safeJsonParse(localStorage.getItem(LS_KEY), {}))
-  };
-
-  let dirty = false;
   let saveTimer = null;
-  let schemaSupportsHp = true; // fallback pokud tabulka nemá sloupce
-  let remoteCols = null;       // Set<string> sloupců, které skutečně existují v DB (podle select "*")
-
-  function syncHud(st) {
-    if (!st) return;
-
-    if (moneyEl) moneyEl.textContent = fmtInt(st.money ?? 0);
-    if (cigEl) cigEl.textContent = fmtInt(st.cigarettes ?? 0);
-    if (levelEl) levelEl.textContent = String(Number(st.level ?? 1));
-
-    // XP (pokud existuje)
-    if (xpFillEl && xpTextEl) {
-      const cur = Number(st.xp ?? 0);
-      const lvl = Number(st.level ?? 1);
-      const req = Math.max(100, lvl * 100);
-      const pct = Math.max(0, Math.min(100, (cur / req) * 100));
-      xpFillEl.style.width = `${pct}%`;
-      xpTextEl.textContent = `${fmtInt(cur)} / ${fmtInt(req)}`;
-    }
+  async function upsertNow() {
+    const sb = window.SF.sb;
+    const stats = window.SF.stats;
+    if (!sb || !stats?.user_id) return;
+    const { error } = await sb.from("player_stats").upsert(stats, { onConflict: "user_id" });
+    if (error) console.warn("SF upsert error:", error);
   }
 
-  function persistLocal() {
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
-  }
+  window.SF.updateStats = function updateStats(patch, opts = {}) {
+    const merge = opts.merge !== false;
+    const prev = window.SF.stats || {};
+    const next = merge ? deepMerge(prev, patch) : { ...prev, ...patch };
+    window.SF.stats = next;
+    emitStats();
+
+    // debounced save (proti spamování / rate limitům)
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(upsertNow, 250);
+  };
 
   // -------------------------
-  // SUPABASE IO
+  // LOAD or CREATE player_stats
   // -------------------------
-  async function fetchMyStats() {
+  function defaultStatsRow(userId) {
+    return {
+      user_id: userId,
+      level: 1,
+      xp: 0,
+      money: 0,
+      cigarettes: 0,
+      energy: 100,
+      max_energy: 100,
+      stats: {
+        strength: 10,
+        defense: 10,
+        dexterity: 10,
+        intelligence: 10,
+        constitution: 10,
+        luck: 10,
+        player_class: (localStorage.getItem("sf_class") || "padouch").toLowerCase(),
+      },
+      upgrade_costs: {
+        strength: 100,
+        defense: 100,
+        dexterity: 100,
+        intelligence: 100,
+        constitution: 100,
+        luck: 100,
+      },
+      inventory: [],
+      equipped: {
+        weapon: null,
+        shield: null,
+        ring: null,
+        backpack: null,
+        helmet: null,
+        armor: null,
+        boots: null,
+        gloves: null,
+      },
+    };
+  }
+
+  async function loadOrCreateStats(userId) {
+    const sb = window.SF.sb;
     if (!sb) return null;
 
     const { data, error } = await sb
       .from("player_stats")
       .select("*")
       .eq("user_id", userId)
-      .limit(1);
+      .maybeSingle();
 
-    if (error) {
-      console.error("menu.js player_stats select error:", error);
-      return null;
+    if (error) console.warn("player_stats load error:", error);
+
+    if (data) return data;
+
+    const defaults = defaultStatsRow(userId);
+    const ins = await sb.from("player_stats").insert(defaults).select().single();
+    if (ins.error) {
+      console.warn("player_stats create error:", ins.error);
+      // fallback: i kdyby insert selhal, vrať aspoň defaults a nepadni
+      return defaults;
     }
-    const row = data?.[0] || null;
-    if (row && typeof row === 'object') {
-      try {
-        remoteCols = new Set(Object.keys(row));
-      } catch {}
-    }
-    return row;
-  }
-
-  async function ensureMyStats() {
-    if (!sb) return null;
-
-    const st = await fetchMyStats();
-    if (st) return st;
-
-    // vytvoř minimální záznam
-    const payload = {
-      user_id: userId,
-      level: 1,
-      xp: 0,
-      money: 0,
-      cigarettes: 0
-    };
-
-    const { error } = await sb.from("player_stats").insert(payload);
-    if (error) {
-      console.error("menu.js player_stats insert error:", error);
-      return null;
-    }
-    return await fetchMyStats();
-  }
-
-  async function saveToSupabase(force = false) {
-    if (!sb) return;
-    if (!dirty && !force) return;
-
-    // ----
-    // PostgREST je přísný: pokud pošleš sloupec, který v tabulce není,
-    // vrátí 400. Proto payload filtrujeme podle skutečných sloupců,
-    // které jsme viděli v DB (remoteCols).
-    // ----
-    const basePayload = { ...state, user_id: userId };
-    // když remoteCols ještě neznáme, držíme se minimálního jistého setu –
-    // jinak PostgREST spadne na neexistujícím sloupci (hp/nickname apod.)
-    const fallbackCols = ["user_id","level","xp","money","cigarettes","stats"];
-
-    const allow = remoteCols ? Array.from(remoteCols) : fallbackCols;
-    const payload = {};
-    for (const k of allow) {
-      if (k in basePayload) payload[k] = basePayload[k];
-    }
-
-    // pokud DB nemá hp sloupce, tak je nepoužívej
-    if (!schemaSupportsHp) {
-      delete payload.hp;
-      delete payload.max_hp;
-    }
-
-    const { error } = await sb
-      .from("player_stats")
-      .upsert(payload, { onConflict: "user_id" });
-
-    if (error) {
-      // fallback pro schema bez hp/max_hp (PostgREST hlášky jsou různé)
-      const msg = String(error.message || "");
-      const hpMissing = /\bhp\b/i.test(msg) && (/column/i.test(msg) || /find/i.test(msg) || /schema cache/i.test(msg) || /does not exist/i.test(msg));
-      const maxHpMissing = /max_hp/i.test(msg) && (/column/i.test(msg) || /find/i.test(msg) || /schema cache/i.test(msg) || /does not exist/i.test(msg));
-
-      if (schemaSupportsHp && (hpMissing || maxHpMissing)) {
-        schemaSupportsHp = false;
-        try {
-          delete payload.hp;
-          delete payload.max_hp;
-          const { error: err2 } = await sb
-            .from("player_stats")
-            .upsert(payload, { onConflict: "user_id" });
-          if (!err2) {
-            dirty = false;
-            return;
-          }
-        } catch {}
-      }
-
-      console.error("menu.js player_stats upsert error:", error);
-      return;
-    }
-
-    dirty = false;
+    return ins.data;
   }
 
   // -------------------------
-  // GLOBAL API: window.SF
+  // REALTIME
   // -------------------------
-  function scheduleSave() {
-    dirty = true;
-    persistLocal();
-
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => saveToSupabase(false), 600);
-  }
-
-  function clamp(n, a, b) {
-    const x = Number(n);
-    if (Number.isNaN(x)) return a;
-    return Math.max(a, Math.min(b, x));
-  }
-
-  function recomputeLevelFromXp() {
-    const lvl = Number(state.level ?? 1);
-    const xp = Number(state.xp ?? 0);
-    const req = Math.max(100, lvl * 100);
-    if (xp >= req) {
-      const gained = Math.floor(xp / req);
-      state.level = lvl + gained;
-      state.xp = xp % req;
-    }
-  }
-
-  function setStats(patch, opts = {}) {
-    const { save = true, sync = true } = opts;
-
-    state = { ...state, ...patch, user_id: userId };
-
-    // sanity
-    state.level = Math.max(1, Number(state.level || 1));
-    state.money = Math.max(0, Number(state.money || 0));
-    state.cigarettes = Math.max(0, Number(state.cigarettes || 0));
-    state.xp = Math.max(0, Number(state.xp || 0));
-
-    // hp
-    state.max_hp = Math.max(1, Number(state.max_hp || 1000));
-    state.hp = clamp(state.hp ?? state.max_hp, 0, state.max_hp);
-
-    recomputeLevelFromXp();
-
-    if (sync) syncHud(state);
-    if (save) scheduleSave();
-  }
-
-  function getStats() {
-    return { ...state };
-  }
-
-  function addMoney(delta) {
-    setStats({ money: Number(state.money || 0) + Number(delta || 0) });
-  }
-
-  function addCigs(delta) {
-    setStats({ cigarettes: Number(state.cigarettes || 0) + Number(delta || 0) });
-  }
-
-  function addXp(delta) {
-    setStats({ xp: Number(state.xp || 0) + Number(delta || 0) });
-  }
-
-  function setHp(hp, maxHp) {
-    const patch = {};
-    if (typeof maxHp !== "undefined") patch.max_hp = Number(maxHp);
-    if (typeof hp !== "undefined") patch.hp = Number(hp);
-    setStats(patch);
-  }
-
-  async function loadRemote() {
+  function initRealtime(userId) {
+    const sb = window.SF.sb;
     if (!sb) return;
 
-    const st = await ensureMyStats();
-    if (!st) return;
-
-    // merge remote -> local (remote má prioritu)
-    state = { ...state, ...st, user_id: userId };
-
-    // doplň defaulty
-    state.level = Math.max(1, Number(state.level || 1));
-    state.xp = Math.max(0, Number(state.xp || 0));
-    state.money = Math.max(0, Number(state.money || 0));
-    state.cigarettes = Math.max(0, Number(state.cigarettes || 0));
-
-    if (typeof state.hp === "undefined") state.hp = DEFAULT_STATS.hp;
-    if (typeof state.max_hp === "undefined") state.max_hp = DEFAULT_STATS.max_hp;
-
-    persistLocal();
-    syncHud(state);
-  }
-
-  function wireRealtime() {
-    if (!sb || typeof sb.channel !== "function") return;
-    try {
-      const ch = sb
-        .channel(`sf_player_stats_${userId}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "player_stats", filter: `user_id=eq.${userId}` },
-          (payload) => {
-            const newRow = payload?.new;
-            if (!newRow) return;
-            state = { ...state, ...newRow, user_id: userId };
-            persistLocal();
-            syncHud(state);
-          }
-        )
-        .subscribe();
-      window.__sfRealtimeChannel = ch;
-    } catch (e) {
-      console.warn("menu.js realtime subscribe failed:", e);
+    // unsubscribe starého kanálu (kdyby reload skriptu)
+    if (window.SF._rt) {
+      try { sb.removeChannel(window.SF._rt); } catch {}
+      window.SF._rt = null;
     }
-  }
 
-  window.SF = {
-    userId,
-    sb,
-    supabaseClient: sb,
-    getStats,
-    setStats,
-    addMoney,
-    addXp,
-    addCigs,
-    setHp,
-    getPlayerClass,
-    setPlayerClass,
-    saveNow: () => saveToSupabase(true),
-    loadRemote
-  };
+    const ch = sb
+      .channel("sf-player-stats")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "player_stats",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          if (payload?.new) {
+            window.SF.stats = payload.new;
+            emitStats();
+          }
+        }
+      )
+      .subscribe();
+
+    window.SF._rt = ch;
+  }
 
   // -------------------------
   // BOOT
   // -------------------------
-  async function boot() {
-    wireNavClicks();
-    setActiveNav();
-    applyMenuRules();
-    syncHud(state);
+  window.SFReady = (async () => {
+    const sb = getSbClient();
+    if (!sb) {
+      console.error("❌ Supabase není načten. Přidej supabase-js před menu.js");
+      return null;
+    }
+    window.SF.sb = sb;
+    // kompatibilita se starými skripty (arena.js/guild.js/...) které čekají window.supabaseClient
+    window.supabaseClient = sb;
 
-    // ikona třídy u avataru
-    renderClassBadge();
+    const sess = await sb.auth.getSession();
+    const user = sess.data?.session?.user || null;
 
-    // remote load + realtime
-    await loadRemote();
-    wireRealtime();
+    if (!user) {
+      if (!isLoginPage()) location.href = LOGIN_PAGE;
+      return null;
+    }
 
-    // periodic autosave (když se něco změnilo a user rychle přepne stránku)
-    setInterval(() => saveToSupabase(false), 8000);
+    window.SF.user = user;
 
-    window.addEventListener("pagehide", () => {
-      // best effort
-      try { saveToSupabase(true); } catch {}
-    });
-  }
+    const row = await loadOrCreateStats(user.id);
+    // zajisti user_id vždy
+    window.SF.stats = { ...(row || {}), user_id: user.id };
+    emitStats();
 
-  document.addEventListener("DOMContentLoaded", boot);
+    initRealtime(user.id);
+
+    return window.SF;
+  })();
+
 })();

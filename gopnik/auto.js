@@ -1,9 +1,18 @@
-// ===== SUPABASE SETUP =====
-const SUPABASE_URL = 'https://bmmaijlbpwgzhrxzxphf.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbWFpamxicHdnemhyeHp4cGhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NjQ5MDcsImV4cCI6MjA4MjQ0MDkwN30.s0YQVnAjMXFu1pSI1NXZ2naSab179N0vQPglsmy3Pgw';
+// auto.js — používá globální init z menu.js (window.SF / window.supabaseClient)
+// ⚠️ ŽÁDNÉ vlastní createClient tady nevytváříme, aby nevznikaly sync/406 problémy.
 
-const { createClient } = supabase;
-const supabaseClient = window.supabaseClient || createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage}});
+function getSF() {
+  return window.SF || null;
+}
+
+async function waitForSF() {
+  if (window.SFReady && typeof window.SFReady.then === "function") {
+    await window.SFReady;
+  }
+  const SF = getSF();
+  if (!SF?.sb || !SF?.user?.id) throw new Error("SF není připravený (chybí menu.js nebo login).");
+  return SF;
+}
 
 // ===== BOSS DATA =====
 const BOSSES = [
@@ -149,65 +158,63 @@ function clampHp(v) {
 }
 
 // ===== SUPABASE FUNCTIONS =====
+// ===== SF (menu.js) FUNCTIONS =====
 async function initUser() {
-  try {
-    let userId = localStorage.getItem('slavFantasyUserId') || localStorage.getItem('user_id');
-    
-    if (!userId) {
-      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('slavFantasyUserId', userId);
+  const SF = await waitForSF();
+  const row = SF.stats || {};
+
+  gameState.userId = row.user_id || SF.user.id;
+  gameState.level = row.level ?? gameState.level;
+  gameState.stats = row.stats ?? gameState.stats;
+  gameState.equipped = row.equipped || {};
+  gameState.inventory = Array.isArray(row.inventory) ? row.inventory : (row.inventory || []);
+
+  const cryptaData = row.crypta_progress || { current: 0, defeated: [] };
+  gameState.currentCrypta = cryptaData.current || 0;
+  gameState.defeatedBosses = cryptaData.defeated || [];
+
+  // realtime update z menu.js
+  document.addEventListener("sf:stats", (e) => {
+    const s = e.detail || {};
+    const c = s.crypta_progress || {};
+    gameState.level = s.level ?? gameState.level;
+    gameState.stats = s.stats ?? gameState.stats;
+    gameState.equipped = s.equipped ?? gameState.equipped;
+    gameState.inventory = Array.isArray(s.inventory) ? s.inventory : gameState.inventory;
+    if (c && typeof c === "object") {
+      gameState.currentCrypta = c.current ?? gameState.currentCrypta;
+      gameState.defeatedBosses = Array.isArray(c.defeated) ? c.defeated : gameState.defeatedBosses;
     }
-    
-    gameState.userId = userId;
-    
-    const { data, error } = await supabaseClient
-      .from('player_stats')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (data) {
-      gameState.level = data.level || 1;
-      gameState.stats = data.stats || gameState.stats;
-      gameState.equipped = data.equipped || {};
-      gameState.inventory = data.inventory || [];
-      
-      const cryptaData = data.crypta_progress || { current: 0, defeated: [] };
-      gameState.currentCrypta = cryptaData.current || 0;
-      gameState.defeatedBosses = cryptaData.defeated || [];
-    }
-    
-    renderCrypta();
-    updateProgress();
-    
-  } catch (error) {
-    console.error('Error initializing user:', error);
-  }
+  });
+
+  renderCrypta();
+  updateProgress();
 }
+
 
 async function saveToSupabase() {
   try {
-    const payload = {
-      user_id: gameState.userId,
+    const SF = getSF();
+    if (!SF?.updateStats) return false;
+
+    const patch = {
+      user_id: SF.user?.id || gameState.userId,
       level: gameState.level,
       stats: gameState.stats,
       equipped: gameState.equipped,
       inventory: gameState.inventory,
       crypta_progress: {
         current: gameState.currentCrypta,
-        defeated: gameState.defeatedBosses
+        defeated: gameState.defeatedBosses,
       },
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabaseClient
-      .from('player_stats')
-      .upsert(payload, { onConflict: 'user_id' });
-
-    if (error) throw error;
-    
-  } catch (error) {
-    console.error('Error saving:', error);
+    SF.updateStats(patch, { merge: true });
+    return true;
+  } catch (e) {
+    console.error("Error saving (SF):", e);
+    return false;
   }
 }
 

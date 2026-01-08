@@ -30,12 +30,12 @@
     const lib = window.supabase;
     if (!lib?.createClient) return null;
 
-    const DEFAULT_URL = 'https://bmmaijlbpwgzhrxzxphf.supabase.co';
-    const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbWFpamxicHdnemhyeHp4cGhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NjQ5MDcsImV4cCI6MjA4MjQ0MDkwN30.s0YQVnAjMXFu1pSI1NXZ2naSab179N0vQPglsmy3Pgw';
+    const DEFAULT_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
+    const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbWFpamxicHdnemhyeHp4cGhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NjQ5MDcsImV4cCI6MjA4MjQ0MDkwN30.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
 
     const url = window.SUPABASE_URL || localStorage.getItem('SUPABASE_URL') || DEFAULT_URL;
     const key = window.SUPABASE_ANON_KEY || localStorage.getItem('SUPABASE_ANON_KEY') || DEFAULT_KEY;
-    window.supabaseClient = window.supabaseClient || lib.createClient(url, key, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage}});
+    window.supabaseClient = lib.createClient(url, key);
     return window.supabaseClient;
   }
 

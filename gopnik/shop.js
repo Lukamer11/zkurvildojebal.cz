@@ -1,9 +1,19 @@
-// ===== SUPABASE SETUP - OPRAVENO NA NOVÝ =====
-const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
+// shop.js — používá globální init z menu.js (window.SF / window.supabaseClient)
+// ⚠️ ŽÁDNÉ vlastní createClient tady nevytváříme, aby nevznikaly sync/406 problémy.
 
-const { createClient } = supabase;
-const supabaseClient = window.supabaseClient || createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage}});
+function getSF() {
+  // menu.js nastaví window.SFReady (Promise) + window.SF + window.supabaseClient
+  return window.SF || null;
+}
+
+async function waitForSF() {
+  if (window.SFReady && typeof window.SFReady.then === "function") {
+    await window.SFReady;
+  }
+  const SF = getSF();
+  if (!SF?.sb || !SF?.user?.id) throw new Error("SF není připravený (chybí menu.js nebo login).");
+  return SF;
+}
 
 // ===== CONSTANTS =====
 const INVENTORY_SIZE = 8;
@@ -176,69 +186,64 @@ function getTimeUntilNextRotation() {
 }
 
 // ===== SUPABASE FUNCTIONS =====
+// ===== SF (menu.js) FUNCTIONS =====
 async function initUser() {
-  try {
-    let userId = localStorage.getItem('user_id') || localStorage.getItem('slavFantasyUserId');
-    
-    if (!userId) {
-      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('slavFantasyUserId', userId);
-      localStorage.setItem('user_id', userId);
-    }
-    
-    gameState.userId = userId;
-    
-    console.log('🔄 Loading from Supabase for user:', userId);
-    
-    const { data, error } = await supabaseClient
-      .from('player_stats')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error loading from Supabase:', error);
-      throw error;
-    }
-    
-    if (data) {
-      gameState.level = data.level || 1;
-      gameState.xp = data.xp || 0;
-      gameState.money = data.money || 3170;
-      gameState.cigarettes = data.cigarettes || 42;
-      gameState.stats = data.stats || gameState.stats;
-      gameState.inventory = data.inventory || [];
-      gameState.equipped = data.equipped || gameState.equipped;
-      gameState.lastShopRotation = data.last_shop_rotation;
-      gameState.currentShopItems = data.current_shop_items || gameState.currentShopItems;
-      
-      console.log('✅ Loaded from Supabase:', data);
-      console.log('📦 Inventory:', gameState.inventory);
-    } else {
-      console.log('🆕 New user, rotating shop...');
-      rotateShopItems();
-      await saveToSupabase();
-    }
-    
-    if (shouldRotateShop()) {
-      rotateShopItems();
-      await saveToSupabase();
-      showNotification('🔄 Shop se obnovil!', 'success');
-    }
-    
-  } catch (error) {
-    console.error('❌ Error initializing user:', error);
-    showNotification('Chyba při načítání hry', 'error');
+  // Kompatibilita: původní kód čeká initUser() a pracuje s lokálním gameState.
+  const SF = await waitForSF();
+  const row = SF.stats || {};
+
+  // Načti z globálního stavu
+  gameState.userId = row.user_id || SF.user.id;
+  gameState.level = row.level ?? gameState.level;
+  gameState.xp = row.xp ?? gameState.xp;
+  gameState.money = row.money ?? gameState.money;
+  gameState.cigarettes = row.cigarettes ?? gameState.cigarettes;
+  gameState.stats = row.stats ?? gameState.stats;
+  gameState.inventory = Array.isArray(row.inventory) ? row.inventory : (row.inventory || []);
+  gameState.equipped = row.equipped || gameState.equipped;
+
+  gameState.lastShopRotation = row.last_shop_rotation ?? row.lastShopRotation ?? gameState.lastShopRotation;
+  gameState.currentShopItems = row.current_shop_items ?? row.currentShopItems ?? gameState.currentShopItems;
+
+  // Pokud ještě nejsou v DB shop itemy, vygeneruj je lokálně a ulož
+  if (!gameState.lastShopRotation || !gameState.currentShopItems) {
+    rotateShopItems();
+    await saveToSupabase();
   }
+
+  // Rotace dle času
+  if (shouldRotateShop()) {
+    rotateShopItems();
+    await saveToSupabase();
+    showNotification("🔄 Shop se obnovil!", "success");
+  }
+
+  // Když realtime (menu.js) přinese update, jenom to přemapuj do lokálního stavu
+  document.addEventListener("sf:stats", (e) => {
+    const s = e.detail || {};
+    // nepřepisuj shop lokální rotaci uprostřed animací, jen když přijde nové
+    gameState.level = s.level ?? gameState.level;
+    gameState.xp = s.xp ?? gameState.xp;
+    gameState.money = s.money ?? gameState.money;
+    gameState.cigarettes = s.cigarettes ?? gameState.cigarettes;
+    gameState.stats = s.stats ?? gameState.stats;
+    gameState.inventory = Array.isArray(s.inventory) ? s.inventory : (s.inventory || gameState.inventory);
+    gameState.equipped = s.equipped ?? gameState.equipped;
+    gameState.lastShopRotation = s.last_shop_rotation ?? gameState.lastShopRotation;
+    gameState.currentShopItems = s.current_shop_items ?? gameState.currentShopItems;
+  });
 }
 
-async function saveToSupabase() {
-  try {
-    console.log('💾 Ukládám do Supabase...');
-    console.log('📦 Inventory před uložením:', gameState.inventory);
 
-    const basePayload = {
-      user_id: gameState.userId,
+async function saveToSupabase() {
+  // Ukládání jde přes menu.js → window.SF.updateStats (debounced upsert).
+  try {
+    const SF = getSF();
+    if (!SF?.updateStats) return false;
+
+    const patch = {
+      // pozor: user_id musí být ID z auth, ne lokální random
+      user_id: SF.user?.id || gameState.userId,
       level: gameState.level,
       xp: gameState.xp,
       money: gameState.money,
@@ -246,46 +251,18 @@ async function saveToSupabase() {
       stats: gameState.stats,
       inventory: gameState.inventory,
       equipped: gameState.equipped,
+
+      // shop specifika
       last_shop_rotation: gameState.lastShopRotation,
       current_shop_items: gameState.currentShopItems,
-      updated_at: new Date().toISOString()
+
+      updated_at: new Date().toISOString(),
     };
 
-    let payload = { ...basePayload };
-
-    for (let attempts = 0; attempts < 6; attempts++) {
-      const { error } = await supabaseClient
-        .from('player_stats')
-        .upsert(payload, { onConflict: 'user_id' });
-
-      if (!error) {
-        console.log('✅ Saved to Supabase successfully');
-        return true;
-      }
-
-      const msg = String(error?.message || '');
-      console.error('❌ Supabase error:', error);
-      console.error('Error message:', msg);
-      
-      const match = msg.match(/Could not find the '([^']+)' column/);
-      if (error?.code === 'PGRST204' && match) {
-        const missing = match[1];
-        if (missing in payload) {
-          console.warn('Supabase: chybí sloupec, zahazuji z payloadu:', missing);
-          delete payload[missing];
-          continue;
-        }
-      }
-
-      throw error;
-    }
-
-    console.warn('Supabase: nepodařilo se uložit ani po ořezání payloadu.');
-    return false;
-  } catch (error) {
-    console.error('❌ Error saving to Supabase:', error);
-    console.error('Error details:', JSON.stringify(error, null, 2));
-    showNotification('Chyba ukládání do cloudu', 'error');
+    SF.updateStats(patch, { merge: true });
+    return true;
+  } catch (e) {
+    console.error("❌ saveToSupabase (SF) error:", e);
     return false;
   }
 }
@@ -873,12 +850,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   console.log('✅ Shop initialized!', gameState);
 });
-
-// ===== AUTO-SAVE =====
-setInterval(async () => {
-  await saveToSupabase();
-  console.log('💾 Auto-save completed');
-}, 30000);
 
 // ===== EXPOSE FOR HTML =====
 window.buyItem = buyItem;
