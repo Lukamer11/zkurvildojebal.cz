@@ -69,7 +69,7 @@
     return Math.floor(Math.random() * (b - a + 1)) + a;
   }
 
-   function computeMaxHpFromCore(core, cls) {
+    function computeMaxHpFromCore(core, cls) {
     // Vypočítej HP POUZE z base Constitution (bez equipment bonusů)
     const baseCon = Number(core.constitution ?? 0);
     const base = 500 + (baseCon * 25);
@@ -188,22 +188,30 @@
       level: Number(playerCore.level||1),
       _class: cls
     };
-        
-    playerMaxHp = computeMaxHpFromCore(playerCore, cls);
+
+    // ⚠️ NEPOUŽÍVEJ computeMaxHpFromCore - vezmi HP ze SF!
+    if (window.SF) {
+      const sfStats = window.SF.getStats();
+      playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || 500);
+      console.log('💚 Using maxHP from SF:', playerMaxHp);
+    } else {
+      playerMaxHp = computeMaxHpFromCore(playerCore, cls);
+      console.log('⚠️ SF not available, computed maxHP:', playerMaxHp);
+    }
     
     console.log('🔥 === RECOMPUTE PLAYER TOTALS ===');
     console.log('playerCore:', playerCore);
     console.log('equipBonus:', equipBonus);
     console.log('playerTotal:', playerTotal);
-    console.log('playerMaxHp (from BASE con only):', playerMaxHp);
+    console.log('playerMaxHp:', playerMaxHp);
     
     // UPDATE UI ELEMENTS
-     const statMap = {
+    const statMap = {
       pStr: playerTotal.strength,
       pDef: playerTotal.defense,
       pDex: playerTotal.dexterity,
       pInt: playerTotal.intelligence,
-      pCon: playerTotal.constitution,  // Zobraz total con v UI
+      pCon: playerTotal.constitution,
       pLuck: playerTotal.luck
     };
     
@@ -223,26 +231,37 @@
   
   function healPlayerToFull() {
     console.log('🏥 === HEAL PLAYER TO FULL ===');
-    recomputePlayerTotals();
     
-    playerCurrentHp = playerMaxHp;
-    
+    // ⚠️ KRITICKÁ ZMĚNA: Vezmi maxHP přímo ze SF, ne z vlastního výpočtu!
     if (window.SF) {
+      const sfStats = window.SF.getStats();
+      playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || 500);
+      playerCurrentHp = playerMaxHp;
+      
+      console.log('  💚 Using HP from SF:', playerCurrentHp, '/', playerMaxHp);
+      console.log('  📊 SF Stats:', sfStats);
+      
       window.SF.setHp(playerCurrentHp, playerMaxHp);
-      console.log('  💉 SF.setHp called:', playerCurrentHp, '/', playerMaxHp);
+    } else {
+      // Fallback pokud SF není k dispozici
+      const cls = (localStorage.getItem("sf_class") || "padouch").toLowerCase();
+      playerMaxHp = computeMaxHpFromCore(playerCore, cls);
+      playerCurrentHp = playerMaxHp;
+      
+      console.log('  ⚠️ SF not available, using computed HP:', playerCurrentHp, '/', playerMaxHp);
     }
     
     setBar(playerHealthFill, playerHealthText, playerCurrentHp, playerMaxHp);
     console.log('  💚 Health bar set:', playerCurrentHp, '/', playerMaxHp);
     
     if (playerLevelText) {
-      playerLevelText.textContent = `Level ${playerTotal.level}`;
-      console.log('  📊 Level text set:', playerTotal.level);
+      const level = window.SF ? window.SF.getStats().level : playerCore.level;
+      playerLevelText.textContent = `Level ${level}`;
+      console.log('  📊 Level text set:', level);
     }
     
     console.log('=============================');
   }
-
   function renderEnemy() {
     const e = enemies[enemyIndex % enemies.length];
     const clsPool = ["padouch","rvac","mozek"];
