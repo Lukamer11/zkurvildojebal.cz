@@ -279,6 +279,62 @@
     }
   }
 
+ // ===== RENDER EQUIPPED ITEMS =====
+  function renderEquippedItems() {
+    console.log('🎒 Renderuji vybavení...');
+    
+    // Projdi všechny sloty
+    const slots = ['weapon', 'shield', 'ring', 'backpack', 'helmet', 'armor', 'boots', 'gloves'];
+    
+    slots.forEach(slotName => {
+      const slotElement = document.querySelector(`[data-slot="${slotName}"]`);
+      if (!slotElement) return;
+      
+      const equippedItemId = gameState.equipped[slotName];
+      
+      if (equippedItemId) {
+        const item = getItemById(equippedItemId);
+        
+        if (item) {
+          // Přidej třídu has-item
+          slotElement.classList.add('has-item');
+          
+          // Skryj emoji
+          const emoji = slotElement.querySelector('.slot-emoji');
+          if (emoji) emoji.style.display = 'none';
+          
+          // Vyčisti předchozí obsah
+          let itemDisplay = slotElement.querySelector('.slot-item');
+          if (!itemDisplay) {
+            itemDisplay = document.createElement('div');
+            itemDisplay.className = 'slot-item';
+            slotElement.appendChild(itemDisplay);
+          }
+          
+          // Zobraz ikonu itemu
+          if (item.icon) {
+            itemDisplay.textContent = item.icon;
+          } else {
+            itemDisplay.textContent = '❓';
+          }
+          
+          console.log(`✅ Slot ${slotName}: ${item.name}`);
+        }
+      } else {
+        // Slot je prázdný - resetuj
+        slotElement.classList.remove('has-item');
+        
+        const emoji = slotElement.querySelector('.slot-emoji');
+        if (emoji) emoji.style.display = '';
+        
+        const itemDisplay = slotElement.querySelector('.slot-item');
+        if (itemDisplay) itemDisplay.remove();
+      }
+    });
+    
+    console.log('✅ Vybavení vykresleno');
+  }
+
   // ===== UPDATE UI =====
   function updateUI() {
     console.log('🔄 Aktualizuji UI...');
