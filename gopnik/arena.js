@@ -69,12 +69,17 @@
     return Math.floor(Math.random() * (b - a + 1)) + a;
   }
 
-  function computeMaxHpFromCore(core, cls) {
-    const base = 500 + (Number(core.constitution ?? 0) * 25);
+   function computeMaxHpFromCore(core, cls) {
+    // Vypočítej HP POUZE z base Constitution (bez equipment bonusů)
+    const baseCon = Number(core.constitution ?? 0);
+    const base = 500 + (baseCon * 25);
     let maxHp = clampHp(base);
+    
+    // Aplikuj class modifikátory
     if (cls === "rvac") maxHp = clampHp(maxHp * 1.25);
     if (cls === "mozek") maxHp = clampHp(maxHp * 0.8);
-    console.log(`💪 computeMaxHpFromCore: con=${core.constitution}, cls=${cls}, maxHp=${maxHp}`);
+    
+    console.log(`💪 computeMaxHpFromCore: baseCon=${baseCon}, cls=${cls}, maxHp=${maxHp}`);
     return Math.max(1, maxHp);
   }
 
@@ -109,6 +114,7 @@
     const cls = (window.SF?.getPlayerClass ? window.SF.getPlayerClass() : (localStorage.getItem("sf_class") || "padouch")).toLowerCase();
     const equipBonus = calcEquipBonuses(playerEquipped);
     
+    // Total stats = base + equipment bonuses
     playerTotal = {
       strength: Number(playerCore.strength||0) + Number(equipBonus.strength||0),
       defense: Number(playerCore.defense||0) + Number(equipBonus.defense||0),
@@ -119,22 +125,22 @@
       level: Number(playerCore.level||1),
       _class: cls
     };
-
-    playerMaxHp = computeMaxHpFromCore(playerTotal, cls);
+        
+    playerMaxHp = computeMaxHpFromCore(playerCore, cls);
     
     console.log('🔥 === RECOMPUTE PLAYER TOTALS ===');
     console.log('playerCore:', playerCore);
     console.log('equipBonus:', equipBonus);
     console.log('playerTotal:', playerTotal);
-    console.log('playerMaxHp:', playerMaxHp);
+    console.log('playerMaxHp (from BASE con only):', playerMaxHp);
     
     // UPDATE UI ELEMENTS
-    const statMap = {
+     const statMap = {
       pStr: playerTotal.strength,
       pDef: playerTotal.defense,
       pDex: playerTotal.dexterity,
       pInt: playerTotal.intelligence,
-      pCon: playerTotal.constitution,
+      pCon: playerTotal.constitution,  // Zobraz total con v UI
       pLuck: playerTotal.luck
     };
     
@@ -151,7 +157,7 @@
 
     console.log('=================================');
   }
-
+  
   function healPlayerToFull() {
     console.log('🏥 === HEAL PLAYER TO FULL ===');
     recomputePlayerTotals();
