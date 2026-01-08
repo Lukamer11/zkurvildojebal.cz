@@ -83,6 +83,69 @@
     return Math.max(1, maxHp);
   }
 
+// ===== PŘIDEJ NOVOU FUNKCI pro synchronizaci měny =====
+  function syncCurrencyUI() {
+    console.log('💰 === SYNC CURRENCY UI ===');
+    
+    if (!window.SF) {
+      console.warn('⚠️ SF not available');
+      return;
+    }
+    
+    const stats = window.SF.getStats();
+    console.log('📊 Stats from SF:', stats);
+    
+    const moneyEl = document.getElementById('money');
+    const cigarettesEl = document.getElementById('cigarettes');
+    const energyEl = document.getElementById('energy');
+    
+    if (moneyEl) {
+      moneyEl.textContent = Number(stats.money || 0).toLocaleString('cs-CZ');
+      console.log('  💵 Money:', stats.money);
+    }
+    
+    if (cigarettesEl) {
+      cigarettesEl.textContent = String(stats.cigarettes || 0);
+      console.log('  🚬 Cigarettes:', stats.cigarettes);
+    }
+    
+    if (energyEl) {
+      energyEl.textContent = String(stats.energy || 0);
+      console.log('  ⚡ Energy:', stats.energy);
+    }
+    
+    // Update XP bar
+    const xpFill = document.getElementById('xpFill');
+    const xpText = document.getElementById('xpText');
+    
+    if (xpFill && xpText) {
+      const xp = stats.xp || 0;
+      const level = stats.level || 1;
+      const requiredXP = Math.floor(100 * Math.pow(1.5, level - 1));
+      const xpPercent = (xp / requiredXP) * 100;
+      
+      xpFill.style.width = `${xpPercent}%`;
+      xpText.textContent = `${xp} / ${requiredXP}`;
+      console.log('  📈 XP:', xp, '/', requiredXP);
+    }
+    
+    // Update energy bar
+    const energyFill = document.getElementById('energyFill');
+    const energyText = document.getElementById('energyText');
+    
+    if (energyFill && energyText) {
+      const energy = stats.energy || 0;
+      const maxEnergy = stats.max_energy || 100;
+      const energyPercent = (energy / maxEnergy) * 100;
+      
+      energyFill.style.width = `${energyPercent}%`;
+      energyText.textContent = `${energy} / ${maxEnergy}`;
+      console.log('  ⚡ Energy bar:', energy, '/', maxEnergy);
+    }
+    
+    console.log('===========================');
+  }  
+  
   function getAllItems() {
     if (!window.SHOP_ITEMS) return [];
     return [
@@ -624,7 +687,7 @@
     badge.title = m.label;
   }
 
-  function boot() {
+   function boot() {
     console.log('🚀 === ARENA BOOT ===');
     
     hydratePlayerFromPostava().finally(() => {
@@ -632,6 +695,10 @@
       renderClassBadgeOnAvatar();
       healPlayerToFull();
       renderEnemy();
+      
+      // ⭐ PŘIDEJ TOTO:
+      syncCurrencyUI();
+      
       console.log('✅ Boot complete!');
     });
 
@@ -645,6 +712,5 @@
       });
     }
   }
-
   document.addEventListener("DOMContentLoaded", boot);
 })();
