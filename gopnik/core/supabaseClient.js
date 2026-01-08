@@ -14,7 +14,7 @@ export function getSupabase() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storage: window.sessionStorage
+        storage: window.localStorage
       }
     });
     console.log("🟢 Supabase singleton ready");

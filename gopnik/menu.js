@@ -33,11 +33,114 @@
     if (!lib || typeof lib.createClient !== "function") return null;
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
 
-    window.supabaseClient = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.supabaseClient = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage }
+    });
     return window.supabaseClient;
   }
 
   const sb = getSbClient();
+
+  // -------------------------
+  // SF (globální) API pro ostatní stránky
+  // -------------------------
+  window.SF = window.SF || {};
+  window.SF.sb = sb;
+
+  // Promise, na kterou se můžou ostatní skripty navázat (jistota, že známe usera + máme načtené stats)
+  window.SFReady = window.SFReady || (async () => {
+    try {
+      // ulož URL/KEY, ať to máš i po reloadu
+      if (SUPABASE_URL) localStorage.setItem("SUPABASE_URL", SUPABASE_URL);
+      if (SUPABASE_ANON_KEY) localStorage.setItem("SUPABASE_ANON_KEY", SUPABASE_ANON_KEY);
+
+      // session
+      if (!sb || !sb.auth) return null;
+      const { data: sessData } = await sb.auth.getSession();
+      const user = sessData?.session?.user || null;
+
+      const isLogin = /login\.html$/i.test(location.pathname) || /login/i.test(location.pathname);
+      if (!user && !isLogin) {
+        location.href = "login.html";
+        return null;
+      }
+
+      window.SF.user = user;
+      window.SF.userId = user?.id || null;
+
+      // cache klíč per-user
+      const cacheKey = user?.id ? `sf_stats_${user.id}` : "sf_stats_anon";
+      window.SF.cacheKey = cacheKey;
+
+      // rychlá cache -> do UI
+      const cachedRaw = localStorage.getItem(cacheKey);
+      if (cachedRaw) {
+        try { window.SF.stats = JSON.parse(cachedRaw); } catch {}
+      }
+
+      // fresh load z DB
+      if (user?.id) {
+        const { data: row } = await sb.from("player_stats").select("*").eq("user_id", user.id).single();
+        if (row) {
+          window.SF.stats = row;
+          localStorage.setItem(cacheKey, JSON.stringify(row));
+        }
+      }
+
+      // realtime (pokud existuje core/realtime.js)
+      // menu.js je non-module, ale můžeme spoléhat na supabase realtime kanál přímo:
+      if (user?.id && sb?.channel) {
+        sb.channel("player_stats:"+user.id)
+          .on("postgres_changes",
+            { event:"*", schema:"public", table:"player_stats", filter:`user_id=eq.${user.id}`},
+            payload => {
+              if (payload?.new) {
+                window.SF.stats = { ...(window.SF.stats||{}), ...payload.new };
+                localStorage.setItem(cacheKey, JSON.stringify(window.SF.stats));
+                document.dispatchEvent(new CustomEvent("sf:stats", { detail: window.SF.stats }));
+              }
+            }
+          ).subscribe();
+      }
+
+      // sync mezi taby/stránkami přes localStorage
+      window.addEventListener("storage", (e) => {
+        if (e.key === cacheKey && e.newValue) {
+          try {
+            const next = JSON.parse(e.newValue);
+            window.SF.stats = next;
+            document.dispatchEvent(new CustomEvent("sf:stats", { detail: next }));
+          } catch {}
+        }
+      });
+
+      // helper na update + persist (debounce)
+      let persistT = null;
+      window.SF.updateStats = (patch, delayMs = 250) => {
+        window.SF.stats = { ...(window.SF.stats||{}), ...(patch||{}) };
+        localStorage.setItem(cacheKey, JSON.stringify(window.SF.stats));
+        document.dispatchEvent(new CustomEvent("sf:stats", { detail: window.SF.stats }));
+
+        if (!user?.id) return;
+        clearTimeout(persistT);
+        persistT = setTimeout(async () => {
+          try {
+            const payload = { ...window.SF.stats, user_id: user.id };
+            const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
+            if (error) console.warn("SF upsert error:", error);
+          } catch (err) {
+            console.warn("SF persist exception:", err);
+          }
+        }, delayMs);
+      };
+
+      return { user };
+    } catch (e) {
+      console.warn("SFReady init failed:", e);
+      return null;
+    }
+  })();
+
 
   // -------------------------
   // DOM (HUD)

@@ -35,7 +35,7 @@
 
     const url = window.SUPABASE_URL || localStorage.getItem('SUPABASE_URL') || DEFAULT_URL;
     const key = window.SUPABASE_ANON_KEY || localStorage.getItem('SUPABASE_ANON_KEY') || DEFAULT_KEY;
-    window.supabaseClient = lib.createClient(url, key);
+    window.supabaseClient = window.supabaseClient || lib.createClient(url, key, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage}});
     return window.supabaseClient;
   }
 
