@@ -41,9 +41,9 @@
   // -------------------------
   // KONFIG (můžeš přepsat přes window.* nebo localStorage)
   // -------------------------
-  const DEFAULT_SUPABASE_URL = "https://jbfvoxlcociwtyobaotz.supabase.co";
+  const DEFAULT_SUPABASE_URL = "https://wngzgptxrgfrwuyiyueu.supabase.co";
   const DEFAULT_SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No";
 
   const SUPABASE_URL =
     window.SUPABASE_URL ||
@@ -133,10 +133,10 @@
 
     return lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
+        persistSession: true,
+        autoRefreshToken: true,
         detectSessionInUrl: false,
-        storage: makeMemoryStorage(),
+        storage: window.sessionStorage,
       },
     });
   }
@@ -289,8 +289,6 @@
 
     // vynutit ruční login (žádná uložená session)
     clearSupabaseAuthStorage();
-    try { await sb.auth.signOut(); } catch {}
-
     // kompatibilita se starými skripty (arena.js/guild.js/...) které čekají window.supabaseClient
     window.supabaseClient = sb;
 
