@@ -110,12 +110,12 @@
 
       const { data, error } = await sb
         .from("player_stats")
-        .select("level, xp, money, hp, hp_max, strength, endurance, agility")
+        .select("level, xp, money, cigarettes, energy, max_energy")
         .eq("user_id", currentUserId)
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('❌ Supabase error:', error);
         return;
       }
@@ -129,26 +129,14 @@
 
       myStats = {
         level: clampVal(data.level, 1, 9999),
-        // DB uses 'exp' (not 'xp')
-        xp: clampVal(data.xp ?? 0, 0, 999999999),
-        money: clampVal(data.money ?? 0, 0, 999999999),
+        xp: clampVal(data.xp, 0, 999999999),
+        money: clampVal(data.money, 0, 999999999),
+        cigarettes: clampVal(data.cigarettes, 0, 999999),
+        energy: clampVal(data.energy, 0, 1000),
+        max_energy: clampVal(data.max_energy, 100, 1000)};
 
-        // DB has hp + hp_max
-        hp: clampVal(data.hp ?? 0, 0, 9999999),
-        max_hp: clampVal(data.hp_max ?? 0, 0, 9999999),
-
-        // Schema A doesn't have these columns yet -> keep UI stable with defaults
-        cigarettes: clampVal(data.cigarettes ?? 0, 0, 999999),
-        energy: clampVal(data.energy ?? 0, 0, 1000),
-        max_energy: clampVal(data.max_energy ?? 100, 1, 1000),
-
-        // Extra combat stats (used in detail view fallback)
-        strength: clampVal(data.strength ?? 0, 0, 9999),
-        endurance: clampVal(data.endurance ?? 0, 0, 9999),
-        agility: clampVal(data.agility ?? 0, 0, 9999)
-      };
-
-updateHUD();
+      console.log('✅ My stats loaded:', myStats);
+      updateHUD();
       console.log('======================================');
     } catch (err) {
       console.error('❌ Error in loadMyStats:', err);
@@ -181,7 +169,7 @@ updateHUD();
     
     // XP bar
     const requiredXP = Math.floor(100 * Math.pow(1.5, myStats.level - 1));
-    const xpPercent = Math.min((myStats.exp / requiredXP) * 100, 100);
+    const xpPercent = Math.min((myStats.xp / requiredXP) * 100, 100);
     
     const xpFill = document.getElementById('xpFill');
     const xpText = document.getElementById('xpText');
@@ -191,7 +179,7 @@ updateHUD();
       console.log('  ✅ XP bar: ', xpPercent.toFixed(1) + '%');
     }
     if (xpText) {
-      xpText.textContent = `${fmtInt(myStats.exp)} / ${fmtInt(requiredXP)}`;
+      xpText.textContent = `${fmtInt(myStats.xp)} / ${fmtInt(requiredXP)}`;
     }
     
     // Energy bar
@@ -233,7 +221,7 @@ updateHUD();
 
       let query = sb
         .from('player_stats')
-        .select('user_id, level, xp, money, hp, hp_max, strength, endurance, agility');
+        .select('user_id, level, xp, money');
       
       if (type === 'level') {
         query = query.order('level', { ascending: false })
@@ -255,7 +243,7 @@ updateHUD();
       const sanitizedData = (data || []).map(player => ({
         user_id: String(player.user_id || '').substring(0, 50),
         level: clampVal(player.level, 1, 9999),
-        xp: clampVal(player.exp, 0, 999999999),
+        xp: clampVal(player.xp, 0, 999999999),
         money: clampVal(player.money, 0, 999999999)
       }));
       
@@ -311,10 +299,10 @@ updateHUD();
       let scoreValue = '';
       
       if (type === 'level') {
-        statsLine = `Level ${player.level} • XP ${fmtInt(player.exp)}`;
+        statsLine = `Level ${player.level} • XP ${fmtInt(player.xp)}`;
         scoreValue = player.level;
       } else {
-        statsLine = `Level ${player.level} • XP ${fmtInt(player.exp)}`;
+        statsLine = `Level ${player.level} • XP ${fmtInt(player.xp)}`;
         scoreValue = `${fmtInt(player.money)}₽`;
       }
       
@@ -379,9 +367,6 @@ updateHUD();
       console.log('📦 Player data:', data);
       
       const playerData = data || player;
-      // Aliases for schema differences
-            if (playerData && playerData.hp_max != null && playerData.max_hp == null) playerData.max_hp = playerData.hp_max;
-
       
       // Update player name
       const isMe = playerData.user_id === currentUserId;
@@ -393,10 +378,9 @@ updateHUD();
       
       // Update stats
       const stats = playerData.stats || {
-        // Fallback for Schema A (columns on player_stats)
-        strength: Number(playerData.strength ?? 0),
-        defense: Number(playerData.endurance ?? 0),
-        dexterity: Number(playerData.agility ?? 0),
+        strength: 0,
+        defense: 0,
+        dexterity: 0,
         intelligence: 0,
         constitution: 0,
         luck: 0
