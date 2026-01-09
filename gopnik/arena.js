@@ -546,7 +546,7 @@
 
       if (playerCurrentHp <= 0 || enemyCurHp <= 0) {
         const win = enemyCurHp <= 0 && playerCurrentHp > 0;
-        endFight(win, playerCurrentHp, playerMaxHp, enemyLvl);
+        await endFight(win, playerCurrentHp, playerMaxHp, enemyLvl);
         return;
       }
 
@@ -560,14 +560,14 @@
 
       if (playerCurrentHp <= 0 || enemyCurHp <= 0) {
         const win = enemyCurHp <= 0 && playerCurrentHp > 0;
-        endFight(win, playerCurrentHp, playerMaxHp, enemyLvl);
+        await endFight(win, playerCurrentHp, playerMaxHp, enemyLvl);
         return;
       }
 
       setTimeout(step, 1800);
     };
 
-    const endFight = (win, playerHpEnd, playerMaxEnd, enemyLvlEnd) => {
+    const endFight = async (win, playerHpEnd, playerMaxEnd, enemyLvlEnd) => {
       try { window.SF.setHp(playerHpEnd, playerMaxEnd); } catch {}
 
       const hasMissionRewards = window.missionRewards && window.missionName;
