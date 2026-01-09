@@ -28,6 +28,39 @@
     }
   }
 
+  // Safe setter pro HP (kompatibilita: různé verze SF)
+  function sfSetHpSync(hp, hpMax) {
+    try {
+      const SF = window.SF;
+      if (!SF) return false;
+
+      if (typeof SF.setHp === 'function') { SF.setHp(hp, hpMax); return true; }
+      if (SF.actions && typeof SF.actions.setHp === 'function') { SF.actions.setHp(hp, hpMax); return true; }
+
+      // fallback: zapis do běžných míst, pokud existují
+      if (SF.stats && typeof SF.stats === 'object') {
+        if (typeof SF.stats.hp === 'number' || SF.stats.hp === undefined) SF.stats.hp = hp;
+        if (typeof SF.stats.hp_max === 'number' || SF.stats.hp_max === undefined) SF.stats.hp_max = hpMax;
+        return true;
+      }
+      if (SF.playerStats && typeof SF.playerStats === 'object') {
+        SF.playerStats.hp = hp;
+        SF.playerStats.hp_max = hpMax;
+        return true;
+      }
+      if (SF.state && SF.state.stats && typeof SF.state.stats === 'object') {
+        SF.state.stats.hp = hp;
+        SF.state.stats.hp_max = hpMax;
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.warn('⚠️ sfSetHpSync failed:', e);
+      return false;
+    }
+  }
+
+
 const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
 
@@ -72,6 +105,11 @@ const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
   let playerEquipped = null;
   let playerTotal = { ...playerCore };
   let playerMaxHp = 500;
+
+  let playerHpFromDb = false; // true if hp/hp_max loaded from DB (Postava)
+  let playerHpDb = { hp: null, hp_max: null };
+
+  
   let playerCurrentHp = 500;
 
   function fmtInt(n) {
@@ -206,6 +244,11 @@ const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
   function recomputePlayerTotals() {
     const cls = (window.SF?.getPlayerClass ? window.SF.getPlayerClass() : (localStorage.getItem("sf_class") || "padouch")).toLowerCase();
     const equipBonus = calcEquipBonuses(playerEquipped);
+
+    // HP: if Postava/DB provided hp_max, keep it as the source of truth
+    if (playerHpFromDb && playerHpDb?.hp_max) {
+      playerMaxHp = clampHp(playerHpDb.hp_max);
+    }
     
     // Total stats = base + equipment bonuses
     playerTotal = {
@@ -223,16 +266,18 @@ const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
     if (window.SF) {
       const sfStats = sfGetStatsSync();
       if (sfStats) {
-        playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || 500);
+        if (!(playerHpFromDb && playerHpDb?.hp_max)) {
+          playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || 500);
+        }
         console.log('💚 Using maxHP from SF:', playerMaxHp);
         console.log('📊 SF Stats:', sfStats);
       } else {
         console.warn('⚠️ SF present but stats API missing; falling back to computed HP');
-        playerMaxHp = computeMaxHpFromCore(playerCore, cls);
+        if (!(playerHpFromDb && playerHpDb?.hp_max)) playerMaxHp = computeMaxHpFromCore(playerCore, cls);
         console.log('💚 Using computed maxHP:', playerMaxHp);
       }
     } else {
-      playerMaxHp = computeMaxHpFromCore(playerCore, cls);
+      if (!(playerHpFromDb && playerHpDb?.hp_max)) playerMaxHp = computeMaxHpFromCore(playerCore, cls);
       console.log('⚠️ SF not available, computed maxHP:', playerMaxHp);
     }
     console.log('🔥 === RECOMPUTE PLAYER TOTALS ===');
@@ -279,8 +324,10 @@ const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
       console.log('  ⚠️ SF stats missing, using computed maxHP:', playerMaxHp);
     }
 
-    playerCurrentHp = playerMaxHp;
-    try { window.SF?.setHp?.(playerCurrentHp, playerMaxHp); } catch (e) { console.warn('⚠️ SF.setHp failed:', e); }
+    // Don't blindly heal to full here; keep current HP (Postava source of truth if available)
+    if (!Number.isFinite(playerCurrentHp) || playerCurrentHp <= 0) playerCurrentHp = playerMaxHp;
+    playerCurrentHp = Math.min(clampHp(playerCurrentHp), playerMaxHp);
+    try { sfSetHpSync(playerCurrentHp, playerMaxHp); } catch (e) { console.warn('⚠️ SF.setHp failed:', e); }
     setBar(playerHealthFill, playerHealthText, playerCurrentHp, playerMaxHp);
   }
   function renderEnemy() {
@@ -539,7 +586,7 @@ const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
         playerMaxHp
       );
       playerCurrentHp = playerObj.hp;
-      if (window.SF) window.SF.setHp(playerCurrentHp, playerMaxHp);
+      sfSetHpSync(playerCurrentHp, playerMaxHp);
     }
   }
 
@@ -589,7 +636,7 @@ const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
     };
 
     const endFight = async (win, playerHpEnd, playerMaxEnd, enemyLvlEnd) => {
-      try { window.SF.setHp(playerHpEnd, playerMaxEnd); } catch {}
+      try { sfSetHpSync(playerHpEnd, playerMaxEnd); } catch {}
 
       const hasMissionRewards = window.missionRewards && window.missionName;
       let reward, loss;
@@ -675,6 +722,22 @@ const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
       console.log('📊 Stats from DB:', row.stats);
 
       const st = row.stats || {};
+      // --- HP sync (match Postava) ---
+      const dbHpMax = (row.hp_max ?? row.hpMax ?? st.hp_max ?? st.max_hp ?? st.maxHp);
+      const dbHpCur = (row.hp ?? row.hp_current ?? row.hpCur ?? st.hp ?? st.hp_current ?? st.current_hp);
+      if (dbHpMax != null) {
+        playerHpFromDb = true;
+        playerHpDb.hp_max = clampHp(dbHpMax);
+        playerHpDb.hp = clampHp(dbHpCur != null ? dbHpCur : dbHpMax);
+        playerMaxHp = playerHpDb.hp_max;
+        playerCurrentHp = Math.min(playerHpDb.hp, playerMaxHp);
+        console.log('❤️ HP loaded from DB:', { hp: playerCurrentHp, hp_max: playerMaxHp });
+      } else {
+        playerHpFromDb = false;
+        playerHpDb = { hp: null, hp_max: null };
+        console.log('ℹ️ No hp_max in DB row; HP will be computed.');
+      }
+
       
       playerCore = {
         strength: Number(st.strength ?? 18),
