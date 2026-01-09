@@ -1010,20 +1010,14 @@
     }
   }
 
-  // ====== INITIALIZATION ======
+   // ====== INITIALIZATION ======
   const manager = new GuildManager();
-  
-  document.addEventListener('DOMContentLoaded', () => {
-    manager.init();
-  });
 
-  // Pokud je DOM již načten
-  if (document.readyState === 'loading') {
-    // Čeká na DOMContentLoaded
+  // Spusť init přesně jednou:
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => manager.init(), { once: true });
   } else {
-    // DOM už je načten
     manager.init();
   }
 
-})();</h3>
-          <div style="display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding
+})();
