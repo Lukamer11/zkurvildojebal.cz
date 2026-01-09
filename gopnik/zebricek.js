@@ -2,8 +2,8 @@
 (() => {
   "use strict";
 
-  const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
+  const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
 
   // ===== GAME STATE =====
   let currentUserId = null;
@@ -110,10 +110,10 @@
 
       const { data, error } = await sb
         .from("player_stats")
-        .select("level, xp, money, cigarettes, energy, max_energy, hp, max_hp")
+        .select("level, exp, money, hp, hp_max, strength, endurance, agility")
         .eq("user_id", currentUserId)
         .limit(1)
-        .maybeSingle();
+        .single();
 
       if (error && error.code !== 'PGRST116') {
         console.error('❌ Supabase error:', error);
@@ -129,17 +129,26 @@
 
       myStats = {
         level: clampVal(data.level, 1, 9999),
-        xp: clampVal(data.xp, 0, 999999999),
-        money: clampVal(data.money, 0, 999999999),
-        cigarettes: clampVal(data.cigarettes, 0, 999999),
-        energy: clampVal(data.energy, 0, 1000),
-        max_energy: clampVal(data.max_energy, 100, 1000),
-        hp: clampVal(data.hp, 0, 99999),
-        max_hp: clampVal(data.max_hp, 1, 99999)
+        // DB uses 'exp' (not 'xp')
+        xp: clampVal(data.exp ?? 0, 0, 999999999),
+        money: clampVal(data.money ?? 0, 0, 999999999),
+
+        // DB has hp + hp_max
+        hp: clampVal(data.hp ?? 0, 0, 9999999),
+        max_hp: clampVal(data.hp_max ?? 0, 0, 9999999),
+
+        // Schema A doesn't have these columns yet -> keep UI stable with defaults
+        cigarettes: clampVal(data.cigarettes ?? 0, 0, 999999),
+        energy: clampVal(data.energy ?? 0, 0, 1000),
+        max_energy: clampVal(data.max_energy ?? 100, 1, 1000),
+
+        // Extra combat stats (used in detail view fallback)
+        strength: clampVal(data.strength ?? 0, 0, 9999),
+        endurance: clampVal(data.endurance ?? 0, 0, 9999),
+        agility: clampVal(data.agility ?? 0, 0, 9999)
       };
 
-      console.log('✅ My stats loaded:', myStats);
-      updateHUD();
+updateHUD();
       console.log('======================================');
     } catch (err) {
       console.error('❌ Error in loadMyStats:', err);
@@ -172,7 +181,7 @@
     
     // XP bar
     const requiredXP = Math.floor(100 * Math.pow(1.5, myStats.level - 1));
-    const xpPercent = Math.min((myStats.xp / requiredXP) * 100, 100);
+    const xpPercent = Math.min((myStats.exp / requiredXP) * 100, 100);
     
     const xpFill = document.getElementById('xpFill');
     const xpText = document.getElementById('xpText');
@@ -182,7 +191,7 @@
       console.log('  ✅ XP bar: ', xpPercent.toFixed(1) + '%');
     }
     if (xpText) {
-      xpText.textContent = `${fmtInt(myStats.xp)} / ${fmtInt(requiredXP)}`;
+      xpText.textContent = `${fmtInt(myStats.exp)} / ${fmtInt(requiredXP)}`;
     }
     
     // Energy bar
@@ -224,11 +233,11 @@
 
       let query = sb
         .from('player_stats')
-        .select('user_id, level, xp, money');
+        .select('user_id, level, exp, money, hp, hp_max, strength, endurance, agility');
       
       if (type === 'level') {
         query = query.order('level', { ascending: false })
-                     .order('xp', { ascending: false });
+                     .order('exp', { ascending: false });
       } else if (type === 'wealth') {
         query = query.order('money', { ascending: false });
       }
@@ -246,7 +255,7 @@
       const sanitizedData = (data || []).map(player => ({
         user_id: String(player.user_id || '').substring(0, 50),
         level: clampVal(player.level, 1, 9999),
-        xp: clampVal(player.xp, 0, 999999999),
+        xp: clampVal(player.exp, 0, 999999999),
         money: clampVal(player.money, 0, 999999999)
       }));
       
@@ -302,10 +311,10 @@
       let scoreValue = '';
       
       if (type === 'level') {
-        statsLine = `Level ${player.level} • XP ${fmtInt(player.xp)}`;
+        statsLine = `Level ${player.level} • XP ${fmtInt(player.exp)}`;
         scoreValue = player.level;
       } else {
-        statsLine = `Level ${player.level} • XP ${fmtInt(player.xp)}`;
+        statsLine = `Level ${player.level} • XP ${fmtInt(player.exp)}`;
         scoreValue = `${fmtInt(player.money)}₽`;
       }
       
@@ -370,6 +379,10 @@
       console.log('📦 Player data:', data);
       
       const playerData = data || player;
+      // Aliases for schema differences
+      if (playerData && playerData.exp != null && playerData.xp == null) playerData.xp = playerData.exp;
+      if (playerData && playerData.hp_max != null && playerData.max_hp == null) playerData.max_hp = playerData.hp_max;
+
       
       // Update player name
       const isMe = playerData.user_id === currentUserId;
@@ -381,9 +394,10 @@
       
       // Update stats
       const stats = playerData.stats || {
-        strength: 0,
-        defense: 0,
-        dexterity: 0,
+        // Fallback for Schema A (columns on player_stats)
+        strength: Number(playerData.strength ?? 0),
+        defense: Number(playerData.endurance ?? 0),
+        dexterity: Number(playerData.agility ?? 0),
         intelligence: 0,
         constitution: 0,
         luck: 0
