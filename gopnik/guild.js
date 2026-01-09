@@ -87,6 +87,50 @@ static hideLoading() {
   if (loading) loading.style.display = 'none';
 }
 
+// ====== UI MANAGER ======
+class UI {
+  static showLoading() {
+    const loading = document.getElementById('loadingScreen');
+    const welcome  = document.getElementById('welcomeScreen');
+    const browser  = document.getElementById('guildBrowser');
+    const myGuild  = document.getElementById('myGuildView');
+
+    if (loading) loading.style.display = 'flex';
+    if (welcome) welcome.style.display = 'none';
+    if (browser) browser.style.display = 'none';
+    if (myGuild) myGuild.style.display = 'none';
+  }
+
+  static hideLoading() {
+    const loading = document.getElementById('loadingScreen');
+    if (loading) loading.style.display = 'none';
+  }
+
+  static showModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('show');
+  }
+
+  static hideModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  }
+
+  static toast(text, type = 'ok', timeout = 3000) {
+    const toast = document.createElement('div');
+    toast.className = `guild-toast ${type}`;
+    toast.textContent = text;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.remove(), timeout);
+  }
+
+  static formatNumber(num) {
+    return Number(num || 0).toLocaleString('cs-CZ');
+  }
+}
+  
+  
   // ====== SUPABASE MANAGER ======
   class SupabaseManager {
     static async init() {
