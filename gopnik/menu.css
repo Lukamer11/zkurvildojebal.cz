@@ -396,6 +396,3 @@ body{ font-size: calc(16px * var(--uiScale)); }
 .currency-line{ font-size: calc(14px * var(--uiScale)); }
 .currency-line b{ font-size: calc(16px * var(--uiScale)); }
 
-@media screen and (orientation: landscape) {
-  body::before{content:"Otoč telefon na výšku 📱";position:fixed;inset:0;background:rgba(0,0,0,.92);color:#fff;display:flex;align-items:center;justify-content:center;z-index:999999;font-size:22px;text-align:center;padding:20px;}
-}
