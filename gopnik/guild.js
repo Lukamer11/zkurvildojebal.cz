@@ -69,41 +69,23 @@
     }
   }
 
-  // ====== UI UTILS ======
-  class UI {
-    static toast(msg, type = 'ok') {
-      const toast = document.createElement('div');
-      toast.className = `guild-toast ${type}`;
-      toast.textContent = msg;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
+  static showLoading() {
+  const loading = document.getElementById('loadingScreen');
+  const welcome  = document.getElementById('welcomeScreen');
+  const browser  = document.getElementById('guildBrowser');
+  const myGuild  = document.getElementById('myGuildView');
 
-    static showModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.classList.add('show');
-    }
+  // Když nemáš loadingScreen v HTML, nespadni – jen skryj ostatní view
+  if (loading) loading.style.display = 'flex';
+  if (welcome) welcome.style.display = 'none';
+  if (browser) browser.style.display = 'none';
+  if (myGuild) myGuild.style.display = 'none';
+}
 
-    static hideModal(id) {
-      const modal = document.getElementById(id);
-      if (modal) modal.classList.remove('show');
-    }
-
-    static formatNumber(num) {
-      return num.toLocaleString('cs-CZ');
-    }
-
-    static showLoading() {
-      document.getElementById('loadingScreen').style.display = 'flex';
-      document.getElementById('welcomeScreen').style.display = 'none';
-      document.getElementById('guildBrowser').style.display = 'none';
-      document.getElementById('myGuildView').style.display = 'none';
-    }
-
-    static hideLoading() {
-      document.getElementById('loadingScreen').style.display = 'none';
-    }
-  }
+static hideLoading() {
+  const loading = document.getElementById('loadingScreen');
+  if (loading) loading.style.display = 'none';
+}
 
   // ====== SUPABASE MANAGER ======
   class SupabaseManager {
@@ -500,9 +482,9 @@
       const myGuildView = document.getElementById('myGuildView');
 
       // Skrýt vše
-      welcomeScreen.style.display = 'none';
-      browserScreen.style.display = 'none';
-      myGuildView.style.display = 'none';
+     if (welcomeScreen) welcomeScreen.style.display = 'none';
+if (browserScreen) browserScreen.style.display = 'none';
+if (myGuildView) myGuildView.style.display = 'none';
 
       if (this.playerGuild) {
         // Zobrazit mou guildu
