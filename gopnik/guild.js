@@ -112,20 +112,21 @@
   }
 
 class SupabaseManager {
-    static async init() {
-      console.log('🔥 Initializing Supabase...');
-
-      const lib = window.supabase; // from CDN @supabase/supabase-js
-      if (!lib || typeof lib.createClient !== 'function') {
-        console.error('❌ Supabase library not available (check script include)');
-        return false;
-      }
-
-      supabase = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      console.log('✅ Supabase initialized');
-      return true;
+   static async init() {
+  try {
+    if (!window.supabase || !window.supabase.createClient) {
+      console.error('❌ Supabase library not loaded');
+      return false;
     }
+
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('✅ Supabase initialized');
+    return true;
+  } catch (e) {
+    console.error('❌ Supabase init failed:', e);
+    return false;
+  }
+}
 
     static async loadGuilds() {
       console.log('📦 Loading guilds from Supabase...');
