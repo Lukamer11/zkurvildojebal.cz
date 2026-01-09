@@ -111,7 +111,7 @@
       console.log('🔥 Initializing Supabase...');
       
       const lib = window.supabase;
-      supabase = window.supabaseClient || (lib?.createClient ? lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
+      supabase = window.supabaseClient;
       
       if (!supabase) {
         console.error('❌ Supabase not available');

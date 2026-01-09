@@ -1,21 +1,17 @@
-function syncStats() {
-  // Tohle může být třeba z localStorage nebo z backendu
-  const playerData = {
-    level: localStorage.getItem("playerLevel") || 5,
-    money: localStorage.getItem("playerMoney") || 1234,
-    cigarettes: localStorage.getItem("playerCigs") || 88,
-    xpText: localStorage.getItem("playerXP") || "45 / 100"
-  };
+async function syncStats() {
+  if (window.SFReady) await window.SFReady;
+  const s = window.SF?.getStats ? window.SF.getStats() : window.SF?.stats;
+  if (!s) return;
 
   if (document.getElementById("levelDisplay"))
-    document.getElementById("levelDisplay").textContent = playerData.level;
+    document.getElementById("levelDisplay").textContent = s.level ?? 1;
 
   if (document.getElementById("money"))
-    document.getElementById("money").textContent = playerData.money;
+    document.getElementById("money").textContent = s.money ?? 0;
 
   if (document.getElementById("cigarettes"))
-    document.getElementById("cigarettes").textContent = playerData.cigarettes;
+    document.getElementById("cigarettes").textContent = s.cigarettes ?? 0;
 
   if (document.getElementById("xpText"))
-    document.getElementById("xpText").textContent = playerData.xpText;
+    document.getElementById("xpText").textContent = `${s.exp ?? 0}`;
 }

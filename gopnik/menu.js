@@ -9,7 +9,7 @@
   // -------------------------
   const DEFAULT_SUPABASE_URL = "https://jbfvoxlcociwtyobaotz.supabase.co";
   const DEFAULT_SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No";
 
   const SUPABASE_URL =
     window.SUPABASE_URL ||
@@ -257,6 +257,23 @@
     // kompatibilita se starými skripty (arena.js/guild.js/...) které čekají window.supabaseClient
     window.supabaseClient = sb;
 
+    // mobil: vynucení portrait (jen overlay, bez hard lock)
+    (function initRotateOverlay(){
+      let el = document.getElementById("sfRotateOverlay");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "sfRotateOverlay";
+        el.textContent = "Otoč telefon na výšku 📱";
+        document.body.appendChild(el);
+      }
+      const mq = window.matchMedia("(max-width: 900px) and (orientation: landscape)");
+      const apply = () => { el.style.display = mq.matches ? "flex" : "none"; };
+      apply();
+      if (mq.addEventListener) mq.addEventListener("change", apply);
+      else mq.addListener(apply);
+    })();
+
+
     const sess = await sb.auth.getSession();
     const user = sess.data?.session?.user || null;
 
@@ -278,3 +295,96 @@
   })();
 
 })();
+
+  // -------------------------
+  // HARDMODE: server-side autorita (RPC only)
+  // -------------------------
+  async function refreshStats() {
+    const sb = window.supabaseClient;
+    if (!sb) throw new Error("Supabase client není dostupný");
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) throw new Error("Nepřihlášen");
+    const { data, error } = await sb.from("player_stats").select("*").eq("user_id", user.id).maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      // bootstrap řádek (pouze přes server? tady je to první vytvoření – pokud chceš 100% RPC, vytvoř si trigger on signup)
+      const baseRow = { user_id: user.id };
+      const ins = await sb.from("player_stats").insert(baseRow);
+      if (ins.error) throw ins.error;
+      const again = await sb.from("player_stats").select("*").eq("user_id", user.id).maybeSingle();
+      if (again.error) throw again.error;
+      window.SF.stats = again.data || {};
+    } else {
+      window.SF.stats = data;
+    }
+    updateHud(window.SF.stats);
+    return window.SF.stats;
+  }
+
+  async function ensureNotBanned() {
+    const sb = window.supabaseClient;
+    if (!sb) return;
+    const { data, error } = await sb.rpc("rpc_check_ban");
+    if (!error && data === true) {
+      location.href = "/banned.html";
+    }
+  }
+
+  window.SF.refresh = refreshStats;
+
+  window.SF.actions = Object.freeze({
+    async claimDaily() {
+      const sb = window.supabaseClient;
+      await ensureNotBanned();
+      const { data, error } = await sb.rpc("rpc_claim_daily");
+      if (error) throw error;
+      await refreshStats();
+      return data;
+    },
+    async arenaWin() {
+      const sb = window.supabaseClient;
+      await ensureNotBanned();
+      const { data, error } = await sb.rpc("rpc_arena_win");
+      if (error) throw error;
+      await refreshStats();
+      return data;
+    },
+    async arenaLose() {
+      const sb = window.supabaseClient;
+      await ensureNotBanned();
+      const { data, error } = await sb.rpc("rpc_arena_lose");
+      if (error) throw error;
+      await refreshStats();
+      return data;
+    },
+    async upgradeStat(statName) {
+      const sb = window.supabaseClient;
+      await ensureNotBanned();
+      const { data, error } = await sb.rpc("rpc_upgrade_stat", { p_stat: statName });
+      if (error) throw error;
+      await refreshStats();
+      return data;
+    },
+    async spendMoney(amount, reason) {
+      const sb = window.supabaseClient;
+      await ensureNotBanned();
+      const { data, error } = await sb.rpc("rpc_spend_money", { p_amount: amount, p_reason: reason || "" });
+      if (error) throw error;
+      await refreshStats();
+      return data;
+    },
+    async logCheat(action, detail) {
+      const sb = window.supabaseClient;
+      await sb.rpc("rpc_log_cheat", { p_action: String(action||""), p_detail: String(detail||"") });
+    }
+  });
+
+  // Deprecated helpers (zrušené kvůli anticheatu)
+  window.SF.addMoney = async (amount) => {
+    await window.SF.actions.logCheat("client_addMoney_call", String(amount));
+    throw new Error("Zakázáno: addMoney. Použij serverové akce.");
+  };
+  window.SF.addExp = async (amount) => {
+    await window.SF.actions.logCheat("client_addExp_call", String(amount));
+    throw new Error("Zakázáno: addExp. Použij serverové akce.");
+  };

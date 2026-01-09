@@ -1096,3 +1096,61 @@ body {
     grid-column: 1 / -1;
   }
 }
+@media (max-width: 900px) {
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-attachment: scroll;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100dvh;
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .left-panel {
+    width: 100%;
+    max-height: 46dvh;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .menu-frame {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .sf-btn {
+    padding: 14px 10px;
+    font-size: 14px;
+  }
+
+  .currency-line {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  body { overflow: hidden; }
+}
+
+#sfRotateOverlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.92);
+  color: #fff;
+  z-index: 99999;
+  font-weight: 900;
+  font-size: 20px;
+}

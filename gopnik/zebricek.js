@@ -97,7 +97,7 @@
       console.log('🔥 === LOAD MY STATS FROM SUPABASE ===');
       
       const lib = window.supabase;
-      const sb = window.supabaseClient || (lib?.createClient ? lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
+      const sb = window.supabaseClient;
 
       currentUserId = localStorage.getItem("user_id") || localStorage.getItem("slavFantasyUserId") || "1";
       
@@ -215,7 +215,7 @@
       }
 
       const lib = window.supabase;
-      const sb = window.supabaseClient || (lib?.createClient ? lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
+      const sb = window.supabaseClient;
       
       if (!sb) {
         console.warn('⚠️ Supabase not available');
@@ -346,7 +346,7 @@
       document.getElementById('playerView').classList.remove('hidden');
       
       const lib = window.supabase;
-      const sb = window.supabaseClient || (lib?.createClient ? lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
+      const sb = window.supabaseClient;
       
       if (!sb) {
         console.warn('⚠️ Supabase not available');
