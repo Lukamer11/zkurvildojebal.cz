@@ -61,8 +61,8 @@
   }
 
 
-const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
+const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
 
   const nextBtn = document.getElementById("nextEnemyBtn");
   const attackBtn = document.getElementById("attackBtn");
@@ -116,15 +116,25 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     return Number(n ?? 0).toLocaleString("cs-CZ");
   }
 
+  function fmtHp(n) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return "0";
+    const isInt = Math.abs(v - Math.round(v)) < 1e-9;
+    return v.toLocaleString("cs-CZ", { minimumFractionDigits: isInt ? 0 : 2, maximumFractionDigits: isInt ? 0 : 2 });
+  }
+
+
   function setBar(fillEl, textEl, cur, max) {
     if (!fillEl || !textEl) return;
     const pct = max <= 0 ? 0 : Math.max(0, Math.min(100, (cur / max) * 100));
     fillEl.style.width = pct + "%";
-    textEl.textContent = `HP ${fmtInt(Math.floor(cur))} / ${fmtInt(Math.floor(max))}`;
+    textEl.textContent = `HP ${fmtHp(cur)} / ${fmtHp(max)}`;
   }
 
   function clampHp(v) {
-    return Math.max(0, Math.floor(Number(v) || 0));
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.round(n * 100) / 100);
   }
 
   function randInt(min, max) {
@@ -701,7 +711,7 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
 
       const { data, error } = await sb
         .from("player_stats")
-        .select("level,stats,equipped")
+        .select("level,xp,money,hp,hp_max,stats,equipped")
         .eq("user_id", uid)
         .limit(1);
 
@@ -722,6 +732,11 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
       console.log('📊 Stats from DB:', row.stats);
 
       const st = row.stats || {};
+
+      // HP zdroj pravdy: Postava (DB)
+      if (row.hp != null) playerCurrentHp = Number(row.hp);
+      if (row.hp_max != null) playerMaxHp = Number(row.hp_max);
+
       // --- HP sync (match Postava) ---
       const dbHpMax = (row.hp_max ?? row.hpMax ?? st.hp_max ?? st.max_hp ?? st.maxHp);
       const dbHpCur = (row.hp ?? row.hp_current ?? row.hpCur ?? st.hp ?? st.hp_current ?? st.current_hp);
