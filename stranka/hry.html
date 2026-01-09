@@ -213,7 +213,6 @@
             text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
         }
 
-        /* Různé barvy pro jednotlivé karty */
         .game-card:nth-child(5n+1) {
             border-color: #ff00ff;
             color: #ff00ff;
@@ -316,10 +315,10 @@
     <a href="index.html" class="back-button">⬅️ ZPĚT</a>
 
     <div class="games-container">
-        <div class="game-card" onclick="alert('Hra 1 - Připravuje se...')">
-            <img src="obr.1.jpg" alt="Hra 1" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ff00ff%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 1%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 1</div>
-        </div>
+        <a href="gopnik/loading.html" class="game-card" style="text-decoration: none;">
+            <img src="obr.1.jpg" alt="Gopnik" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ff00ff%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EGOPNIK%3C/text%3E%3C/svg%3E'">
+            <div class="game-title">🇷🇺 GOPNIK 🇷🇺</div>
+        </a>
 
         <div class="game-card" onclick="alert('Hra 2 - Připravuje se...')">
             <img src="obr.2.jpg" alt="Hra 2" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%2300ffff%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 2%3C/text%3E%3C/svg%3E'">
@@ -360,61 +359,6 @@
             <img src="obr.9.jpg" alt="Hra 9" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ffff00%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22black%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 9%3C/text%3E%3C/svg%3E'">
             <div class="game-title">Hra 9</div>
         </div>
-
-        <div class="game-card" onclick="alert('Hra 10 - Připravuje se...')">
-            <img src="obr.10.jpg" alt="Hra 10" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ff0080%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 10%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 10</div>
-        </div>
-
-        <div class="game-card" onclick="alert('Hra 11 - Připravuje se...')">
-            <img src="obr.11.jpg" alt="Hra 11" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ff00ff%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 11%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 11</div>
-        </div>
-
-        <div class="game-card" onclick="alert('Hra 12 - Připravuje se...')">
-            <img src="obr.12.jpg" alt="Hra 12" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%2300ffff%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 12%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 12</div>
-        </div>
-
-        <div class="game-card" onclick="alert('Hra 13 - Připravuje se...')">
-            <img src="obr.13.jpg" alt="Hra 13" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%2300ff00%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 13%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 13</div>
-        </div>
-
-        <div class="game-card" onclick="alert('Hra 14 - Připravuje se...')">
-            <img src="obr.14.jpg" alt="Hra 14" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ffff00%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22black%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 14%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 14</div>
-        </div>
-
-        <div class="game-card" onclick="alert('Hra 15 - Připravuje se...')">
-            <img src="obr.15.jpg" alt="Hra 15" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ff0080%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 15%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 15</div>
-        </div>
-
-        <div class="game-card" onclick="alert('Hra 16 - Připravuje se...')">
-            <img src="obr.16.jpg" alt="Hra 16" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ff00ff%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 16%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 16</div>
-        </div>
-
-        <div class="game-card" onclick="alert('Hra 17 - Připravuje se...')">
-            <img src="obr.17.jpg" alt="Hra 17" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%2300ffff%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 17%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 17</div>
-        </div>
-
-        <div class="game-card" onclick="alert('Hra 18 - Připravuje se...')">
-            <img src="obr.18.jpg" alt="Hra 18" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%2300ff00%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 18%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 18</div>
-        </div>
-
-        <div class="game-card" onclick="alert('Hra 19 - Připravuje se...')">
-            <img src="obr.19.jpg" alt="Hra 19" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ffff00%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22black%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EHra 19%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">Hra 19</div>
-        </div>
-
-        <a href="gopnik/loading.html" class="game-card" style="text-decoration: none;">
-            <img src="obr.20.jpg" alt="Gopnik" class="game-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23ff0080%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2224%22%3EGOPNIK%3C/text%3E%3C/svg%3E'">
-            <div class="game-title">🇷🇺 GOPNIK 🇷🇺</div>
-        </a>
     </div>
 </body>
 </html>
