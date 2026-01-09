@@ -2,7 +2,33 @@
 (() => {
   "use strict";
 
-  const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
+  
+
+  // ====== SF COMPAT LAYER ======
+  // Některé verze menu.js / core mají jiné API než SF.getStats().
+  // Tohle sjednocuje čtení statistik tak, aby aréna nespadla, když getStats neexistuje.
+  function sfGetStatsSync() {
+    try {
+      const SF = window.SF;
+      if (!SF) return null;
+
+      if (typeof SF.getStats === 'function') return SF.getStats();
+
+      // běžné alternativy (podle různých verzí projektu)
+      if (SF.stats && typeof SF.stats === 'object') return SF.stats;
+      if (SF.playerStats && typeof SF.playerStats === 'object') return SF.playerStats;
+      if (SF.state?.stats && typeof SF.state.stats === 'object') return SF.state.stats;
+      if (SF.store?.stats && typeof SF.store.stats === 'object') return SF.store.stats;
+
+      // pokud existuje async getter, nevoláme ho zde (sync kontext)
+      return null;
+    } catch (e) {
+      console.warn('⚠️ sfGetStatsSync failed:', e);
+      return null;
+    }
+  }
+
+const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
 
   const nextBtn = document.getElementById("nextEnemyBtn");
@@ -92,7 +118,11 @@
       return;
     }
     
-    const stats = window.SF.getStats();
+    const stats = sfGetStatsSync();
+    if (!stats) {
+      console.warn("⚠️ SF stats not available (no getStats/stats object)");
+      return;
+    }
     console.log('📊 Stats from SF:', stats);
     
     const moneyEl = document.getElementById('money');
@@ -191,14 +221,20 @@
 
     // ⚠️ NEPOUŽÍVEJ computeMaxHpFromCore - vezmi HP ze SF!
     if (window.SF) {
-      const sfStats = window.SF.getStats();
-      playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || 500);
-      console.log('💚 Using maxHP from SF:', playerMaxHp);
+      const sfStats = sfGetStatsSync();
+      if (sfStats) {
+        playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || 500);
+        console.log('💚 Using maxHP from SF:', playerMaxHp);
+        console.log('📊 SF Stats:', sfStats);
+      } else {
+        console.warn('⚠️ SF present but stats API missing; falling back to computed HP');
+        playerMaxHp = computeMaxHpFromCore(playerCore, cls);
+        console.log('💚 Using computed maxHP:', playerMaxHp);
+      }
     } else {
       playerMaxHp = computeMaxHpFromCore(playerCore, cls);
       console.log('⚠️ SF not available, computed maxHP:', playerMaxHp);
     }
-    
     console.log('🔥 === RECOMPUTE PLAYER TOTALS ===');
     console.log('playerCore:', playerCore);
     console.log('equipBonus:', equipBonus);
@@ -231,36 +267,21 @@
   
   function healPlayerToFull() {
     console.log('🏥 === HEAL PLAYER TO FULL ===');
-    
-    // ⚠️ KRITICKÁ ZMĚNA: Vezmi maxHP přímo ze SF, ne z vlastního výpočtu!
-    if (window.SF) {
-      const sfStats = window.SF.getStats();
-      playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || 500);
-      playerCurrentHp = playerMaxHp;
-      
-      console.log('  💚 Using HP from SF:', playerCurrentHp, '/', playerMaxHp);
-      console.log('  📊 SF Stats:', sfStats);
-      
-      window.SF.setHp(playerCurrentHp, playerMaxHp);
+
+    // Preferuj HP ze SF, ale nepadni, když stats API není k dispozici
+    const sfStats = window.SF ? sfGetStatsSync() : null;
+    if (sfStats) {
+      playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || playerMaxHp || 500);
+      console.log('  💚 Using maxHP from SF:', playerMaxHp);
     } else {
-      // Fallback pokud SF není k dispozici
-      const cls = (localStorage.getItem("sf_class") || "padouch").toLowerCase();
+      const cls = (localStorage.getItem('sf_class') || 'padouch').toLowerCase();
       playerMaxHp = computeMaxHpFromCore(playerCore, cls);
-      playerCurrentHp = playerMaxHp;
-      
-      console.log('  ⚠️ SF not available, using computed HP:', playerCurrentHp, '/', playerMaxHp);
+      console.log('  ⚠️ SF stats missing, using computed maxHP:', playerMaxHp);
     }
-    
+
+    playerCurrentHp = playerMaxHp;
+    try { window.SF?.setHp?.(playerCurrentHp, playerMaxHp); } catch (e) { console.warn('⚠️ SF.setHp failed:', e); }
     setBar(playerHealthFill, playerHealthText, playerCurrentHp, playerMaxHp);
-    console.log('  💚 Health bar set:', playerCurrentHp, '/', playerMaxHp);
-    
-    if (playerLevelText) {
-      const level = window.SF ? window.SF.getStats().level : playerCore.level;
-      playerLevelText.textContent = `Level ${level}`;
-      console.log('  📊 Level text set:', level);
-    }
-    
-    console.log('=============================');
   }
   function renderEnemy() {
     const e = enemies[enemyIndex % enemies.length];
@@ -531,7 +552,7 @@
 
     recomputePlayerTotals();
     
-    const st = window.SF.getStats();
+    const st = sfGetStatsSync() || { money: playerMoney || 0 };
     playerCurrentHp = clampHp(st.hp ?? playerMaxHp);
     playerCurrentHp = Math.min(playerCurrentHp, playerMaxHp);
 
@@ -560,7 +581,7 @@
 
       if (playerCurrentHp <= 0 || enemyCurHp <= 0) {
         const win = enemyCurHp <= 0 && playerCurrentHp > 0;
-        await endFight(win, playerCurrentHp, playerMaxHp, enemyLvl);
+        endFight(win, playerCurrentHp, playerMaxHp, enemyLvl);
         return;
       }
 
@@ -575,10 +596,10 @@
       
       if (hasMissionRewards) {
         reward = window.missionRewards.money;
-        loss = Math.min(reward, window.SF?.getStats()?.money ?? 0);
+        loss = Math.min(reward, sfGetStatsSync()?.money ?? 0);
       } else {
         reward = clampHp((enemyLvlEnd * 55) + randInt(20, 110));
-        const stNow = window.SF.getStats();
+        const stNow = sfGetStatsSync() || { money: playerMoney || 0 };
         const curMoney = clampHp(stNow.money ?? 0);
         loss = Math.min(curMoney, reward);
       }
