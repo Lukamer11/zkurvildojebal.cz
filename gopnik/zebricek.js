@@ -2,8 +2,8 @@
 (() => {
   "use strict";
 
-  const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
+  const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
 
   // ===== GAME STATE =====
   let currentUserId = null;
@@ -110,7 +110,7 @@
 
       const { data, error } = await sb
         .from("player_stats")
-        .select("level, exp, money, hp, hp_max, strength, endurance, agility")
+        .select("level, xp, money, hp, hp_max, strength, endurance, agility")
         .eq("user_id", currentUserId)
         .limit(1)
         .single();
@@ -130,7 +130,7 @@
       myStats = {
         level: clampVal(data.level, 1, 9999),
         // DB uses 'exp' (not 'xp')
-        xp: clampVal(data.exp ?? 0, 0, 999999999),
+        xp: clampVal(data.xp ?? 0, 0, 999999999),
         money: clampVal(data.money ?? 0, 0, 999999999),
 
         // DB has hp + hp_max
@@ -233,11 +233,11 @@ updateHUD();
 
       let query = sb
         .from('player_stats')
-        .select('user_id, level, exp, money, hp, hp_max, strength, endurance, agility');
+        .select('user_id, level, xp, money, hp, hp_max, strength, endurance, agility');
       
       if (type === 'level') {
         query = query.order('level', { ascending: false })
-                     .order('exp', { ascending: false });
+                     .order('xp', { ascending: false });
       } else if (type === 'wealth') {
         query = query.order('money', { ascending: false });
       }
@@ -380,8 +380,7 @@ updateHUD();
       
       const playerData = data || player;
       // Aliases for schema differences
-      if (playerData && playerData.exp != null && playerData.xp == null) playerData.xp = playerData.exp;
-      if (playerData && playerData.hp_max != null && playerData.max_hp == null) playerData.max_hp = playerData.hp_max;
+            if (playerData && playerData.hp_max != null && playerData.max_hp == null) playerData.max_hp = playerData.hp_max;
 
       
       // Update player name
