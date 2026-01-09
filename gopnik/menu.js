@@ -272,14 +272,15 @@
 
         // Jen pro skutečná mobilní zařízení (coarse pointer / žádný hover),
         // aby se hláška nezobrazovala na PC při zúženém okně.
-        const mq = window.matchMedia(
-          "(max-width: 900px) and (orientation: landscape) and (hover: none) and (pointer: coarse)"
-        );
-        const apply = () => { el.style.display = mq.matches ? "flex" : "none"; };
-        apply();
-        if (mq.addEventListener) mq.addEventListener("change", apply);
-        else mq.addListener(apply);
-      };
+       const isMobileUA =
+  (navigator.userAgentData && navigator.userAgentData.mobile) ||
+  /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobi/i.test(navigator.userAgent);
+
+const mq = window.matchMedia("(max-width: 900px) and (orientation: landscape)");
+const apply = () => {
+  // Overlay jen na mobilech + jen když je landscape a úzký viewport
+  el.style.display = (isMobileUA && mq.matches) ? "flex" : "none";
+};
 
       if (document.body) mount();
       else document.addEventListener("DOMContentLoaded", mount, { once: true });
