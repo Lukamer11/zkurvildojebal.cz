@@ -332,7 +332,7 @@ function startBossFight(bossIndex) {
     story: boss.story
   };
   
-  localStorage.setItem('cryptaBossFight', JSON.stringify(bossData));
+  sessionStorage.setItem('cryptaBossFight', JSON.stringify(bossData));
   window.location.href = 'arena.html';
 }
 
