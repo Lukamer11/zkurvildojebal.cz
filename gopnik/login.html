@@ -410,7 +410,14 @@
     localStorage.setItem('SUPABASE_URL', SUPABASE_URL);
     localStorage.setItem('SUPABASE_ANON_KEY', SUPABASE_ANON_KEY);
 
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    storage: window.sessionStorage,
+    autoRefreshToken: true,
+    detectSessionInUrl: false
+  }
+});
 
     const tabBtns = document.querySelectorAll('.tab-btn');
     const loginForm = document.getElementById('loginForm');
@@ -590,9 +597,6 @@
         console.log('✅ Logged in:', user.id);
 
         localStorage.setItem('user_id', user.id);
-        localStorage.setItem('user_email', user.email || email);
-        localStorage.setItem('slavFantasyUserId', user.id);
-
         const row = await ensurePlayerStats(user.id, user.email || email, null);
 
         showMessage('Přihlášeno! Vstupuješ do arény...', 'success');
@@ -652,9 +656,6 @@
         }
 
         localStorage.setItem('user_id', user.id);
-        localStorage.setItem('user_email', user.email || email);
-        localStorage.setItem('slavFantasyUserId', user.id);
-
         const row = await ensurePlayerStats(user.id, user.email || email, nickname);
 
         showMessage('Registrace OK! Vstupuješ do arény...', 'success');
@@ -678,10 +679,7 @@
         
         if (sess?.user) {
           console.log('✅ Session found:', sess.user.id);
-          localStorage.setItem('user_id', sess.user.id);
-          localStorage.setItem('user_email', sess.user.email || '');
-          localStorage.setItem('slavFantasyUserId', sess.user.id);
-          
+          localStorage.setItem('user_id', sess.user.id);          
           const row = await ensurePlayerStats(sess.user.id, sess.user.email || '', null);
           
           showNotification('Již jsi přihlášen! Přesměrování...', 'success');

@@ -23,8 +23,8 @@
 
     static getName() {
       return localStorage.getItem('playerName') || 
-             localStorage.getItem('nickname') || 
-             localStorage.getItem('nick') || 
+             sessionStorage.getItem('nickname') || 
+             sessionStorage.getItem('nick') || 
              'PLAYER';
     }
 

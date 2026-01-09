@@ -20,16 +20,14 @@
     static getUserId() {
       return (
         (window.SF && window.SF.user && window.SF.user.id) ||
-        localStorage.getItem('slavFantasyUserId') ||
         '1'
       );
     }
 
     static getName() {
       return (
-        localStorage.getItem('playerName') ||
-        localStorage.getItem('nickname') ||
-        localStorage.getItem('nick') ||
+        sessionStorage.getItem('nickname') ||
+        sessionStorage.getItem('nick') ||
         'PLAYER'
       );
     }
