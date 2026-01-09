@@ -260,7 +260,13 @@
     // mobil: vynucení portrait (jen overlay, bez hard lock)
     // Pozor: na GitHub Pages může být menu.js načtený v <head> ještě před <body>.
     // Proto overlay montujeme až ve chvíli, kdy existuje document.body.
-    (function initRotateOverlay(){
+        // mobil: vynucení portrait (jen overlay, bez hard lock)
+    // Pozor: na GitHub Pages může být menu.js načtený v <head> ještě před <body>.
+    (function initRotateOverlay() {
+      const isMobileUA =
+        (navigator.userAgentData && navigator.userAgentData.mobile) ||
+        /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobi/i.test(navigator.userAgent);
+
       const mount = () => {
         let el = document.getElementById("sfRotateOverlay");
         if (!el) {
@@ -270,21 +276,21 @@
           document.body.appendChild(el);
         }
 
-        // Jen pro skutečná mobilní zařízení (coarse pointer / žádný hover),
-        // aby se hláška nezobrazovala na PC při zúženém okně.
-       const isMobileUA =
-  (navigator.userAgentData && navigator.userAgentData.mobile) ||
-  /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobi/i.test(navigator.userAgent);
+        const mq = window.matchMedia("(max-width: 900px) and (orientation: landscape)");
 
-const mq = window.matchMedia("(max-width: 900px) and (orientation: landscape)");
-const apply = () => {
-  // Overlay jen na mobilech + jen když je landscape a úzký viewport
-  el.style.display = (isMobileUA && mq.matches) ? "flex" : "none";
-};
+        const apply = () => {
+          el.style.display = (isMobileUA && mq.matches) ? "flex" : "none";
+        };
+
+        apply();
+        if (mq.addEventListener) mq.addEventListener("change", apply);
+        else mq.addListener(apply);
+      };
 
       if (document.body) mount();
       else document.addEventListener("DOMContentLoaded", mount, { once: true });
     })();
+
 
 
     const sess = await sb.auth.getSession();
