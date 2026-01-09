@@ -260,7 +260,35 @@
     // mobil: vynucení portrait (jen overlay, bez hard lock)
     // Pozor: na GitHub Pages může být menu.js načtený v <head> ještě před <body>.
     // Proto overlay montujeme až ve chvíli, kdy existuje document.body.
-    
+
+    (function initRotateOverlay() {
+  const isMobileUA =
+    (navigator.userAgentData && navigator.userAgentData.mobile) ||
+    /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobi/i.test(navigator.userAgent);
+
+  const mount = () => {
+    let el = document.getElementById("sfRotateOverlay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "sfRotateOverlay";
+      el.textContent = "Otoč telefon na výšku 📱";
+      document.body.appendChild(el);
+    }
+
+    const mq = window.matchMedia("(max-width: 900px) and (orientation: landscape)");
+    const apply = () => {
+      el.style.display = (isMobileUA && mq.matches) ? "flex" : "none";
+    };
+
+    apply();
+    if (mq.addEventListener) mq.addEventListener("change", apply);
+    else mq.addListener(apply);
+  };
+
+  if (document.body) mount();
+  else document.addEventListener("DOMContentLoaded", mount, { once: true });
+})();
+
 
     const sess = await sb.auth.getSession();
     const user = sess.data?.session?.user || null;
