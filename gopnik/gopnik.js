@@ -18,9 +18,7 @@
   // ====== PLAYER UTILS ======
   class Player {
     static getUserId() {
-      return localStorage.getItem("user_id") || 
-             localStorage.getItem("slavFantasyUserId") || 
-             "1";
+      return (window.SF && window.SF.user && window.SF.user.id) || null;
     }
 
     static getName() {

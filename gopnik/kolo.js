@@ -99,7 +99,7 @@
       const lib = window.supabase;
       const sb = window.supabaseClient;
 
-      currentUserId = localStorage.getItem("user_id") || localStorage.getItem("slavFantasyUserId") || "1";
+      currentUserId = (window.SF && window.SF.user && window.SF.user.id) || null;
       
       console.log('👤 User ID:', currentUserId);
       

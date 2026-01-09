@@ -19,7 +19,7 @@
   class Player {
     static getUserId() {
       return (
-        localStorage.getItem('user_id') ||
+        (window.SF && window.SF.user && window.SF.user.id) ||
         localStorage.getItem('slavFantasyUserId') ||
         '1'
       );
