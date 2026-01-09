@@ -1,3 +1,22 @@
+
+// ===== ITEM IMAGE MAP (zbran1.jpg, zbran2.jpg, ... pro VŠECHNO vybavení) =====
+const ITEM_IMAGE_MAP = (() => {
+  const map = {};
+  try {
+    const all = [
+      ...(window.SHOP_ITEMS?.weapons || []),
+      ...(window.SHOP_ITEMS?.armor || []),
+      ...(window.SHOP_ITEMS?.special || []),
+    ];
+    all.forEach((it, idx) => {
+      if (it && it.id) map[it.id] = `zbran${idx + 1}.jpg`;
+    });
+  } catch (e) {
+    console.warn('ITEM_IMAGE_MAP build failed', e);
+  }
+  return map;
+})();
+
 const supabaseClient = () => window.supabaseClient;
 async function ensureOnline() {
   if (window.SFReady) await window.SFReady;
@@ -95,6 +114,11 @@ function makeItemInstance(baseItem, level){
   const scale = 1 + (Math.max(1, level) - 1) * ITEM_LEVEL_SCALE;
 
   const inst = JSON.parse(JSON.stringify(baseItem));
+  // nahraď emoji ikonku obrázkem (pořadí v items.js)
+  if (baseItem && baseItem.id && ITEM_IMAGE_MAP[baseItem.id]) {
+    inst.emoji = inst.icon; // původní emoji
+    inst.icon = ITEM_IMAGE_MAP[baseItem.id];
+  }
   inst.instance_id = 'it_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   inst.base_id = baseItem.id;
 
