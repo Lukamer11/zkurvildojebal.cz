@@ -1,17 +1,9 @@
-// auto.js — používá globální init z menu.js (window.SF / window.supabaseClient)
-// ⚠️ ŽÁDNÉ vlastní createClient tady nevytváříme, aby nevznikaly sync/406 problémy.
-
-function getSF() {
-  return window.SF || null;
-}
-
-async function waitForSF() {
-  if (window.SFReady && typeof window.SFReady.then === "function") {
-    await window.SFReady;
-  }
-  const SF = getSF();
-  if (!SF?.sb || !SF?.user?.id) throw new Error("SF není připravený (chybí menu.js nebo login).");
-  return SF;
+const supabaseClient = () => window.supabaseClient;
+async function ensureOnline() {
+  if (window.SFReady) await window.SFReady;
+  const sb = supabaseClient();
+  if (!sb) throw new Error('Supabase client není inicializovaný (načti menu.js před tímto skriptem)');
+  return sb;
 }
 
 // ===== BOSS DATA =====
@@ -158,62 +150,72 @@ function clampHp(v) {
 }
 
 // ===== SUPABASE FUNCTIONS =====
-// ===== SF (menu.js) FUNCTIONS =====
 async function initUser() {
-  const SF = await waitForSF();
-  const row = SF.stats || {};
-
-  gameState.userId = row.user_id || SF.user.id;
-  gameState.level = row.level ?? gameState.level;
-  gameState.stats = row.stats ?? gameState.stats;
-  gameState.equipped = row.equipped || {};
-  gameState.inventory = Array.isArray(row.inventory) ? row.inventory : (row.inventory || []);
-
-  const cryptaData = row.crypta_progress || { current: 0, defeated: [] };
-  gameState.currentCrypta = cryptaData.current || 0;
-  gameState.defeatedBosses = cryptaData.defeated || [];
-
-  // realtime update z menu.js
-  document.addEventListener("sf:stats", (e) => {
-    const s = e.detail || {};
-    const c = s.crypta_progress || {};
-    gameState.level = s.level ?? gameState.level;
-    gameState.stats = s.stats ?? gameState.stats;
-    gameState.equipped = s.equipped ?? gameState.equipped;
-    gameState.inventory = Array.isArray(s.inventory) ? s.inventory : gameState.inventory;
-    if (c && typeof c === "object") {
-      gameState.currentCrypta = c.current ?? gameState.currentCrypta;
-      gameState.defeatedBosses = Array.isArray(c.defeated) ? c.defeated : gameState.defeatedBosses;
+  try {
+    await ensureOnline();
+    const row = window.SF?.stats;
+    if (!row?.user_id) {
+      location.href = "login.html";
+      return;
     }
-  });
 
-  renderCrypta();
-  updateProgress();
+    gameState.userId = row.user_id;
+    gameState.level = row.level || 1;
+    gameState.stats = row.stats || gameState.stats;
+    gameState.equipped = row.equipped || {};
+    gameState.inventory = row.inventory || [];
+
+    const cryptaData = row.crypta_progress || { current: 0, defeated: [] };
+    gameState.currentCrypta = cryptaData.current || 0;
+    gameState.defeatedBosses = cryptaData.defeated || [];
+
+    renderCrypta();
+    updateProgress();
+  } catch (error) {
+    console.error("Error initializing user:", error);
+  }
 }
-
 
 async function saveToSupabase() {
   try {
-    const SF = getSF();
-    if (!SF?.updateStats) return false;
+    const sb = await ensureOnline();
 
-    const patch = {
-      user_id: SF.user?.id || gameState.userId,
+    const basePayload = {
+      user_id: gameState.userId,
       level: gameState.level,
       stats: gameState.stats,
       equipped: gameState.equipped,
       inventory: gameState.inventory,
       crypta_progress: {
         current: gameState.currentCrypta,
-        defeated: gameState.defeatedBosses,
-      },
-      updated_at: new Date().toISOString(),
+        defeated: gameState.defeatedBosses
+      }
     };
 
-    SF.updateStats(patch, { merge: true });
-    return true;
-  } catch (e) {
-    console.error("Error saving (SF):", e);
+    let payload = { ...basePayload };
+
+    for (let attempts = 0; attempts < 6; attempts++) {
+      const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
+      if (!error) {
+        if (window.SF?.updateStats) window.SF.updateStats(payload);
+        return true;
+      }
+
+      const msg = String(error?.message || "");
+      const match = msg.match(/Could not find the '([^']+)' column/);
+      if (error?.code === "PGRST204" && match) {
+        const missing = match[1];
+        if (missing in payload) {
+          delete payload[missing];
+          continue;
+        }
+      }
+
+      throw error;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error saving to Supabase:", error);
     return false;
   }
 }

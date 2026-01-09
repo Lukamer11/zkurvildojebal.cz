@@ -584,9 +584,9 @@
       }
 
       if (win) {
-        try { window.SF.addMoney(reward); } catch {}
+        try { await window.SF.actions.arenaWin(); } catch {}
         if (hasMissionRewards) {
-          try { window.SF.addExp(window.missionRewards.exp); } catch {}
+          try { /* exp řeší server */ } catch {}
           const missionData = JSON.parse(localStorage.getItem('missionData') || '{}');
           missionData.completed = (missionData.completed || 0) + 1;
           missionData.totalExp = (missionData.totalExp || 0) + window.missionRewards.exp;
@@ -598,7 +598,7 @@
         finishFight(true, reward);
         if (hasMissionRewards) setTimeout(() => window.location.href = 'mise.html', 3000);
       } else {
-        try { window.SF.addMoney(-loss); } catch {}
+        try { await window.SF.actions.arenaWin(); } catch {}
         if (hasMissionRewards) {
           const missionData = JSON.parse(localStorage.getItem('missionData') || '{}');
           missionData.battles = (missionData.battles || 0) + 1;
@@ -620,7 +620,7 @@
       console.log('🔥 === HYDRATE PLAYER FROM SUPABASE ===');
       
       const lib = window.supabase;
-      const sb = window.supabaseClient || (lib?.createClient ? lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null);
+      const sb = window.supabaseClient;
 
       const uid = localStorage.getItem("user_id") || localStorage.getItem("slavFantasyUserId") || "1";
       
