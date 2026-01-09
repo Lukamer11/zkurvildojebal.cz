@@ -300,6 +300,10 @@
       }
     }
   </style>
+<script type="module">
+  import { redirectIfAuthed } from './js/authGuard.js';
+  redirectIfAuthed('menu.html');
+</script>
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -413,7 +417,7 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
-    storage: window.sessionStorage,
+    storage: window.localStorage,
     autoRefreshToken: true,
     detectSessionInUrl: false
   }
