@@ -80,8 +80,9 @@
       try { clickSnd.play(); } catch {}
     }
 
+    // Animace má jít A -> B -> A -> B ... (v HTML startujeme na A)
     anim = !anim;
-    if (img) img.src = anim ? "gopnik_A.png" : "gopnik_B.png";
+    if (img) img.src = anim ? "gopnik_B.png" : "gopnik_A.png";
 
     if (window.SFReady) await window.SFReady;
     const stats = window.SF?.stats;

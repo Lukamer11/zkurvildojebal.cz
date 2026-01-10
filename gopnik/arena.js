@@ -436,22 +436,20 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
     if (enemyMaxHp <= 0) enemyMaxHp = 1000;
     enemyCurHp = enemyMaxHp;
 
-    // Boss obrázek (stejný jako v cryptě), pokud existuje v DOM
-    if (cryptaBossFight?.boss && e.avatar) {
-      const img = document.querySelector('.enemy-section .character-arena img')
-        || document.querySelector('#enemyAvatar')
+    // Avatar nepřítele / bosse: patří do <img id="enemyAvatar">, ne jako background celé sekce.
+    // (Background dělal "fight" v pozadí a boss obrázek přes celou pravou stranu.)
+    if (e.avatar) {
+      const img = document.querySelector('#enemyAvatar')
+        || document.querySelector('.enemy-section .character-arena img')
         || document.querySelector('.enemy-section img');
-      if (img && img.tagName === 'IMG') {
-        img.src = e.avatar;
-      }
-      // background pokud používáš jednu vrstvu/sekci
-      const bg = document.querySelector('.enemy-section');
-      if (bg && e.background) {
-        // jen pokud už tam background používáš – když ne, nic to nerozbije
-        bg.style.backgroundImage = `url(${e.background})`;
-        bg.style.backgroundSize = 'cover';
-        bg.style.backgroundPosition = 'center';
-      }
+      if (img && img.tagName === 'IMG') img.src = e.avatar;
+    }
+    // Pro jistotu vždy zruš případný background nastavený dřív (boss/crypta).
+    const bg = document.querySelector('.enemy-section');
+    if (bg) {
+      bg.style.backgroundImage = '';
+      bg.style.backgroundSize = '';
+      bg.style.backgroundPosition = '';
     }
 
     // Ikonka bosse v rámečku: nejméně invazivní je prefix názvu

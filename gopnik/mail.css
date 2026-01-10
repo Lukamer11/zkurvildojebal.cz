@@ -1,6 +1,6 @@
 /* mail.css */
 
-/* MUS� B�T �PLN� NAHO�E � sjednocen� menu z MISE */
+/* MUSÍ BÝT ÚPLNĚ NAHOŘE – sjednocené menu z MISE */
 @import url("mise.css");
 
 /* ===== RESET ===== */
@@ -659,6 +659,19 @@ body{
   font-size:11px;
   color:#c9a44a;
   opacity:.9;
+}
+
+/* malé upozornění při chybě (např. chybí adresát / text) */
+.shake{
+  animation: mailShake 320ms ease-in-out;
+}
+
+@keyframes mailShake{
+  0%{ transform: translateX(0); }
+  25%{ transform: translateX(-6px); }
+  50%{ transform: translateX(6px); }
+  75%{ transform: translateX(-4px); }
+  100%{ transform: translateX(0); }
 }
 
 @media (max-width: 520px){
