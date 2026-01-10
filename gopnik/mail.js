@@ -1,6 +1,15 @@
 (() => {
   "use strict";
 
+  // ======================================================
+  //  MAIL — ONLINE (Supabase)
+  //  Tabulka: player_mail
+  //  Sloupce (doporučeno):
+  //    id (text/uuid, PK), user_id (uuid), from_name (text), to_name (text),
+  //    subject (text), body (text), created_at (timestamptz),
+  //    unread (bool), important (bool), kind (text)
+  // ======================================================
+
   // ===== DOM =====
   const listEl = document.querySelector(".mail-list");
   const detailEl = document.querySelector(".mail-detail-section");
@@ -17,7 +26,19 @@
   const tabBtns = Array.from(document.querySelectorAll(".tab-btn"));
 
   // ===== helpers =====
-  const LS_KEY = "sf_mail_threads_v1";
+  const TABLE = "player_mail";
+
+  const supabaseClient = () => window.supabaseClient;
+  async function ensureOnline() {
+    if (window.SFReady) await window.SFReady;
+    const sb = supabaseClient();
+    if (!sb) throw new Error("Supabase client není inicializovaný (načti menu.js před mail.js)");
+    return sb;
+  }
+
+  function safeStr(x) {
+    return String(x ?? "").trim();
+  }
 
   function nowIso() {
     return new Date().toISOString();
@@ -33,55 +54,95 @@
     }
   }
 
-  function safeStr(x) {
-    return String(x ?? "").trim();
-  }
-
-  // ===== data model =====
-  // Jednoduché lokální zprávy + 1 systémová (welcome). Zatím bez serveru.
-  function loadThreads() {
+  function genId() {
     try {
-      const raw = localStorage.getItem(LS_KEY);
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (Array.isArray(parsed)) return parsed;
-    } catch {}
-    return [];
-  }
-
-  function saveThreads(threads) {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify(threads));
-    } catch {}
+      return crypto.randomUUID();
+    } catch {
+      return `m_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+    }
   }
 
   function ensureWelcome(stats) {
     const claimed = Boolean(stats?.flags?.welcome_mail_claimed);
     return {
       id: "welcome",
-      from: "SYSTÉM",
-      to: "TY",
+      from_name: "SYSTÉM",
+      to_name: "TY",
       subject: "Vítej, nováčku",
       body: [
         "Vítej v ulicích.",
         "Tohle není hra pro měkký.",
         "Tady máš něco na rozjezd.",
         "\n**100 cig**\n**5000 grošů**\n",
-        "Neproser to."
+        "Neproser to.",
       ].join("\n"),
-      createdAt: "2026-01-01T00:00:00.000Z",
+      created_at: "2026-01-01T00:00:00.000Z",
       unread: !claimed,
       important: true,
-      kind: "system"
+      kind: "system",
     };
   }
 
-  function getAllThreads(stats) {
-    const local = loadThreads();
-    const welcome = ensureWelcome(stats);
-    const merged = [welcome, ...local];
-    // sort newest first (welcome fixed, but still ok)
-    merged.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-    return merged;
+  // ===== state =====
+  let cache = {
+    userId: null,
+    mails: [],
+    activeId: null,
+  };
+
+  // ===== DB =====
+  async function fetchMails(userId) {
+    const sb = await ensureOnline();
+
+    // NOTE: Pokud tabulka neexistuje, Supabase obvykle vrátí chybu.
+    const { data, error } = await sb
+      .from(TABLE)
+      .select("id, from_name, to_name, subject, body, created_at, unread, important, kind")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function insertMail(userId, payload) {
+    const sb = await ensureOnline();
+    const row = {
+      id: genId(),
+      user_id: userId,
+      from_name: payload.from_name,
+      to_name: payload.to_name,
+      subject: payload.subject,
+      body: payload.body,
+      created_at: nowIso(),
+      unread: Boolean(payload.unread),
+      important: Boolean(payload.important),
+      kind: payload.kind || "player",
+    };
+
+    const { error } = await sb.from(TABLE).insert(row);
+    if (error) throw error;
+    return row;
+  }
+
+  async function setMailRead(userId, mailId) {
+    const sb = await ensureOnline();
+    const { error } = await sb
+      .from(TABLE)
+      .update({ unread: false })
+      .eq("user_id", userId)
+      .eq("id", mailId);
+    if (error) throw error;
+  }
+
+  async function deleteMail(userId, mailId) {
+    const sb = await ensureOnline();
+    const { error } = await sb
+      .from(TABLE)
+      .delete()
+      .eq("user_id", userId)
+      .eq("id", mailId);
+    if (error) throw error;
   }
 
   // ===== UI: compose =====
@@ -89,7 +150,6 @@
     if (!composePanel) return;
     composePanel.classList.add("open");
     composePanel.setAttribute("aria-hidden", "false");
-    // focus
     setTimeout(() => composeTo?.focus?.(), 0);
   }
 
@@ -112,13 +172,11 @@
       .map((m) => {
         const unreadCls = m.unread ? "unread" : "";
         const imp = m.important ? "⭐" : "";
-        const fromLine = m.kind === "system" ? m.from : `${m.from} → ${m.to}`;
+        const fromLine = m.kind === "system" ? m.from_name : `${m.from_name} → ${m.to_name}`;
         const snippet = safeStr(m.body).replace(/\s+/g, " ").slice(0, 70);
         const active = m.id === activeId ? "active" : "";
         const icon = m.kind === "system" ? "📩" : "✍️";
-        const timeText = (m.kind === "system" && m.id === "welcome" && !m.unread)
-          ? "VYZVEDNUTO"
-          : fmtTime(m.createdAt);
+        const timeText = (m.kind === "system" && m.id === "welcome" && !m.unread) ? "VYZVEDNUTO" : fmtTime(m.created_at);
         return `
           <div class="mail-item ${unreadCls} ${active}" data-id="${m.id}">
             <div class="mail-icon">${icon}</div>
@@ -150,25 +208,56 @@
       .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
       .replace(/\n/g, "<br>");
 
+    const canDelete = !isWelcome;
+
     detailEl.innerHTML = `
       <div class="mail-detail">
         <div class="mail-detail-head">
           <h2>${safeStr(mail.subject) || "(bez předmětu)"}</h2>
           <div class="mail-detail-meta">
-            <span>${safeStr(mail.from)}</span>
+            <span>${safeStr(mail.from_name)}</span>
             <span class="dot">•</span>
-            <span>${fmtTime(mail.createdAt)}</span>
+            <span>${fmtTime(mail.created_at)}</span>
           </div>
         </div>
         <div class="mail-detail-body">${bodyHtml}</div>
-        <div class="mail-detail-actions">
+        <div class="mail-detail-actions" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           ${isWelcome ? `<button id="claimWelcome" class="skinBtn" ${claimed ? "disabled" : ""}>${claimed ? "Vyzvednuto" : "Vyzvednout odměnu"}</button>` : ""}
+          ${canDelete ? `<button id="deleteMail" class="skinBtn" style="filter:saturate(0.85);">🗑️ Odstranit</button>` : ""}
         </div>
       </div>
     `;
 
     const btn = document.getElementById("claimWelcome");
     if (btn) btn.addEventListener("click", () => claimWelcome(stats));
+
+    const delBtn = document.getElementById("deleteMail");
+    if (delBtn) {
+      delBtn.addEventListener("click", async () => {
+        try {
+          await deleteMail(cache.userId, mail.id);
+          cache.activeId = null;
+          await refresh(stats);
+          renderDetail(null, stats);
+        } catch (e) {
+          console.error(e);
+          delBtn.classList.add("shake");
+          setTimeout(() => delBtn.classList.remove("shake"), 350);
+        }
+      });
+    }
+  }
+
+  function setActiveTab(name) {
+    tabBtns.forEach((b) => b.classList.toggle("active", safeStr(b.textContent) === name));
+  }
+
+  function filterByTab(threads) {
+    const active = tabBtns.find((b) => b.classList.contains("active"));
+    const name = safeStr(active?.textContent);
+    if (name === "Nepřečtené") return threads.filter((t) => t.unread);
+    if (name === "Důležité") return threads.filter((t) => t.important);
+    return threads;
   }
 
   // ===== actions =====
@@ -184,52 +273,30 @@
     window.SF.updateStats({ money, cigarettes, flags });
   }
 
-  function markReadIfLocal(id) {
-    if (id === "welcome") return; // welcome read state řešíme přes flag
-    const threads = loadThreads();
-    const idx = threads.findIndex((t) => t.id === id);
-    if (idx >= 0 && threads[idx].unread) {
-      threads[idx].unread = false;
-      saveThreads(threads);
-    }
-  }
-
-  function addLocalMessage({ to, subject, body }) {
-    const threads = loadThreads();
-    threads.unshift({
-      id: `local_${Math.random().toString(16).slice(2)}_${Date.now()}`,
-      from: "TY",
-      to,
-      subject,
-      body,
-      createdAt: nowIso(),
-      unread: false,
-      important: false,
-      kind: "local"
-    });
-    saveThreads(threads);
-  }
-
-  function setActiveTab(name) {
-    tabBtns.forEach((b) => b.classList.toggle("active", safeStr(b.textContent) === name));
-  }
-
-  function filterByTab(threads) {
-    const active = tabBtns.find((b) => b.classList.contains("active"));
-    const name = safeStr(active?.textContent);
-    if (name === "Nepřečtené") return threads.filter((t) => t.unread);
-    if (name === "Důležité") return threads.filter((t) => t.important);
-    return threads;
-  }
-
+  // ===== wiring =====
   function wireListClicks(stats) {
     if (!listEl) return;
-    listEl.addEventListener("click", (e) => {
+    listEl.addEventListener("click", async (e) => {
       const item = e.target?.closest?.(".mail-item");
       const id = item?.getAttribute?.("data-id");
       if (!id) return;
-      markReadIfLocal(id);
-      const all = getAllThreads(stats);
+
+      cache.activeId = id;
+
+      // mark read (jen online, a jen pokud to není welcome)
+      if (id !== "welcome") {
+        const m = cache.mails.find((x) => x.id === id);
+        if (m && m.unread) {
+          try {
+            await setMailRead(cache.userId, id);
+            m.unread = false;
+          } catch (e2) {
+            console.error(e2);
+          }
+        }
+      }
+
+      const all = buildMergedThreads(stats);
       const filtered = filterByTab(all);
       const mail = all.find((m) => m.id === id);
       renderList(filtered, id);
@@ -239,77 +306,120 @@
 
   function wireCompose(stats) {
     composeOpenBtn?.addEventListener("click", openCompose);
-    composeCloseBtn?.addEventListener("click", () => {
-      closeCompose();
-    });
-    composeCancelBtn?.addEventListener("click", () => {
-      closeCompose();
-    });
+    composeCloseBtn?.addEventListener("click", closeCompose);
+    composeCancelBtn?.addEventListener("click", closeCompose);
 
-    // ESC zavře
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeCompose();
     });
 
-    composeSendBtn?.addEventListener("click", () => {
+    composeSendBtn?.addEventListener("click", async () => {
       const to = safeStr(composeTo?.value);
       const subject = safeStr(composeSubject?.value);
       const body = safeStr(composeBody?.value);
 
       if (!to || !body) {
-        // mini feedback bez alertu, aby to nebylo otravný
         composeSendBtn.classList.add("shake");
         setTimeout(() => composeSendBtn.classList.remove("shake"), 350);
         return;
       }
 
-      // Zatím jen lokálně (offline). Později to můžeš napojit na DB.
-      addLocalMessage({ to, subject, body });
-      clearCompose();
-      closeCompose();
-
-      // rerender
-      const all = getAllThreads(stats);
-      const filtered = filterByTab(all);
-      renderList(filtered);
-      renderDetail(null, stats);
+      try {
+        await insertMail(cache.userId, {
+          from_name: "TY",
+          to_name: to,
+          subject,
+          body,
+          unread: false,
+          important: false,
+          kind: "player",
+        });
+        clearCompose();
+        closeCompose();
+        await refresh(stats);
+        renderDetail(null, stats);
+      } catch (e) {
+        console.error(e);
+        composeSendBtn.classList.add("shake");
+        setTimeout(() => composeSendBtn.classList.remove("shake"), 350);
+      }
     });
   }
 
   function wireTabs(stats) {
     tabBtns.forEach((b) => {
-      b.addEventListener("click", () => {
+      b.addEventListener("click", async () => {
         tabBtns.forEach((x) => x.classList.remove("active"));
         b.classList.add("active");
-        const all = getAllThreads(stats);
-        renderList(filterByTab(all));
-        renderDetail(null, stats);
+        const all = buildMergedThreads(stats);
+        renderList(filterByTab(all), cache.activeId);
+        const mail = all.find((m) => m.id === cache.activeId);
+        renderDetail(mail || null, stats);
       });
     });
   }
 
+  // ===== build & refresh =====
+  function buildMergedThreads(stats) {
+    const welcome = ensureWelcome(stats);
+    const merged = [welcome, ...(cache.mails || [])];
+    merged.sort((a, b) => String(b.created_at || b.createdAt).localeCompare(String(a.created_at || a.createdAt)));
+    return merged;
+  }
+
+  async function refresh(stats) {
+    try {
+      cache.mails = await fetchMails(cache.userId);
+    } catch (e) {
+      console.error("MAIL: Supabase chyba", e);
+      // Když tabulka neexistuje / chybí sloupce, nech aspoň welcome.
+      cache.mails = [];
+    }
+
+    const all = buildMergedThreads(stats);
+    renderList(filterByTab(all), cache.activeId);
+  }
+
   // ===== boot =====
-  function boot(stats) {
-    const all = getAllThreads(stats);
-    renderList(filterByTab(all));
+  async function start() {
+    if (window.SFReady) await window.SFReady;
+
+    const userId = window.SF?.user?.id || window.SF?.stats?.user_id;
+    cache.userId = userId;
+
+    if (!userId) {
+      // bez usera = není přihlášen
+      location.href = "login.html";
+      return;
+    }
+
+    // default tab
+    if (!tabBtns.some((b) => b.classList.contains("active")) && tabBtns[0]) {
+      tabBtns[0].classList.add("active");
+    }
+
+    const stats = window.SF?.stats;
+    await refresh(stats);
     renderDetail(null, stats);
     wireListClicks(stats);
     wireCompose(stats);
     wireTabs(stats);
-  }
 
-  function start() {
     // Re-render při změně statů (kvůli welcome claim)
-    document.addEventListener("sf:stats", (e) => {
+    document.addEventListener("sf:stats", async (e) => {
       const st = e.detail || window.SF?.stats;
-      boot(st);
+      await refresh(st);
+      const all = buildMergedThreads(st);
+      const mail = all.find((m) => m.id === cache.activeId);
+      renderDetail(mail || null, st);
     });
-    boot(window.SF?.stats);
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", start);
+    document.addEventListener("DOMContentLoaded", () => {
+      start().catch(console.error);
+    });
   } else {
-    start();
+    start().catch(console.error);
   }
 })();

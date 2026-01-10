@@ -257,6 +257,35 @@ async function initUser() {
       gameState.equipped = data.equipped || gameState.equipped;
       gameState.lastShopRotation = data.last_shop_rotation ?? data.lastShopRotation ?? null;
       gameState.currentShopItems = data.current_shop_items || data.currentShopItems || gameState.currentShopItems;
+
+      // ===== MIGRACE STARÝCH SAVŮ =====
+      // Když je v DB uložený inventář/equipped jen jako string id,
+      // převedeme to na objekt (aby se to vždy vykreslilo a nepadalo na ❓).
+      const allBase = getAllItems();
+      const toInstance = (ref) => {
+        if (!ref) return null;
+        if (typeof ref === 'object') return ref;
+        const id = String(ref);
+        // najdi base item
+        const base = allBase.find(it => it.id === id);
+        if (!base) return null;
+        const inst = JSON.parse(JSON.stringify(base));
+        inst.instance_id = id; // zachovej string jako instance_id (kvůli kompatibilitě)
+        inst.base_id = base.id;
+        inst.level_roll = gameState.level;
+        return inst;
+      };
+
+      // inventory: vyhoď neznámé stringy (nebo je necháme jako null a odfiltrujeme)
+      gameState.inventory = (gameState.inventory || []).map(x => toInstance(x) || x).filter(Boolean);
+      // equipped: převést stringy
+      const eq = gameState.equipped || {};
+      Object.keys(eq).forEach(k => {
+        if (typeof eq[k] === 'string') {
+          eq[k] = toInstance(eq[k]) || null;
+        }
+      });
+      gameState.equipped = eq;
     } else {
       rotateShopItems();
       await saveToSupabase();
@@ -391,12 +420,11 @@ function renderShopItems() {
   
   shopGrid.innerHTML = items.map(item => {
     const itemId = item.instance_id || item.id;
+    const iconHTML = renderItemIconHTML(item.icon, item.name);
     return `
       <div class="shop-item" data-item-id="${itemId}">
         <div class="item-icon">
-          ${item.icon.endsWith('.jpg') ? 
-            `<img src="${item.icon}" alt="${item.name}">` : 
-            item.icon}
+          ${iconHTML}
         </div>
         <div class="item-details">
           <h3>${item.name}</h3>
@@ -434,6 +462,35 @@ function renderShopItems() {
       hideTooltip();
     });
   });
+}
+
+// ===== PAID REROLL (NAHRADIT) =====
+async function paidRerollShop() {
+  try {
+    if (gameState.cigarettes < 10) {
+      showNotification('Nemáš 10 cigaret!', 'error');
+      return;
+    }
+
+    gameState.cigarettes -= 10;
+    rotateShopItems();
+    // aby se to neotočilo hned znovu přes timer
+    gameState.lastShopRotation = new Date().toISOString();
+
+    const saved = await saveToSupabase();
+    if (!saved) {
+      // rollback
+      gameState.cigarettes += 10;
+      showNotification('Chyba při ukládání (reroll zrušen).', 'error');
+      return;
+    }
+
+    updateUI();
+    showNotification('🔁 Itemy nahrazeny! (-10 cig)', 'success');
+  } catch (e) {
+    console.error(e);
+    showNotification('Chyba při nahrazení itemů', 'error');
+  }
 }
 
 function renderInventory() {
@@ -877,6 +934,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       switchCategory(btn.dataset.category);
     });
   });
+
+  // Paid reroll button (NAHRADIT)
+  const rerollBtn = document.getElementById('shopRerollBtn');
+  if (rerollBtn) {
+    rerollBtn.addEventListener('click', paidRerollShop);
+  }
   
   // Setup drop zones
   document.querySelectorAll('[data-dropzone="true"]').forEach(slot => {
