@@ -154,13 +154,18 @@
 
     // Základní numerická normalizace:
     // - když nám UI někde vyrobí číslo jako string ("10" / "10.05"), převedeme na Number
-    // - desetinné číslo se ponechá jako Number (oříznutí na int řešíme níže při chybě 22P02)
+    // - a pro jistotu pošleme INTEGER-like sloupce vždy jako celé číslo (ať je v DB int nebo numeric)
+    const forceIntKeys = new Set(["level", "xp", "money", "cigarettes", "energy", "max_energy"]);
     for (const k of Object.keys(out)) {
-      const v = out[k];
+      let v = out[k];
       if (typeof v === "string" && /^-?\d+(?:\.\d+)?$/.test(v.trim())) {
         const n = Number(v);
-        if (!Number.isNaN(n)) out[k] = n;
+        if (!Number.isNaN(n)) v = n;
       }
+      if (forceIntKeys.has(k) && typeof v === "number" && Number.isFinite(v)) {
+        v = Math.floor(v);
+      }
+      out[k] = v;
     }
     return out;
   }
@@ -187,31 +192,36 @@
     // 1) Standardní payload (bez neznámých klíčů)
     const payloadBase = normalizeRowForDb(stats);
 
-    // 2) Některé DB instance můžou mít sloupec pojmenovaný jinak (missiondata vs "missionData").
-    // Zkusíme postupně obě varianty, a když DB některý sloupec nezná, spadneme na druhou.
+    // 2) Mission sloupec detekujeme z načteného řádku (abychom neposílali "špatný" klíč a nespamovali 400).
+    // Pokud jsme ho ještě nedetekovali, spadneme na původní "zkus obě" režim.
     const attempts = [];
+    const m = window.SF?.dbCols?.player_stats || {};
+    const hasMissiondata = !!m.missiondata;
+    const hasMissionData = !!m.missionData;
 
-    // varianta A: missiondata (lowercase)
-    if (payloadBase.missiondata !== undefined) {
+    if (hasMissiondata) {
       const a = { ...payloadBase };
       delete a.missionData;
       attempts.push(a);
-    } else {
-      attempts.push({ ...payloadBase });
-    }
-
-    // varianta B: "missionData" (camelCase) – jen pokud máme co uložit
-    if (stats.missionData !== undefined || stats.missiondata !== undefined) {
+    } else if (hasMissionData) {
       const b = { ...payloadBase, missionData: stats.missionData ?? stats.missiondata };
       delete b.missiondata;
       attempts.push(b);
-    }
+    } else {
+      // Nevíme – zkusíme obě + fallback.
+      const a = { ...payloadBase };
+      delete a.missionData;
+      attempts.push(a);
 
-    // poslední záchrana: úplně bez misí (když DB nemá ani jeden sloupec)
-    const c = { ...payloadBase };
-    delete c.missiondata;
-    delete c.missionData;
-    attempts.push(c);
+      const b = { ...payloadBase, missionData: stats.missionData ?? stats.missiondata };
+      delete b.missiondata;
+      attempts.push(b);
+
+      const c = { ...payloadBase };
+      delete c.missiondata;
+      delete c.missionData;
+      attempts.push(c);
+    }
 
     let lastError = null;
     for (const payload of attempts) {
@@ -401,6 +411,15 @@
     if (baseRow.missiondata !== undefined && baseRow.missionData === undefined) {
       baseRow.missionData = baseRow.missiondata;
     }
+
+    // Zapamatuj si, jaké sloupce DB skutečně vrací, aby se upsert nemusel trefovat naslepo
+    // (a tím pádem nespamoval 400 pokusy se špatným názvem sloupce).
+    window.SF.dbCols = window.SF.dbCols || {};
+    window.SF.dbCols.player_stats = {
+      missiondata: Object.prototype.hasOwnProperty.call(baseRow, "missiondata"),
+      missionData: Object.prototype.hasOwnProperty.call(baseRow, "missionData"),
+    };
+
     window.SF.stats = baseRow;
     emitStats();
 
