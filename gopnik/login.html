@@ -472,64 +472,35 @@
     });
 
     // ===== PLAYER STATS BOOTSTRAP =====
-    async function ensurePlayerStats(userId, email, nickname) {
-      console.log('🔧 Ensuring player stats for:', userId);
-      
-      const { data: existing, error: selErr } = await sb
-        .from('player_stats')
-        .select('*')
-        .eq('user_id', userId)
-        .limit(1);
+    async function ensurePlayerStats(userId) {
+  const { data: existing, error: selErr } = await supabase
+    .from("player_stats")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle()
 
-      if (selErr) {
-        console.warn('player_stats select error:', selErr);
-        return null;
-      }
+  if (selErr) throw selErr
+  if (existing) return existing
 
-      if (existing && existing.length) {
-        console.log('✅ Player stats already exist');
-        return existing[0];
-      }
+  const payload = {
+    user_id: userId,
+    money: 5000,
+    cigarettes: 100,
+    energy: 100,
+    damage: 1,
+    mail_claimed: false
+  }
 
-      console.log('🆕 Creating new player stats...');
+  const { data, error } = await supabase
+    .from("player_stats")
+    .upsert(payload, { onConflict: "user_id" })
+    .select("*")
+    .single()
 
-      const payload = {
-        user_id: userId,
-        level: 1,
-        xp: 0,
-        money: 3170,
-        cigarettes: 42,
-        energy: 100,
-        max_energy: 100,
-        stats: {
-          strength: 18,
-          defense: 14,
-          dexterity: 11,
-          intelligence: 11,
-          constitution: 16,
-          luck: 9,
-          player_class: null
-        },
-        upgrade_costs: {
-          strength: 100,
-          defense: 100,
-          dexterity: 100,
-          intelligence: 100,
-          constitution: 100,
-          luck: 100
-        },
-        inventory: [],
-        equipped: {
-          weapon: null,
-          shield: null,
-          ring: null,
-          backpack: null,
-          helmet: null,
-          armor: null,
-          boots: null,
-          gloves: null
-        }
-      };
+  if (error) throw error
+  return data
+}
+
 
       const { data: ins, error: insErr } = await sb
         .from('player_stats')
