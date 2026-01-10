@@ -640,26 +640,42 @@
     });
 
     // ===== AUTO-REDIRECT =====
-    (async function autoRedirect() {
-      try {
-        console.log('🔍 Checking session...');
-        const { data } = await sb.auth.getSession();
-        const sess = data?.session;
-        
-        if (sess?.user) {
-          console.log('✅ Session found:', sess.user.id);
-          
-          const row = await ensurePlayerStats(sess.user.id, sess.user.email || '', null);
-          
-          showNotification('Již jsi přihlášen! Přesměrování...', 'success');
-          setTimeout(() => goToGame(row), 1000);
-        } else {
-          console.log('ℹ️ No active session');
-        }
-      } catch (error) {
-        console.warn('⚠️ Auto session check:', error);
-      }
-    })();
+(async function autoRedirect() {
+  try {
+    console.log('🔍 Checking session...');
+    const { data, error } = await sb.auth.getSession();
+    if (error) throw error;
+
+    const sess = data?.session;
+    if (!sess?.user) {
+      console.log('ℹ️ No active session');
+      return;
+    }
+
+    console.log('✅ Session found:', sess.user.id);
+
+    let row;
+    try {
+      row = await ensurePlayerStats(
+        sess.user.id,
+        sess.user.email || '',
+        null
+      );
+    } catch (e) {
+      console.error('❌ ensurePlayerStats failed:', e);
+      return;
+    }
+
+    showNotification('Již jsi přihlášen! Přesměrování...', 'success');
+    setTimeout(() => {
+      if (row) goToGame(row);
+    }, 500);
+
+  } catch (error) {
+    console.warn('⚠️ Auto session check:', error);
+  }
+})();
+
   </script>
 </body>
 </html>
