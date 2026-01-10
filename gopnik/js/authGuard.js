@@ -1,8 +1,6 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// Sdílej jednu instanci napříč stránkami – jinak Supabase varuje
-// "Multiple GoTrueClient instances" a může to vést k nestabilní session.
-export const supabase = window.supabaseClient || createClient(
+export const supabase = createClient(
   'https://wngzgptxrgfrwuyiyueu.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No',
   {
@@ -14,8 +12,6 @@ export const supabase = window.supabaseClient || createClient(
     },
   }
 );
-
-window.supabaseClient = supabase;
 
 // Global guard: pokud není session, poslat na login.html
 export async function requireAuth() {

@@ -224,8 +224,8 @@
     const asset = (file) => new URL(file, BASE).toString();
 
     // ===== DATA =====
-    // Pozn.: v repozitáři jsou aktuálně jen 2 avatary.
-    // Kdybychom tu nechali i neexistující soubory, prohlížeč spamuje konzoli 404.
+    // Pozn.: v repu jsou aktuálně jen avatar.jpg a avatar2.jpg.
+    // Když přidáš další avatary, stačí je sem dopsat.
     const avatarOptions = ['avatar.jpg','avatar2.jpg'].map(asset);
 
     const frameOptions = [
@@ -390,38 +390,47 @@
     // INIT UI
     previewImg.src = state.selectedAvatar;
     loadAvatars(); loadFrames(); loadColors(); updateConfirmButton();
-
-    // ===== SUPABASE =====
-    const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
-    // Sdílená Supabase instance (jinak Supabase varuje "Multiple GoTrueClient instances")
-    const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-    });
-    window.supabaseClient = sb;
-    let uid = null;
-
-    async function loadPlayerRow(userId) {
-      const { data, error } = await sb.from('player_stats').select('user_id, stats').eq('user_id', userId).maybeSingle();
-      if (error) throw error;
-      return data;
+    // ===== SUPABASE (přes menu.js) =====
+    // menu.js vytváří jediný Supabase klient a načítá stats do window.SF
+    async function ensureSF() {
+      if (window.SFReady) {
+        try {
+          await window.SFReady;
+        } catch (e) {
+          dbg('❌ SFReady failed:', e);
+        }
+      }
+      return window.SF || null;
     }
 
     async function saveCharacterToDb() {
-      if (!uid) return;
+      const SF = await ensureSF();
+      if (!SF?.sb || !SF?.user?.id) {
+        alert('Chybí přihlášení (Supabase). Zkus se odhlásit/přihlásit.');
+        return;
+      }
 
-      const row = await loadPlayerRow(uid);
-      const st = row?.stats || {};
+      const uid = SF.user.id;
+      const st = (SF.stats && SF.stats.stats) ? (SF.stats.stats) : {};
+
+      // když už je třída uložená, nic nepřepisuj
       if (st.player_class) return;
 
-      st.player_class  = String(state.selectedClass || 'padouch').toLowerCase();
-      st.character_name= state.characterName;
-      st.avatar_url    = state.selectedAvatar;
-      st.avatar_frame  = state.selectedFrame;
-      st.avatar_color  = state.selectedColor;
+      st.player_class   = String(state.selectedClass || 'padouch').toLowerCase();
+      st.character_name = state.characterName;
+      st.avatar_url     = state.selectedAvatar;
+      st.avatar_frame   = state.selectedFrame;
+      st.avatar_color   = state.selectedColor;
 
-      const { error } = await sb.from('player_stats').update({ stats: st }).eq('user_id', uid);
+      const { error } = await SF.sb
+        .from('player_stats')
+        .update({ stats: st })
+        .eq('user_id', uid);
+
       if (error) throw error;
+
+      // update cache
+      if (SF.stats) SF.stats.stats = st;
     }
 
     // CONFIRM (jediný listener)
@@ -439,40 +448,27 @@
       }
     });
 
-    // BOOT (neposílá na login při DB fetch failu)
+    // BOOT
     (async function boot() {
-      try {
-        dbg('🔍 boot vyber start');
-        const { data, error } = await sb.auth.getSession();
-        if (error) throw error;
+      dbg('🔍 boot vyber start');
+      const SF = await ensureSF();
 
-        const session = data?.session;
-        if (!session?.user?.id) {
-          window.location.href = 'login.html';
-          return;
-        }
-
-        uid = session.user.id;
-        dbg('✅ uid:', uid);
-
-        try {
-          const { data: row, error: rowErr } = await sb.from('player_stats').select('stats').eq('user_id', uid).maybeSingle();
-          if (rowErr) {
-            dbg('⚠️ player_stats error (no redirect):', rowErr);
-          } else {
-            const cls = String(row?.stats?.player_class || '').toLowerCase();
-            dbg('player_class:', cls || '(empty)');
-            if (cls) { window.location.href = 'postava.html'; return; }
-          }
-        } catch (dbFetchErr) {
-          dbg('⚠️ DB fetch failed (no redirect):', dbFetchErr);
-        }
-
-        dbg('✅ staying on vyber');
-      } catch (e) {
-        dbg('❌ boot vyber failed:', e);
+      if (!SF?.user?.id) {
         window.location.href = 'login.html';
+        return;
       }
+
+      dbg('✅ uid:', SF.user.id);
+
+      // pokud už třída existuje, přesměruj
+      const cls = String(SF?.stats?.stats?.player_class || '').toLowerCase();
+      dbg('player_class:', cls || '(empty)');
+      if (cls) {
+        window.location.href = 'postava.html';
+        return;
+      }
+
+      dbg('✅ staying on vyber');
     })();
   </script>
 </body>

@@ -2,10 +2,6 @@
 (() => {
   'use strict';
 
-  // ====== SUPABASE CONFIG ======
-  const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
-
   let supabase = null;
 
   // ====== CONFIG ======
@@ -115,321 +111,56 @@
   }
 
   // ====== SUPABASE MANAGER ======
+
+  let sb = null;
+
   class SupabaseManager {
     static async init() {
-      try {
-        if (!window.supabase || !window.supabase.createClient) {
-          console.error('❌ Supabase library not loaded');
-          return false;
+      // menu.js drží singleton Supabase client (window.SF.sb) + Promise (window.SFReady)
+      if (window.SFReady) {
+        try { await window.SFReady; } catch (e) {
+          console.warn('[guild] SFReady failed:', e);
         }
-
-        // Sdílej jednu instanci napříč stránkami
-        supabase = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-        });
-        window.supabaseClient = supabase;
-        console.log('✅ Supabase initialized');
-        return true;
-      } catch (e) {
-        console.error('❌ Supabase init failed:', e);
-        return false;
       }
+      sb = window.SF?.sb || null;
+      if (!sb) {
+        console.error('[guild] Supabase client není dostupný. Zkontroluj že je na stránce načtený menu.js a @supabase/supabase-js.');
+      }
+      return sb;
     }
 
     static _ensure() {
-      if (!supabase) throw new Error('Supabase not initialized');
+      if (!sb) throw new Error('Supabase client není inicializovaný');
     }
 
-    static async loadGuilds() {
-      console.log('📦 Loading guilds from Supabase...');
-      try {
-        this._ensure();
-
-        const { data, error } = await supabase
-          .from('guilds')
-          .select('*')
-          .order('level', { ascending: false });
-
-        if (error) {
-          console.error('❌ Error loading guilds:', error);
-          return [];
-        }
-
-        console.log('✅ Loaded guilds:', data);
-        return data || [];
-      } catch (err) {
-        console.error('❌ Exception loading guilds:', err);
-        return [];
-      }
+    static async getUserId() {
+      this._ensure();
+      const { data, error } = await sb.auth.getSession();
+      if (error) throw error;
+      return data?.session?.user?.id || null;
     }
 
-    // ✅ FIX: use maybeSingle() to avoid 406 (Not Acceptable) when the player is not in any guild.
-    static async loadPlayerGuild(userId) {
-      console.log('👤 Loading player guild for user:', userId);
-
-      try {
-        this._ensure();
-
-        // maybeSingle() returns { data: null, error: null } if no rows -> no 406
-        const { data, error } = await supabase
-          .from('guild_members')
-          .select('guild_id, role, last_donate')
-          .eq('user_id', userId)
-          .limit(1)
-          .maybeSingle();
-
-        if (error) {
-          console.error('❌ Error loading player guild:', error);
-          return null;
-        }
-
-        if (!data) {
-          console.log('ℹ️ Player not in any guild');
-          return null;
-        }
-
-        console.log('✅ Player guild data:', data);
-        return data;
-      } catch (err) {
-        console.error('❌ Exception loading player guild:', err);
-        return null;
-      }
+    static async getRow(userId) {
+      this._ensure();
+      const { data, error } = await sb
+        .from('player_stats')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     }
 
-    static async loadGuildMembers(guildId) {
-      console.log('👥 Loading guild members for:', guildId);
-
-      try {
-        this._ensure();
-
-        const { data, error } = await supabase
-          .from('guild_members')
-          .select('user_id, role, level, icon')
-          .eq('guild_id', guildId);
-
-        if (error) {
-          console.error('❌ Error loading guild members:', error);
-          return [];
-        }
-
-        console.log('✅ Loaded members:', data);
-        return data || [];
-      } catch (err) {
-        console.error('❌ Exception loading guild members:', err);
-        return [];
-      }
-    }
-
-    static async createGuild(guildData) {
-      console.log('🏗️ Creating guild:', guildData);
-
-      try {
-        this._ensure();
-
-        const { data, error } = await supabase
-          .from('guilds')
-          .insert([guildData])
-          .select()
-          .single();
-
-        if (error) {
-          console.error('❌ Error creating guild:', error);
-          throw error;
-        }
-
-        console.log('✅ Guild created:', data);
-        return data;
-      } catch (err) {
-        console.error('❌ Exception creating guild:', err);
-        throw err;
-      }
-    }
-
-    static async joinGuild(userId, guildId, role = 'Member') {
-      console.log('✅ Joining guild:', { userId, guildId, role });
-
-      try {
-        this._ensure();
-
-        const playerLevel = Player.getLevel();
-
-        const memberData = {
-          user_id: userId,
-          guild_id: guildId,
-          role,
-          level: playerLevel,
-          icon: role === 'Master' ? '👑' : '💪',
-        };
-
-        const { data, error } = await supabase
-          .from('guild_members')
-          .insert([memberData])
-          .select()
-          .single();
-
-        if (error) {
-          console.error('❌ Error joining guild:', error);
-          throw error;
-        }
-
-        // Update guild member count and power (RPC)
-        const { error: updateError } = await supabase.rpc('increment_guild_stats', {
-          p_guild_id: guildId,
-          p_members_delta: 1,
-          p_power_delta: playerLevel * 50,
-        });
-
-        if (updateError) {
-          console.warn('⚠️ Error updating guild stats:', updateError);
-        }
-
-        console.log('✅ Joined guild:', data);
-        return data;
-      } catch (err) {
-        console.error('❌ Exception joining guild:', err);
-        throw err;
-      }
-    }
-
-    static async leaveGuild(userId, guildId) {
-      console.log('🚪 Leaving guild:', { userId, guildId });
-
-      try {
-        this._ensure();
-
-        // Get member data before deleting
-        const { data: memberData } = await supabase
-          .from('guild_members')
-          .select('level')
-          .eq('user_id', userId)
-          .eq('guild_id', guildId)
-          .maybeSingle();
-
-        const { error } = await supabase
-          .from('guild_members')
-          .delete()
-          .eq('user_id', userId)
-          .eq('guild_id', guildId);
-
-        if (error) {
-          console.error('❌ Error leaving guild:', error);
-          throw error;
-        }
-
-        // Update guild stats
-        if (memberData) {
-          const { error: updateError } = await supabase.rpc('increment_guild_stats', {
-            p_guild_id: guildId,
-            p_members_delta: -1,
-            p_power_delta: -(memberData.level * 50),
-          });
-
-          if (updateError) {
-            console.warn('⚠️ Error updating guild stats:', updateError);
-          }
-        }
-
-        console.log('✅ Left guild');
-        return true;
-      } catch (err) {
-        console.error('❌ Exception leaving guild:', err);
-        throw err;
-      }
-    }
-
-    static async deleteGuild(guildId) {
-      console.log('🗑️ Deleting guild:', guildId);
-
-      try {
-        this._ensure();
-
-        // Delete all members first
-        await supabase.from('guild_members').delete().eq('guild_id', guildId);
-
-        // Delete guild
-        const { error } = await supabase.from('guilds').delete().eq('id', guildId);
-
-        if (error) {
-          console.error('❌ Error deleting guild:', error);
-          throw error;
-        }
-
-        console.log('✅ Guild deleted');
-        return true;
-      } catch (err) {
-        console.error('❌ Exception deleting guild:', err);
-        throw err;
-      }
-    }
-
-    static async donate(guildId, type, amount) {
-      console.log('💰 Donating to guild:', { guildId, type, amount });
-
-      try {
-        this._ensure();
-
-        const moneyDelta = type === 'money' ? amount : 0;
-        const cigsDelta = type === 'cigs' ? amount : 0;
-
-        // Prefer RPC (atomic) if you have it in DB:
-        // create function increment_guild_vault(p_guild_id uuid, p_money_delta int, p_cigs_delta int)
-        let usedRpc = false;
-        try {
-          const { error: rpcErr } = await supabase.rpc('increment_guild_vault', {
-            p_guild_id: guildId,
-            p_money_delta: moneyDelta,
-            p_cigs_delta: cigsDelta,
-          });
-          if (!rpcErr) usedRpc = true;
-        } catch (_) {
-          // ignore, fallback below
-        }
-
-        if (!usedRpc) {
-          // Fallback (non-atomic): read then update
-          const { data: g, error: readErr } = await supabase
-            .from('guilds')
-            .select('vault_money, vault_cigs')
-            .eq('id', guildId)
-            .single();
-
-          if (readErr) throw readErr;
-
-          const nextMoney = (g?.vault_money || 0) + moneyDelta;
-          const nextCigs = (g?.vault_cigs || 0) + cigsDelta;
-
-          const { error: updErr } = await supabase
-            .from('guilds')
-            .update({ vault_money: nextMoney, vault_cigs: nextCigs })
-            .eq('id', guildId);
-
-          if (updErr) throw updErr;
-        }
-
-        // Update power (kept from your code)
-        const powerDelta = Math.floor(amount / 10);
-        await supabase.rpc('increment_guild_stats', {
-          p_guild_id: guildId,
-          p_members_delta: 0,
-          p_power_delta: powerDelta,
-        });
-
-        // Update last_donate timestamp (store as ms epoch)
-        const userId = Player.getUserId();
-        await supabase
-          .from('guild_members')
-          .update({ last_donate: Date.now() })
-          .eq('user_id', userId)
-          .eq('guild_id', guildId);
-
-        console.log('✅ Donation successful');
-        return true;
-      } catch (err) {
-        console.error('❌ Exception donating:', err);
-        throw err;
-      }
+    static async updateStats(userId, statsObj) {
+      this._ensure();
+      const { error } = await sb
+        .from('player_stats')
+        .update({ stats: statsObj })
+        .eq('user_id', userId);
+      if (error) throw error;
     }
   }
+
 
   // ====== GUILD MANAGER ======
   class GuildManager {

@@ -83,27 +83,26 @@
   // SUPABASE CLIENT
   // -------------------------
   function getSbClient() {
-    // Používej jednu sdílenou instanci napříč stránkami.
-    // Když se vytvoří více clientů se stejným storage key, Supabase varuje
-    // "Multiple GoTrueClient instances" a může to vést k divnému chování.
-    if (window.supabaseClient) return window.supabaseClient;
+    // Jedna instance Supabase klienta na stránku (řeší warning "Multiple GoTrueClient instances")
     if (window.SF?.sb) return window.SF.sb;
     const lib = window.supabase;
     if (!lib || typeof lib.createClient !== "function") return null;
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
 
-    const client = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const sb = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storage: window.sessionStorage,
+        // localStorage = stabilnější napříč stránkami; sessionStorage umí dělat divné věci při reloadu
+        storage: window.localStorage,
       },
     });
 
-    window.supabaseClient = client;
-    if (window.SF) window.SF.sb = client;
-    return client;
+    // cache
+    if (!window.SF) window.SF = {};
+    window.SF.sb = sb;
+    return sb;
   }
 
   // -------------------------
@@ -158,7 +157,12 @@
         intelligence: 10,
         constitution: 10,
         luck: 10,
-        player_class: ("padouch").toLowerCase(),
+        // Nevyplňovat automaticky – třídu si hráč volí na stránce výběru
+        player_class: null,
+        character_name: null,
+        avatar_url: null,
+        avatar_frame: null,
+        avatar_color: null,
       },
       upgrade_costs: {
         strength: 100,

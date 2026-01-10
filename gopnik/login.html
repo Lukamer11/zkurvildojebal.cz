@@ -408,11 +408,7 @@
     const NEXT_URL = 'postava.html';
 
 
-    // Sdílená Supabase instance (ať nevzniká víc GoTrueClientů napříč stránkami)
-    const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-    });
-    window.supabaseClient = sb;
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const tabBtns = document.querySelectorAll('.tab-btn');
     const loginForm = document.getElementById('loginForm');
