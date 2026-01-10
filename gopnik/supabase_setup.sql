@@ -14,7 +14,8 @@ create table if not exists player_stats (
   equipped jsonb not null default '{}'::jsonb,
   flags jsonb not null default '{}'::jsonb,
   clicker jsonb not null default '{}'::jsonb,
-  missionData jsonb not null default '{}'::jsonb
+  missionData jsonb not null default '{}'::jsonb,
+  mail_claimed boolean not null default false
 );
 
 alter table if exists player_stats add column if not exists level int not null default 1;
@@ -30,6 +31,35 @@ alter table if exists player_stats add column if not exists equipped jsonb not n
 alter table if exists player_stats add column if not exists flags jsonb not null default '{}'::jsonb;
 alter table if exists player_stats add column if not exists clicker jsonb not null default '{}'::jsonb;
 alter table if exists player_stats add column if not exists missionData jsonb not null default '{}'::jsonb;
+alter table if exists player_stats add column if not exists mail_claimed boolean not null default false;
+
+do $$
+declare
+  r record;
+begin
+  for r in
+    select c.conname
+    from pg_constraint c
+    join pg_class t on t.oid = c.conrelid
+    join pg_namespace n on n.oid = t.relnamespace
+    where n.nspname='public'
+      and t.relname='player_stats'
+      and c.contype='f'
+  loop
+    execute format('alter table public.player_stats drop constraint %I', r.conname);
+  end loop;
+  if not exists (
+    select 1
+    from pg_constraint c
+    join pg_class t on t.oid = c.conrelid
+    join pg_namespace n on n.oid = t.relnamespace
+    where n.nspname='public'
+      and t.relname='player_stats'
+      and c.contype='f'
+  ) then
+    execute 'alter table public.player_stats add constraint player_stats_user_id_fkey foreign key (user_id) references auth.users(id) on delete cascade';
+  end if;
+end $$;
 
 create table if not exists crypta_fights (
   user_id uuid primary key,

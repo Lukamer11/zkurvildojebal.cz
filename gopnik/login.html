@@ -533,7 +533,7 @@
 
       const { data: ins, error: insErr } = await sb
         .from('player_stats')
-        .insert(payload)
+        .upsert(payload, { onConflict: 'user_id' })
         .select('*')
         .single();
 
