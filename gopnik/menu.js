@@ -83,12 +83,16 @@
   // SUPABASE CLIENT
   // -------------------------
   function getSbClient() {
+    // Používej jednu sdílenou instanci napříč stránkami.
+    // Když se vytvoří více clientů se stejným storage key, Supabase varuje
+    // "Multiple GoTrueClient instances" a může to vést k divnému chování.
+    if (window.supabaseClient) return window.supabaseClient;
     if (window.SF?.sb) return window.SF.sb;
     const lib = window.supabase;
     if (!lib || typeof lib.createClient !== "function") return null;
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
 
-    return lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const client = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -96,6 +100,10 @@
         storage: window.sessionStorage,
       },
     });
+
+    window.supabaseClient = client;
+    if (window.SF) window.SF.sb = client;
+    return client;
   }
 
   // -------------------------

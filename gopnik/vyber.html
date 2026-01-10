@@ -224,7 +224,9 @@
     const asset = (file) => new URL(file, BASE).toString();
 
     // ===== DATA =====
-    const avatarOptions = ['avatar.jpg','avatar2.jpg','avatar3.jpg','avatar4.jpg','avatar5.jpg','avatar6.jpg','avatar7.jpg','avatar8.jpg','avatar9.jpg'].map(asset);
+    // Pozn.: v repozitáři jsou aktuálně jen 2 avatary.
+    // Kdybychom tu nechali i neexistující soubory, prohlížeč spamuje konzoli 404.
+    const avatarOptions = ['avatar.jpg','avatar2.jpg'].map(asset);
 
     const frameOptions = [
       { color: 'transparent', name: 'Žádný' },
@@ -392,7 +394,11 @@
     // ===== SUPABASE =====
     const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Sdílená Supabase instance (jinak Supabase varuje "Multiple GoTrueClient instances")
+    const sb = window.supabaseClient || supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    });
+    window.supabaseClient = sb;
     let uid = null;
 
     async function loadPlayerRow(userId) {

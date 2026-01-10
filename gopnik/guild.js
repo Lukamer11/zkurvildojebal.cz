@@ -123,7 +123,11 @@
           return false;
         }
 
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Sdílej jednu instanci napříč stránkami
+        supabase = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        });
+        window.supabaseClient = supabase;
         console.log('✅ Supabase initialized');
         return true;
       } catch (e) {
