@@ -549,7 +549,7 @@
     async function goToGame(playerRow) {
       const clsDb = (playerRow?.stats?.player_class || '').toLowerCase();
       
-      if (!clsLs && !clsDb) {
+      if (!clsDb) {
         console.log('🎭 No class selected, redirecting to vyber.html');
         window.location.href = 'vyber.html';
         return;
