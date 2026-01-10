@@ -16,515 +16,162 @@
       color:#fff;
       overflow-x: hidden;
     }
-
-    .pick-wrap{
-      height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:12px;
-      overflow:hidden;
-    }
-
+    .pick-wrap{height:100vh;display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden;}
     .pick-panel{
       width:min(1400px, 98vw);
-      max-height:96vh;
-      border-radius:16px;
-      overflow:hidden;
-      border:4px solid;
+      max-height:96vh;border-radius:16px;overflow:hidden;border:4px solid;
       border-image: linear-gradient(135deg, #f1d27a, #c9a44a, #f1d27a) 1;
       box-shadow:0 25px 70px rgba(0,0,0,0.85);
-      background-image:url('panel_bg.jpg');
-      background-size:cover;
-      background-position:center;
-      display:flex;
-      flex-direction:column;
+      background-image:url('panel_bg.jpg');background-size:cover;background-position:center;
+      display:flex;flex-direction:column;
     }
-
     .pick-head{
       padding:14px 20px;
       background: linear-gradient(135deg, rgba(40,30,20,0.98), rgba(25,18,12,0.99));
       border-bottom:3px solid rgba(201,164,74,0.4);
-      text-align:center;
-      flex-shrink:0;
+      text-align:center;flex-shrink:0;
     }
-
     .pick-title{
-      font-size:22px;
-      font-weight:900;
-      letter-spacing:2px;
-      color:#f1d27a;
+      font-size:22px;font-weight:900;letter-spacing:2px;color:#f1d27a;
       text-shadow:0 0 20px rgba(241, 210, 122, 0.6), 0 4px 12px rgba(0,0,0,0.95);
       text-transform: uppercase;
     }
+    .pick-sub{margin-top:4px;font-size:12px;font-weight:900;color:rgba(255,255,255,0.85);text-shadow:0 2px 8px rgba(0,0,0,0.95);}
+    .pick-content{display:grid;grid-template-columns: 1fr 360px;gap:16px;padding:14px;flex:1;overflow:hidden;}
 
-    .pick-sub{
-      margin-top:4px;
-      font-size:12px;
-      font-weight:900;
-      color:rgba(255,255,255,0.85);
-      text-shadow:0 2px 8px rgba(0,0,0,0.95);
-    }
-
-    .pick-content{
-      display:grid;
-      grid-template-columns: 1fr 360px;
-      gap:16px;
-      padding:14px;
-      flex:1;
-      overflow:hidden;
-    }
-
-    /* LEVÁ ČÁST - TŘÍDY */
     .class-section{
       background: linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99));
       border: 3px solid rgba(201,164,74,0.35);
-      border-radius:14px;
-      padding:14px;
+      border-radius:14px;padding:14px;
       box-shadow: 0 12px 35px rgba(0,0,0,.7);
-      display:flex;
-      flex-direction:column;
-      overflow:hidden;
+      display:flex;flex-direction:column;overflow:hidden;
     }
-
     .section-title{
-      font-size:16px;
-      font-weight:900;
-      color:#f1d27a;
-      margin-bottom:12px;
-      padding-bottom:8px;
+      font-size:16px;font-weight:900;color:#f1d27a;margin-bottom:12px;padding-bottom:8px;
       border-bottom:2px solid rgba(201,164,74,0.3);
       text-shadow:0 2px 6px rgba(0,0,0,0.8);
       flex-shrink:0;
     }
-
-    .class-grid{
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap:12px;
-      overflow-y:auto;
-      padding-right:6px;
-    }
-
-    .class-grid::-webkit-scrollbar{
-      width:6px;
-    }
-
-    .class-grid::-webkit-scrollbar-track{
-      background:rgba(0,0,0,.2);
-      border-radius:10px;
-    }
-
-    .class-grid::-webkit-scrollbar-thumb{
-      background:rgba(255,255,255,.3);
-      border-radius:10px;
-    }
-
+    .class-grid{display:grid;grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));gap:12px;overflow-y:auto;padding-right:6px;}
+    .class-grid::-webkit-scrollbar{width:6px;}
+    .class-grid::-webkit-scrollbar-track{background:rgba(0,0,0,.2);border-radius:10px;}
+    .class-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:10px;}
     .class-card{
-      position:relative;
-      border-radius:12px;
-      overflow:hidden;
-      background: url('tlacitko_shop.jpg');
-      background-size:cover;
-      background-position:center;
+      position:relative;border-radius:12px;overflow:hidden;
+      background: url('tlacitko_shop.jpg');background-size:cover;background-position:center;
       border:3px solid rgba(201,164,74,0.3);
       box-shadow:0 8px 20px rgba(0,0,0,0.65);
-      cursor:pointer;
-      transition:all .2s ease;
-      padding:12px;
-      min-height: 200px;
+      cursor:pointer;transition:all .2s ease;padding:12px;min-height: 200px;
     }
-
-    .class-card:hover{
-      transform: translateY(-4px) scale(1.02);
-      border-color: rgba(201,164,74,0.6);
-      box-shadow:0 16px 40px rgba(0,0,0,0.75), 0 0 25px rgba(241, 210, 122, 0.3);
-    }
-
-    .class-card.selected{
-      border-color: rgba(46,204,113,0.9);
-      box-shadow:0 18px 50px rgba(46,204,113,0.3), 0 0 40px rgba(46,204,113,0.5);
-      transform: translateY(-6px) scale(1.05);
-    }
-
-    .class-top{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      margin-bottom:10px;
-    }
-
+    .class-card:hover{transform: translateY(-4px) scale(1.02);border-color: rgba(201,164,74,0.6);box-shadow:0 16px 40px rgba(0,0,0,0.75), 0 0 25px rgba(241, 210, 122, 0.3);}
+    .class-card.selected{border-color: rgba(46,204,113,0.9);box-shadow:0 18px 50px rgba(46,204,113,0.3), 0 0 40px rgba(46,204,113,0.5);transform: translateY(-6px) scale(1.05);}
+    .class-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
     .class-icon{
-      width:40px;
-      height:40px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border-radius:10px;
-      background:rgba(0,0,0,0.55);
-      border:2px solid rgba(201,164,74,0.55);
-      font-size:22px;
-      text-shadow:0 2px 8px rgba(0,0,0,0.95);
-      flex:0 0 auto;
+      width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;
+      background:rgba(0,0,0,0.55);border:2px solid rgba(201,164,74,0.55);
+      font-size:22px;text-shadow:0 2px 8px rgba(0,0,0,0.95);flex:0 0 auto;
       box-shadow: inset 0 0 15px rgba(0,0,0,0.4);
     }
+    .class-name{font-size:16px;font-weight:900;color:#fff;text-shadow:0 3px 12px rgba(0,0,0,0.95);letter-spacing:0.8px;}
+    .class-desc{font-size:11px;font-weight:900;color:rgba(255,255,255,0.85);line-height:1.35;text-shadow:0 2px 8px rgba(0,0,0,0.95);margin-bottom:10px;}
+    .class-bullets{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:900;color:#f7f0d0;text-shadow:0 2px 10px rgba(0,0,0,0.95);}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:rgba(0,0,0,0.4);border:2px solid rgba(255,255,255,0.15);transition: all 0.2s ease;}
+    .pill:hover{background:rgba(0,0,0,0.5);border-color: rgba(255,255,255,0.25);}
 
-    .class-name{
-      font-size:16px;
-      font-weight:900;
-      color:#fff;
-      text-shadow:0 3px 12px rgba(0,0,0,0.95);
-      letter-spacing:0.8px;
-    }
-
-    .class-desc{
-      font-size:11px;
-      font-weight:900;
-      color:rgba(255,255,255,0.85);
-      line-height:1.35;
-      text-shadow:0 2px 8px rgba(0,0,0,0.95);
-      margin-bottom:10px;
-    }
-
-    .class-bullets{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      font-size:11px;
-      font-weight:900;
-      color:#f7f0d0;
-      text-shadow:0 2px 10px rgba(0,0,0,0.95);
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 10px;
-      border-radius:8px;
-      background:rgba(0,0,0,0.4);
-      border:2px solid rgba(255,255,255,0.15);
-      transition: all 0.2s ease;
-    }
-
-    .pill:hover{
-      background:rgba(0,0,0,0.5);
-      border-color: rgba(255,255,255,0.25);
-    }
-
-    /* PRAVÁ ČÁST - AVATAR */
     .avatar-section{
       background: linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99));
       border: 3px solid rgba(201,164,74,0.35);
-      border-radius:14px;
-      padding:14px;
+      border-radius:14px;padding:14px;
       box-shadow: 0 12px 35px rgba(0,0,0,.7);
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      overflow:hidden;
+      display:flex;flex-direction:column;gap:12px;overflow:hidden;
     }
-
     .avatar-preview{
-      position:relative;
-      width:100%;
-      aspect-ratio: 1/1;
+      position:relative;width:100%;aspect-ratio: 1/1;
       background: radial-gradient(circle at center, rgba(44,47,52,0.8), rgba(15,17,20,0.95));
-      border: 4px solid #c9a44a;
-      border-radius: 12px;
+      border: 4px solid #c9a44a;border-radius: 12px;
       box-shadow: inset 0 0 30px rgba(0,0,0,.5), 0 8px 20px rgba(0,0,0,.6);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink:0;
+      overflow: hidden;display: flex;align-items: center;justify-content: center;flex-shrink:0;
     }
-
-    .avatar-preview img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-    }
-
+    .avatar-preview img{width:100%;height:100%;object-fit:cover;}
     .avatar-class-icon{
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 40px;
-      height: 40px;
-      background: rgba(0,0,0,0.8);
-      border: 3px solid #c9a44a;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
+      position: absolute;top: 8px;right: 8px;width: 40px;height: 40px;
+      background: rgba(0,0,0,0.8);border: 3px solid #c9a44a;border-radius: 50%;
+      display: flex;align-items: center;justify-content: center;font-size: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.6);
     }
-
-    .customization-tabs{
-      display:flex;
-      gap:6px;
-      flex-shrink:0;
-    }
-
+    .customization-tabs{display:flex;gap:6px;flex-shrink:0;}
     .custom-tab{
-      flex:1;
-      padding:8px;
-      background: url('tlacitko.jpg');
-      background-size:cover;
-      background-position:center;
-      border:2px solid #7a5a23;
-      border-radius:8px;
-      color:#c9a44a;
-      font-weight:900;
-      font-size:11px;
-      cursor:pointer;
-      transition:all .2s ease;
-      text-transform:uppercase;
-      text-align:center;
+      flex:1;padding:8px;background: url('tlacitko.jpg');background-size:cover;background-position:center;
+      border:2px solid #7a5a23;border-radius:8px;color:#c9a44a;
+      font-weight:900;font-size:11px;cursor:pointer;transition:all .2s ease;
+      text-transform:uppercase;text-align:center;
     }
-
-    .custom-tab:hover{
-      border-color:#c9a44a;
-      transform: translateY(-2px);
-    }
-
-    .custom-tab.active{
-      background: linear-gradient(135deg, #c9a44a, #7a5a23);
-      color:#2b1a0f;
-      border-color:#f1d27a;
-      box-shadow: 0 0 15px rgba(241, 210, 122, 0.4);
-    }
-
-    .custom-content{
-      display:none;
-    }
-
-    .custom-content.active{
-      display:block;
-    }
-
-    .avatar-grid{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:8px;
-      max-height:140px;
-      overflow-y:auto;
-      padding:4px;
-    }
-
-    .avatar-grid::-webkit-scrollbar{
-      width:5px;
-    }
-
-    .avatar-grid::-webkit-scrollbar-track{
-      background:rgba(0,0,0,.2);
-      border-radius:10px;
-    }
-
-    .avatar-grid::-webkit-scrollbar-thumb{
-      background:rgba(255,255,255,.3);
-      border-radius:10px;
-    }
-
+    .custom-tab:hover{border-color:#c9a44a;transform: translateY(-2px);}
+    .custom-tab.active{background: linear-gradient(135deg, #c9a44a, #7a5a23);color:#2b1a0f;border-color:#f1d27a;box-shadow: 0 0 15px rgba(241, 210, 122, 0.4);}
+    .custom-content{display:none;}
+    .custom-content.active{display:block;}
+    .avatar-grid{display:grid;grid-template-columns: repeat(3, 1fr);gap:8px;max-height:140px;overflow-y:auto;padding:4px;}
+    .avatar-grid::-webkit-scrollbar{width:5px;}
+    .avatar-grid::-webkit-scrollbar-track{background:rgba(0,0,0,.2);border-radius:10px;}
+    .avatar-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:10px;}
     .avatar-option{
-      aspect-ratio:1/1;
-      border:3px solid rgba(201,164,74,0.3);
-      border-radius:10px;
-      overflow:hidden;
-      cursor:pointer;
-      transition:all .2s ease;
+      aspect-ratio:1/1;border:3px solid rgba(201,164,74,0.3);border-radius:10px;overflow:hidden;
+      cursor:pointer;transition:all .2s ease;
       background: radial-gradient(circle at center, rgba(58,63,70,0.9), rgba(26,31,36,0.95));
       box-shadow: inset 0 0 15px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.3);
     }
+    .avatar-option:hover{transform:scale(1.08);border-color:#c9a44a;box-shadow: 0 0 20px rgba(241, 210, 122, 0.4);}
+    .avatar-option.selected{border-color:#4af;box-shadow: 0 0 25px rgba(74, 170, 255, 0.6);}
+    .avatar-option img{width:100%;height:100%;object-fit:cover;}
 
-    .avatar-option:hover{
-      transform:scale(1.08);
-      border-color:#c9a44a;
-      box-shadow: 0 0 20px rgba(241, 210, 122, 0.4);
-    }
+    .color-picker-grid{display:grid;grid-template-columns: repeat(6, 1fr);gap:8px;}
+    .color-option{aspect-ratio:1/1;border:3px solid rgba(201,164,74,0.3);border-radius:8px;cursor:pointer;transition:all .2s ease;box-shadow: inset 0 0 10px rgba(0,0,0,.3), 0 3px 6px rgba(0,0,0,.3);}
+    .color-option:hover{transform:scale(1.1);border-color:#c9a44a;}
+    .color-option.selected{border-color:#4af;box-shadow: 0 0 20px rgba(74, 170, 255, 0.6);transform:scale(1.15);}
 
-    .avatar-option.selected{
-      border-color:#4af;
-      box-shadow: 0 0 25px rgba(74, 170, 255, 0.6);
-    }
-
-    .avatar-option img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-    }
-
-    .color-picker-grid{
-      display:grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap:8px;
-    }
-
-    .color-option{
-      aspect-ratio:1/1;
-      border:3px solid rgba(201,164,74,0.3);
-      border-radius:8px;
-      cursor:pointer;
-      transition:all .2s ease;
-      box-shadow: inset 0 0 10px rgba(0,0,0,.3), 0 3px 6px rgba(0,0,0,.3);
-    }
-
-    .color-option:hover{
-      transform:scale(1.1);
-      border-color:#c9a44a;
-    }
-
-    .color-option.selected{
-      border-color:#4af;
-      box-shadow: 0 0 20px rgba(74, 170, 255, 0.6);
-      transform:scale(1.15);
-    }
-
-    .name-input-wrap{
-      flex-shrink:0;
-    }
-
-    .name-label{
-      display:block;
-      font-size:11px;
-      font-weight:900;
-      color:#c9a44a;
-      margin-bottom:6px;
-      text-shadow:0 2px 6px rgba(0,0,0,0.8);
-    }
-
+    .name-input-wrap{flex-shrink:0;}
+    .name-label{display:block;font-size:11px;font-weight:900;color:#c9a44a;margin-bottom:6px;text-shadow:0 2px 6px rgba(0,0,0,0.8);}
     .name-input{
-      width:100%;
-      padding:10px;
-      background: rgba(0,0,0,0.5);
-      border:2px solid rgba(201,164,74,0.4);
-      border-radius:8px;
-      color:#fff;
-      font-size:14px;
-      font-weight:900;
-      text-align:center;
-      text-transform:uppercase;
-      box-shadow: inset 0 3px 10px rgba(0,0,0,.4);
-      transition: all 0.2s ease;
+      width:100%;padding:10px;background: rgba(0,0,0,0.5);
+      border:2px solid rgba(201,164,74,0.4);border-radius:8px;color:#fff;
+      font-size:14px;font-weight:900;text-align:center;text-transform:uppercase;
+      box-shadow: inset 0 3px 10px rgba(0,0,0,.4);transition: all 0.2s ease;
     }
-
-    .name-input:focus{
-      outline:none;
-      border-color:#c9a44a;
-      box-shadow: 0 0 20px rgba(241, 210, 122, 0.3), inset 0 3px 10px rgba(0,0,0,.4);
-    }
+    .name-input:focus{outline:none;border-color:#c9a44a;box-shadow: 0 0 20px rgba(241, 210, 122, 0.3), inset 0 3px 10px rgba(0,0,0,.4);}
 
     .pick-actions{
-      display:flex;
-      justify-content:center;
-      gap:12px;
-      padding: 12px 16px 14px;
+      display:flex;justify-content:center;gap:12px;padding: 12px 16px 14px;
       background: linear-gradient(135deg, rgba(40,30,20,0.98), rgba(25,18,12,0.99));
-      border-top:3px solid rgba(201,164,74,0.4);
-      flex-shrink:0;
+      border-top:3px solid rgba(201,164,74,0.4);flex-shrink:0;
     }
-
     .pick-btn{
-      height:42px;
-      padding:0 20px;
-      border:none;
-      cursor:pointer;
-      border-radius:10px;
-      background-image:url('tlacitko_shop.jpg');
-      background-size:cover;
-      background-position:center;
-      color:#fff;
-      font-weight:900;
-      font-size:13px;
-      letter-spacing:0.8px;
-      text-shadow:0 3px 10px rgba(0,0,0,0.95);
-      box-shadow:0 8px 20px rgba(0,0,0,0.65);
-      border:3px solid rgba(201,164,74,0.4);
-      transition: all 0.2s ease;
-      text-transform:uppercase;
+      height:42px;padding:0 20px;border:none;cursor:pointer;border-radius:10px;
+      background-image:url('tlacitko_shop.jpg');background-size:cover;background-position:center;
+      color:#fff;font-weight:900;font-size:13px;letter-spacing:0.8px;text-shadow:0 3px 10px rgba(0,0,0,0.95);
+      box-shadow:0 8px 20px rgba(0,0,0,0.65);border:3px solid rgba(201,164,74,0.4);
+      transition: all 0.2s ease;text-transform:uppercase;
     }
-
-    .pick-btn:hover:not(:disabled){
-      transform: translateY(-3px);
-      border-color:#c9a44a;
-      box-shadow:0 14px 35px rgba(0,0,0,0.75), 0 0 25px rgba(241, 210, 122, 0.3);
-    }
-
-    .pick-btn:active:not(:disabled){
-      transform: translateY(-1px);
-    }
-
-    .pick-btn:disabled{
-      opacity:0.45;
-      cursor:not-allowed;
-      filter:grayscale(0.4);
-    }
-
-    .pick-btn.primary{
-      background-image: linear-gradient(135deg, #c9a44a, #7a5a23);
-      border-color:#f1d27a;
-    }
+    .pick-btn:hover:not(:disabled){transform: translateY(-3px);border-color:#c9a44a;box-shadow:0 14px 35px rgba(0,0,0,0.75), 0 0 25px rgba(241, 210, 122, 0.3);}
+    .pick-btn:active:not(:disabled){transform: translateY(-1px);}
+    .pick-btn:disabled{opacity:0.45;cursor:not-allowed;filter:grayscale(0.4);}
+    .pick-btn.primary{background-image: linear-gradient(135deg, #c9a44a, #7a5a23);border-color:#f1d27a;}
 
     @media (max-width: 1100px){
-      .pick-content{
-        grid-template-columns: 1fr;
-      }
-      .class-grid{
-        grid-template-columns: 1fr;
-      }
+      .pick-content{grid-template-columns: 1fr;}
+      .class-grid{grid-template-columns: 1fr;}
     }
 
     .randomize-btn{
-      width:100%;
-      padding:8px;
-      background: linear-gradient(135deg, rgba(74, 170, 255, 0.3), rgba(59, 130, 246, 0.4));
-      border:2px solid rgba(74, 170, 255, 0.5);
-      border-radius:8px;
-      color:#4af;
-      font-weight:900;
-      font-size:11px;
-      cursor:pointer;
-      transition:all .2s ease;
-      text-transform:uppercase;
+      width:100%;padding:8px;background: linear-gradient(135deg, rgba(74, 170, 255, 0.3), rgba(59, 130, 246, 0.4));
+      border:2px solid rgba(74, 170, 255, 0.5);border-radius:8px;color:#4af;
+      font-weight:900;font-size:11px;cursor:pointer;transition:all .2s ease;text-transform:uppercase;
     }
+    .randomize-btn:hover{background: linear-gradient(135deg, rgba(74, 170, 255, 0.4), rgba(59, 130, 246, 0.5));border-color:#4af;box-shadow: 0 0 20px rgba(74, 170, 255, 0.4);transform: translateY(-2px);}
 
-    .randomize-btn:hover{
-      background: linear-gradient(135deg, rgba(74, 170, 255, 0.4), rgba(59, 130, 246, 0.5));
-      border-color:#4af;
-      box-shadow: 0 0 20px rgba(74, 170, 255, 0.4);
-      transform: translateY(-2px);
-    }
-
-    .stat-preview{
-      background: rgba(0,0,0,0.4);
-      border:2px solid rgba(201,164,74,0.3);
-      border-radius:10px;
-      padding:12px;
-      margin-top:12px;
-    }
-
-    .stat-preview-title{
-      font-size:13px;
-      font-weight:900;
-      color:#c9a44a;
-      margin-bottom:10px;
-      text-shadow:0 2px 6px rgba(0,0,0,0.8);
-    }
-
-    .stat-row{
-      display:flex;
-      justify-content:space-between;
-      padding:4px 0;
-      font-size:12px;
-      font-weight:900;
-      color:rgba(255,255,255,0.85);
-    }
-
-    .stat-row .value{
-      color:#4af;
-    }
+    .stat-preview{background: rgba(0,0,0,0.4);border:2px solid rgba(201,164,74,0.3);border-radius:10px;padding:12px;margin-top:12px;}
+    .stat-preview-title{font-size:13px;font-weight:900;color:#c9a44a;margin-bottom:10px;text-shadow:0 2px 6px rgba(0,0,0,0.8);}
+    .stat-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;font-weight:900;color:rgba(255,255,255,0.85);}
+    .stat-row .value{color:#4af;}
   </style>
   <script src="menu.js"></script>
 </head>
@@ -537,7 +184,6 @@
       </div>
 
       <div class="pick-content">
-        <!-- LEVÁ ČÁST - TŘÍDY -->
         <div class="class-section">
           <div class="section-title">⚔️ VÝBĚR TŘÍDY</div>
           <div class="class-grid" id="grid">
@@ -585,10 +231,9 @@
           </div>
         </div>
 
-        <!-- PRAVÁ ČÁST - AVATAR -->
         <div class="avatar-section">
           <div class="section-title">🎨 VZHLED AVATARA</div>
-          
+
           <div class="avatar-preview">
             <img id="previewImg" src="avatar.jpg" alt="avatar">
             <div class="avatar-class-icon" id="classIconPreview">👻</div>
@@ -601,22 +246,16 @@
           </div>
 
           <div class="custom-content active" id="avatarContent">
-            <div class="avatar-grid" id="avatarGrid">
-              <!-- Avatary se načtou JS -->
-            </div>
-            <button class="randomize-btn" onclick="randomizeAvatar()">🎲 NÁHODNÝ AVATAR</button>
+            <div class="avatar-grid" id="avatarGrid"></div>
+            <button class="randomize-btn" type="button" onclick="randomizeAvatar()">🎲 NÁHODNÝ AVATAR</button>
           </div>
 
           <div class="custom-content" id="frameContent">
-            <div class="avatar-grid" id="frameGrid">
-              <!-- Rámečky se načtou JS -->
-            </div>
+            <div class="avatar-grid" id="frameGrid"></div>
           </div>
 
           <div class="custom-content" id="colorContent">
-            <div class="color-picker-grid" id="colorGrid">
-              <!-- Barvy se načtou JS -->
-            </div>
+            <div class="color-picker-grid" id="colorGrid"></div>
           </div>
 
           <div class="name-input-wrap">
@@ -626,7 +265,6 @@
 
           <div class="stat-preview" id="statPreview">
             <div class="stat-preview-title">📊 STARTOVNÍ STATISTIKY</div>
-            <!-- Stats se načtou JS -->
           </div>
         </div>
       </div>
@@ -639,103 +277,9 @@
   </div>
 
   <script>
-
-// ===== SUPABASE CONFIG (stejné jako v login.html) =====
-const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No'; // z login.html
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-let uid = null;
-
-async function getUidOrRedirect() {
-  const { data, error } = await sb.auth.getSession();
-  if (error) throw error;
-
-  const session = data?.session;
-  if (!session?.user?.id) {
-    // nejsi přihlášen -> zpět na login
-    window.location.href = 'login.html';
-    return null;
-  }
-  return session.user.id;
-}
-
-async function loadPlayerRow(userId) {
-  const { data, error } = await sb
-    .from('player_stats')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
-}
-
-async function saveCharacterToDb() {
-  if (!uid) return;
-
-  const row = await loadPlayerRow(uid);
-  const st = row?.stats || {};
-
-  // když už je třída uložená, nic nepřepisuj
-  if (st.player_class) return;
-
-  st.player_class = String(state.selectedClass || 'padouch').toLowerCase();
-  st.character_name = state.characterName;
-  st.avatar_url = state.selectedAvatar;
-  st.avatar_frame = state.selectedFrame;
-  st.avatar_color = state.selectedColor;
-
-  const { error } = await sb
-    .from('player_stats')
-    .update({ stats: st })
-    .eq('user_id', uid);
-
-  if (error) throw error;
-}
-
-// CONFIRM BUTTON
-btnConfirm.addEventListener('click', async () => {
-  if (!state.selectedClass || !state.characterName.trim()) return;
-
-  btnConfirm.disabled = true;
-  try {
-    await saveCharacterToDb();
-    window.location.href = 'postava.html';
-  } catch (e) {
-    console.error('❌ saveCharacterToDb:', e);
-    btnConfirm.disabled = false;
-    alert(e?.message || 'Chyba uložení postavy.');
-  }
-});
-
-// BOOT
-(async function boot() {
-  try {
-    uid = await getUidOrRedirect();
-    if (!uid) return;
-
-    const row = await loadPlayerRow(uid);
-    const cls = String(row?.stats?.player_class || '').toLowerCase();
-
-    // pokud už třída existuje, nemá smysl být na vyberu
-    if (cls) {
-      window.location.href = 'postava.html';
-      return;
-    }
-
-    // zůstaneš na vyberu a vybereš si třídu
-  } catch (e) {
-    console.error('❌ boot vyber:', e);
-    // když je problém se session / DB, pošli na login
-    window.location.href = 'login.html';
-  }
-})();
-
-    
-    // AVATAR DATA
+    // ===== DATA =====
     const avatarOptions = [
-      'avatar.jpg', 'avatar2.jpg', 'avatar3.jpg', 
+      'avatar.jpg', 'avatar2.jpg', 'avatar3.jpg',
       'avatar4.jpg', 'avatar5.jpg', 'avatar6.jpg',
       'avatar7.jpg', 'avatar8.jpg', 'avatar9.jpg'
     ];
@@ -760,13 +304,9 @@ btnConfirm.addEventListener('click', async () => {
       mozek: { str: 20, def: 11, dex: 12, int: 18, con: 13, luck: 10 }
     };
 
-    const classIcons = {
-      padouch: '👻',
-      rvac: '✊',
-      mozek: '💡'
-    };
+    const classIcons = { padouch: '👻', rvac: '✊', mozek: '💡' };
 
-    // STATE
+    // ===== STATE =====
     let state = {
       selectedClass: null,
       selectedAvatar: 'avatar.jpg',
@@ -775,13 +315,35 @@ btnConfirm.addEventListener('click', async () => {
       characterName: 'BORIS GOPNIKOV'
     };
 
+    // ===== DOM =====
     const btnConfirm = document.getElementById('btnConfirm');
     const btnBack = document.getElementById('btnBack');
     const previewImg = document.getElementById('previewImg');
     const classIconPreview = document.getElementById('classIconPreview');
     const charNameInput = document.getElementById('charName');
 
-    // CLASS SELECTION
+    // ===== UI HELPERS =====
+    function updateConfirmButton() {
+      btnConfirm.disabled = !state.selectedClass || !state.characterName.trim();
+    }
+
+    function updateStatPreview() {
+      if (!state.selectedClass) return;
+      const stats = classStats[state.selectedClass];
+      const preview = document.getElementById('statPreview');
+
+      preview.innerHTML = `
+        <div class="stat-preview-title">📊 STARTOVNÍ STATISTIKY</div>
+        <div class="stat-row"><span>⚔️ Síla</span><span class="value">${stats.str}</span></div>
+        <div class="stat-row"><span>🛡️ Obrana</span><span class="value">${stats.def}</span></div>
+        <div class="stat-row"><span>🎯 Obratnost</span><span class="value">${stats.dex}</span></div>
+        <div class="stat-row"><span>🧠 Inteligence</span><span class="value">${stats.int}</span></div>
+        <div class="stat-row"><span>💪 Výdrž</span><span class="value">${stats.con}</span></div>
+        <div class="stat-row"><span>🍀 Štěstí</span><span class="value">${stats.luck}</span></div>
+      `;
+    }
+
+    // ===== CLASS SELECTION =====
     document.querySelectorAll('.class-card').forEach(card => {
       card.addEventListener('click', () => {
         document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
@@ -793,7 +355,7 @@ btnConfirm.addEventListener('click', async () => {
       });
     });
 
-    // TAB SWITCHING
+    // ===== TAB SWITCHING =====
     document.querySelectorAll('.custom-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const targetTab = tab.dataset.tab;
@@ -804,7 +366,7 @@ btnConfirm.addEventListener('click', async () => {
       });
     });
 
-    // LOAD AVATAR OPTIONS
+    // ===== AVATAR / FRAME / COLOR LOADERS =====
     function loadAvatars() {
       const grid = document.getElementById('avatarGrid');
       grid.innerHTML = avatarOptions.map(av => `
@@ -823,12 +385,11 @@ btnConfirm.addEventListener('click', async () => {
       });
     }
 
-    // LOAD FRAME OPTIONS
     function loadFrames() {
       const grid = document.getElementById('frameGrid');
       grid.innerHTML = frameOptions.map(frame => `
-        <div class="avatar-option ${frame.color === state.selectedFrame ? 'selected' : ''}" 
-             data-frame="${frame.color}" 
+        <div class="avatar-option ${frame.color === state.selectedFrame ? 'selected' : ''}"
+             data-frame="${frame.color}"
              style="border-color: ${frame.color}; border-width: 4px;">
           <img src="${state.selectedAvatar}" alt="frame" style="opacity: 0.5;">
         </div>
@@ -844,12 +405,11 @@ btnConfirm.addEventListener('click', async () => {
       });
     }
 
-    // LOAD COLOR OPTIONS
     function loadColors() {
       const grid = document.getElementById('colorGrid');
       grid.innerHTML = colorOptions.map(color => `
-        <div class="color-option ${color === state.selectedColor ? 'selected' : ''}" 
-             data-color="${color}" 
+        <div class="color-option ${color === state.selectedColor ? 'selected' : ''}"
+             data-color="${color}"
              style="background: ${color};">
         </div>
       `).join('');
@@ -865,65 +425,76 @@ btnConfirm.addEventListener('click', async () => {
       });
     }
 
-    // RANDOMIZE
+    // ===== RANDOMIZE =====
     window.randomizeAvatar = function() {
       state.selectedAvatar = avatarOptions[Math.floor(Math.random() * avatarOptions.length)];
       state.selectedFrame = frameOptions[Math.floor(Math.random() * frameOptions.length)].color;
       state.selectedColor = colorOptions[Math.floor(Math.random() * colorOptions.length)];
-      
+
       previewImg.src = state.selectedAvatar;
       document.querySelector('.avatar-preview').style.borderColor = state.selectedFrame;
       classIconPreview.style.borderColor = state.selectedColor;
       classIconPreview.style.backgroundColor = state.selectedColor + '33';
-      
+
       loadAvatars();
       loadFrames();
       loadColors();
     };
 
-    // UPDATE STAT PREVIEW
-    function updateStatPreview() {
-      if (!state.selectedClass) return;
-      const stats = classStats[state.selectedClass];
-      const preview = document.getElementById('statPreview');
-      
-      preview.innerHTML = `
-        <div class="stat-preview-title">📊 STARTOVNÍ STATISTIKY</div>
-        <div class="stat-row"><span>⚔️ Síla</span><span class="value">${stats.str}</span></div>
-        <div class="stat-row"><span>🛡️ Obrana</span><span class="value">${stats.def}</span></div>
-        <div class="stat-row"><span>🎯 Obratnost</span><span class="value">${stats.dex}</span></div>
-        <div class="stat-row"><span>🧠 Inteligence</span><span class="value">${stats.int}</span></div>
-        <div class="stat-row"><span>💪 Výdrž</span><span class="value">${stats.con}</span></div>
-        <div class="stat-row"><span>🍀 Štěstí</span><span class="value">${stats.luck}</span></div>
-      `;
-    }
-
-    // UPDATE CONFIRM BUTTON
-    function updateConfirmButton() {
-      btnConfirm.disabled = !state.selectedClass || !state.characterName.trim();
-    }
-
-    // CHARACTER NAME INPUT
+    // ===== NAME INPUT =====
     charNameInput.addEventListener('input', (e) => {
       state.characterName = e.target.value.toUpperCase();
       e.target.value = state.characterName;
       updateConfirmButton();
     });
 
-    // SUPABASE FUNCTIONS
-    async function getSb(){
-      if (!url || !key || !window.supabase?.createClient) return null;
-      return window.supabaseClient || (window.supabaseClient = window.supabase.createClient(url, key));
+    // BACK
+    btnBack.addEventListener('click', () => {
+      window.location.href = 'postava.html';
+    });
+
+    // ===== INIT UI =====
+    loadAvatars();
+    loadFrames();
+    loadColors();
+    updateConfirmButton();
+
+    // ===== SUPABASE (až po definici state + btnConfirm) =====
+    const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let uid = null;
+
+    async function getUidOrRedirect() {
+      const { data, error } = await sb.auth.getSession();
+      if (error) throw error;
+
+      const session = data?.session;
+      if (!session?.user?.id) {
+        window.location.href = 'login.html';
+        return null;
+      }
+      return session.user.id;
     }
 
-    async function saveCharacterToDb(){
-      const sb = await getSb();
-      if (!sb || !uid) return;
+    async function loadPlayerRow(userId) {
+      const { data, error } = await sb
+        .from('player_stats')
+        .select('user_id, stats')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      const { data } = await sb.from('player_stats').select('stats').eq('user_id', uid).limit(1);
-      const st = data?.[0]?.stats || {};
-      
-      if (st.player_class) return; // už uložené – neměnit
+      if (error) throw error;
+      return data;
+    }
+
+    async function saveCharacterToDb() {
+      if (!uid) return;
+
+      const row = await loadPlayerRow(uid);
+      const st = row?.stats || {};
+
+      if (st.player_class) return; // už uložené
 
       st.player_class = String(state.selectedClass || 'padouch').toLowerCase();
       st.character_name = state.characterName;
@@ -931,71 +502,46 @@ btnConfirm.addEventListener('click', async () => {
       st.avatar_frame = state.selectedFrame;
       st.avatar_color = state.selectedColor;
 
-      await sb.from('player_stats').update({ stats: st }).eq('user_id', uid);
+      const { error } = await sb
+        .from('player_stats')
+        .update({ stats: st })
+        .eq('user_id', uid);
+
+      if (error) throw error;
     }
 
-    // CONFIRM BUTTON
+    // CONFIRM (jediný listener)
     btnConfirm.addEventListener('click', async () => {
       if (!state.selectedClass || !state.characterName.trim()) return;
 
-      
-      if (existing){
+      btnConfirm.disabled = true;
+      try {
+        await saveCharacterToDb();
         window.location.href = 'postava.html';
-        return;
+      } catch (e) {
+        console.error('❌ saveCharacterToDb:', e);
+        btnConfirm.disabled = false;
+        alert(e?.message || 'Chyba uložení postavy.');
       }
-
-      // Uložit lokálně
-      if (window.SF && typeof window.SF.setPlayerClass === 'function') {
-        window.SF.setPlayerClass(state.selectedClass);
-      } else {
-      }
-
-      // Uložit customizaci
-
-      if (uid) {
-      }
-
-      // Uložit do DB
-      await saveCharacterToDb();
-      
-      window.location.href = 'postava.html';
     });
 
-    // BACK BUTTON
-    btnBack.addEventListener('click', () => {
-      window.location.href = 'postava.html';
-    });
+    // BOOT
+    (async function boot() {
+      try {
+        uid = await getUidOrRedirect();
+        if (!uid) return;
 
-    // CHECK IF ALREADY HAS CLASS
-    (async function boot(){
-      
-      if (curLs){
-        window.location.href = 'postava.html';
-        return;
-      }
-
-      const sb = await getSb();
-      if (sb && uid){
-        const { data } = await sb.from('player_stats').select('stats').eq('user_id', uid).limit(1);
-        const dbCls = String(data?.[0]?.stats?.player_class || '').toLowerCase();
-        if (dbCls){
+        const row = await loadPlayerRow(uid);
+        const cls = String(row?.stats?.player_class || '').toLowerCase();
+        if (cls) {
           window.location.href = 'postava.html';
           return;
         }
-      }
-
-      // Load saved customization if any
-      if (savedName) {
-        state.characterName = savedName;
-        charNameInput.value = savedName;
+      } catch (e) {
+        console.error('❌ boot vyber:', e);
+        window.location.href = 'login.html';
       }
     })();
-
-    // INIT
-    loadAvatars();
-    loadFrames();
-    loadColors();
-    updateConfirmButton();
   </script>
 </body>
 </html>
