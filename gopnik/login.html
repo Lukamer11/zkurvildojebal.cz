@@ -473,33 +473,35 @@
 
     // ===== PLAYER STATS BOOTSTRAP =====
     async function ensurePlayerStats(userId) {
-  const { data: existing, error: selErr } = await supabase
-    .from("player_stats")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle()
+    // 1) zkus načíst existující řádek
+    const { data: existing, error: selErr } = await sb
+      .from("player_stats")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-  if (selErr) throw selErr
-  if (existing) return existing
+    if (selErr) throw selErr;
+    if (existing) return existing;
 
-  const payload = {
-    user_id: userId,
-    money: 5000,
-    cigarettes: 100,
-    energy: 100,
-    damage: 1,
-    mail_claimed: false
+    // 2) když neexistuje, založ default
+    const payload = {
+      user_id: userId,
+      money: 5000,
+      cigarettes: 100,
+      energy: 100,
+      damage: 1,
+      mail_claimed: false
+    };
+
+    const { data, error } = await sb
+      .from("player_stats")
+      .upsert(payload, { onConflict: "user_id" })
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return data;
   }
-
-  const { data, error } = await supabase
-    .from("player_stats")
-    .upsert(payload, { onConflict: "user_id" })
-    .select("*")
-    .single()
-
-  if (error) throw error
-  return data
-}
 
 
       const { data: ins, error: insErr } = await sb
