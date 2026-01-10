@@ -504,17 +504,18 @@ async function ensurePlayerStats(userId) {
 }
 
 async function goToGame(playerRow) {
-  const clsDb = (playerRow?.stats?.player_class || '').toLowerCase();
+  const clsDb = String(
+    playerRow?.stats?.player_class || playerRow?.player_class || ''
+  ).toLowerCase();
 
   if (!clsDb) {
-    console.log('🎭 No class selected, redirecting to vyber.html');
     window.location.href = 'vyber.html';
     return;
   }
 
-  console.log('🎮 Redirecting to game...');
   window.location.href = NEXT_URL;
 }
+
 
     // ===== LOGIN =====
     loginForm.addEventListener('submit', async (e) => {
