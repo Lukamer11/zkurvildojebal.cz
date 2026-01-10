@@ -14,10 +14,12 @@
   // ====== PLAYER UTILS ======
   class Player {
     static getUserId() {
-      return (
-        (window.SF?.user?.id || window.SF?.stats?.user_id || "1") ||
-        '1'
-      );
+    // user_id je UUID (např. "233ffa37-...") – žádný fallback "1".
+    return (
+      window.SF?.user?.id ||
+      window.SF?.stats?.user_id ||
+      null
+    );
     }
 
     static getName() {
@@ -295,6 +297,11 @@
 
       // Load player's guild membership
       const userId = Player.getUserId();
+      if (!userId) {
+        console.warn('⚠️ Missing userId (no session) -> redirect login');
+        window.location.href = 'login.html';
+        return;
+      }
       this.playerGuildData = await SupabaseManager.loadPlayerGuild(userId);
 
       if (this.playerGuildData) {
