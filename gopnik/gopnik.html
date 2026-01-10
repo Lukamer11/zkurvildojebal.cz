@@ -181,29 +181,53 @@
   <script src="gopnik.js"></script>
   
   <script>
-    const music = document.getElementById("bgMusic");
+const music = document.getElementById("bgMusic");
+const toggle = document.getElementById("musicToggle");
 
-    function safePlay(){
-      if(!music) return;
-      const p = music.play();
-      if(p && typeof p.catch === 'function') p.catch(() => {});
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  // respektuj toggle
+  if (toggle && toggle.checked === false) {
+    music.pause();
+  } else {
+    safePlay();
+  }
+
+  // první klik (autoplay)
+  document.addEventListener(
+    "click",
+    () => {
+      if (toggle && !toggle.checked) return;
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  if (toggle) {
+    toggle.addEventListener("change", () => {
+      if (toggle.checked) safePlay();
+      else music.pause();
+    });
+  }
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
     }
-
-      music.volume = 0.4;
-      safePlay();
-    }
-
-    document.addEventListener("click", () => {
-      if (music.paused) {
-        safePlay();
-      }
-    }, { once: true });
-
-    setInterval(() => {
-      if (!music.paused) {
-      }
-    }, 500);
-  </script>
+  }, 500);
+}
+</script>
 
 </main>
 </div>

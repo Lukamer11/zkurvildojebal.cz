@@ -268,27 +268,35 @@
 <script src="postava.js"></script>
 <script>
 const music = document.getElementById("bgMusic");
-
-function safePlay(){
-  if(!music) return;
-  const p = music.play();
-  if(p && typeof p.catch === 'function') p.catch(() => {});
-}
-
+if (music) {
   music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
   safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
 }
-
-document.addEventListener("click", () => {
-  if (music.paused) {
-    safePlay();
-  }
-}, { once: true });
-
-setInterval(() => {
-  if (!music.paused) {
-  }
-}, 500);
 </script>
 
 </body>

@@ -99,7 +99,12 @@
       const lib = window.supabase;
       const sb = window.supabaseClient;
 
-      currentUserId = (window.SF?.user?.id || window.SF?.stats?.user_id || "1");
+      const sf = await (window.SFReady || Promise.resolve(window.SF));
+      currentUserId = (sf?.user?.id || sf?.stats?.user_id);
+      if (!currentUserId) {
+        console.error("❌ Missing uid (not querying player_stats).");
+        return;
+      }
       
       console.log('👤 User ID:', currentUserId);
       

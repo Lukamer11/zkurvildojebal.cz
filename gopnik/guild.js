@@ -159,6 +159,100 @@
         .eq('user_id', userId);
       if (error) throw error;
     }
+
+    // ====== GUILD API (bezpečné – když tabulky neexistují, vrací prázdno) ======
+    static async loadGuilds() {
+      try {
+        this._ensure();
+        const { data, error } = await sb
+          .from('guilds')
+          .select('*')
+          .order('level', { ascending: false })
+          .limit(100);
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.warn('[guild] loadGuilds failed:', e);
+        return [];
+      }
+    }
+
+    static async loadPlayerGuild(userId) {
+      try {
+        this._ensure();
+        const { data, error } = await sb
+          .from('guild_members')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (error) throw error;
+        return data || null;
+      } catch (e) {
+        console.warn('[guild] loadPlayerGuild failed:', e);
+        return null;
+      }
+    }
+
+    static async loadGuildMembers(guildId) {
+      try {
+        this._ensure();
+        const { data, error } = await sb
+          .from('guild_members')
+          .select('*')
+          .eq('guild_id', guildId)
+          .limit(200);
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.warn('[guild] loadGuildMembers failed:', e);
+        return [];
+      }
+    }
+
+    static async createGuild({ name, tag, ownerId }) {
+      try {
+        this._ensure();
+        const { data, error } = await sb
+          .from('guilds')
+          .insert([{ name, tag, owner_id: ownerId }])
+          .select('*')
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        console.warn('[guild] createGuild failed:', e);
+        throw e;
+      }
+    }
+
+    static async joinGuild({ guildId, userId }) {
+      try {
+        this._ensure();
+        const { error } = await sb
+          .from('guild_members')
+          .insert([{ guild_id: guildId, user_id: userId }]);
+        if (error) throw error;
+      } catch (e) {
+        console.warn('[guild] joinGuild failed:', e);
+        throw e;
+      }
+    }
+
+    static async leaveGuild({ guildId, userId }) {
+      try {
+        this._ensure();
+        const { error } = await sb
+          .from('guild_members')
+          .delete()
+          .eq('guild_id', guildId)
+          .eq('user_id', userId);
+        if (error) throw error;
+      } catch (e) {
+        console.warn('[guild] leaveGuild failed:', e);
+        throw e;
+      }
+    }
+
   }
 
 
