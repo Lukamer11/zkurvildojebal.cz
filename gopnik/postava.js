@@ -14,6 +14,112 @@
   // ---------- DOM helpers ----------
   const $ = (id) => document.getElementById(id);
 
+  // ---------- Items / equipment helpers ----------
+  const EQUIP_SLOTS = ["weapon", "shield", "ring", "backpack", "helmet", "armor", "boots", "gloves"];
+
+  function getAllItems() {
+    const db = window.SHOP_ITEMS;
+    if (!db) return [];
+    return [
+      ...(db.weapons || []),
+      ...(db.armor || []),
+      ...(db.special || []),
+    ];
+  }
+
+  function getItemById(itemRef, row) {
+    // 1) Když je reference už objekt (instance), použij ji.
+    if (itemRef && typeof itemRef === "object") return itemRef;
+
+    // Legacy aliasy (pro starší uložená data)
+    const ALIASES = {
+      knife: "nuz",
+      tactical_knife: "nuz",
+      takticky_nuz: "nuz",
+      "takticky-nuz": "nuz",
+    };
+
+    const rawId = String(itemRef || "");
+    const id = ALIASES[rawId] || rawId;
+    if (!id) return null;
+
+    // 2) Hledej v inventáři (tam často ukládáš celé instance)
+    const inv = (row?.inventory || window.SF?.stats?.inventory || []);
+    const foundInv = inv.find((x) => {
+      if (!x) return false;
+      if (typeof x === "object") return x.instance_id === id || x.id === id;
+      return String(x) === id;
+    });
+    if (foundInv && typeof foundInv === "object") return foundInv;
+
+    // 2b) Hledej i ve výbavě (kdyby někde zůstalo uložené jen instance_id jako string)
+    const eq = (row?.equipped || window.SF?.stats?.equipped || {});
+    const eqObj = Object.values(eq).find((x) => x && typeof x === "object" && (x.instance_id === id || x.id === id));
+    if (eqObj && typeof eqObj === "object") return eqObj;
+
+    // 3) Fallback: base item podle id
+    return getAllItems().find((it) => it.id === id) || null;
+  }
+
+  function getSlotEmoji(slotName) {
+    const m = {
+      weapon: "🗡️",
+      shield: "🛡️",
+      ring: "💍",
+      backpack: "🎒",
+      helmet: "🎩",
+      armor: "👕",
+      boots: "👢",
+      gloves: "🧤",
+    };
+    return m[slotName] || "❓";
+  }
+
+  // Vykreslení ikonky itemu: emoji/text nebo obrázek.
+  function renderItemIconHTML(icon, alt) {
+    const safeAlt = String(alt || "item").replace(/"/g, "&quot;");
+    const ic = icon == null ? "" : String(icon);
+
+    // obrázek: URL / dataURL / nebo souborový název s příponou
+    const isImage =
+      /^data:image\//i.test(ic) ||
+      /^https?:\/\//i.test(ic) ||
+      /\.(png|jpe?g|webp|gif|svg)$/i.test(ic);
+
+    if (isImage) {
+      return `<img src="${ic}" alt="${safeAlt}">`;
+    }
+
+    return ic ? ic : "❓";
+  }
+
+  function renderEquipment(row) {
+    const equipped = (row?.equipped || window.SF?.stats?.equipped || {});
+
+    EQUIP_SLOTS.forEach((slotName) => {
+      const slotEl = document.querySelector(`.slot[data-slot="${slotName}"]`);
+      if (!slotEl) return;
+
+      const ref = equipped?.[slotName] ?? null;
+      if (!ref) {
+        slotEl.classList.remove("has-item");
+        slotEl.innerHTML = `<span class="slot-emoji">${getSlotEmoji(slotName)}</span>`;
+        return;
+      }
+
+      const item = getItemById(ref, row);
+      if (!item) {
+        slotEl.classList.remove("has-item");
+        slotEl.innerHTML = `<span class="slot-emoji">${getSlotEmoji(slotName)}</span>`;
+        return;
+      }
+
+      slotEl.classList.add("has-item");
+      const iconHTML = renderItemIconHTML(item.icon, item.name);
+      slotEl.innerHTML = `<span class="slot-item">${iconHTML}</span>`;
+    });
+  }
+
   function fmtInt(n) {
     const x = Number(n ?? 0);
     return Number.isFinite(x) ? x.toLocaleString("cs-CZ") : "0";
@@ -148,39 +254,8 @@ function nextCost(currCost) {
       if (cEl) cEl.textContent = fmtInt(cost) + "₽";
     }
 
-    // --- Equipped (sync se shopem) ---
-    try {
-      const eq = row.equipped || {};
-      const slots = document.querySelectorAll('.slot-shop[data-slot]');
-      slots.forEach((slotEl) => {
-        const slotName = slotEl.dataset.slot;
-        const raw = eq[slotName];
-        // Normalizace (pro staré savy, kde se omylem uložil objekt)
-        const itemId = (raw && typeof raw === 'object') ? (raw.instance_id || raw.itemId || raw.id) : raw;
-
-        if (itemId) {
-          const item = (typeof window.getItemById === 'function') ? window.getItemById(itemId) : null;
-          slotEl.classList.add('has-item');
-
-          if (item) {
-            const icon = item.icon || item.emoji || '📦';
-            if (typeof icon === 'string' && icon.endsWith('.jpg')) {
-              slotEl.innerHTML = `<img src="${icon}" alt="${item.name || 'item'}" class="slot-item">`;
-            } else {
-              slotEl.innerHTML = `<span class="slot-item">${icon}</span>`;
-            }
-          } else {
-            slotEl.innerHTML = `<span class="slot-item">📦</span>`;
-          }
-        } else {
-          slotEl.classList.remove('has-item');
-          const fallback = (typeof window.getSlotEmoji === 'function') ? window.getSlotEmoji(slotName) : '⬜';
-          slotEl.innerHTML = `<span class="slot-emoji">${fallback}</span>`;
-        }
-      });
-    } catch (e) {
-      console.warn('⚠️ render equipped failed:', e);
-    }
+    // Výbava (z shopu) → Postava
+    renderEquipment(row);
   }
 
   // ---------- Upgrade handling ----------

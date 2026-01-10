@@ -63,29 +63,6 @@ function sanitizeStats(input) {
   return out;
 }
 
-// ===== EQUIPPED NORMALIZATION =====
-// V DB i mezi stránkami chceme ve "equipped" vždycky jen itemId (string/number),
-// ne celý objekt itemu. Dřív se někdy ukládal objekt → postava pak nezobrazila item v "čtverečku".
-function normalizeEquipped(equipped) {
-  const src = (equipped && typeof equipped === 'object') ? equipped : {};
-  const out = {};
-  Object.keys(gameState.equipped).forEach((slot) => {
-    const v = src[slot];
-    if (!v) {
-      out[slot] = null;
-      return;
-    }
-    // pokud je to objekt, vytáhneme id
-    if (typeof v === 'object') {
-      out[slot] = v.instance_id || v.itemId || v.id || null;
-      return;
-    }
-    // jinak je to přímo id
-    out[slot] = v;
-  });
-  return out;
-}
-
 function formatStatValue(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return '0';
@@ -108,11 +85,34 @@ function getAllItems() {
   ];
 }
 
+// Ikona itemu může být emoji/text nebo obrázek (soubor/URL/dataURL).
+function renderItemIconHTML(icon, alt) {
+  const safeAlt = String(alt || 'item').replace(/"/g, '&quot;');
+  const ic = icon == null ? '' : String(icon);
+
+  const isImage =
+    /^data:image\//i.test(ic) ||
+    /^https?:\/\//i.test(ic) ||
+    /\.(png|jpe?g|webp|gif|svg)$/i.test(ic);
+
+  if (isImage) return `<img src="${ic}" alt="${safeAlt}">`;
+  return ic ? ic : '❓';
+}
+
 function getItemById(itemId) {
   // Pokud je itemId objekt (instance), vrať ho
   if (typeof itemId === 'object' && itemId !== null) {
     return itemId;
   }
+
+  // Legacy aliasy (pro starší uložená data)
+  const ALIASES = {
+    knife: 'nuz',
+    tactical_knife: 'nuz',
+    takticky_nuz: 'nuz',
+    'takticky-nuz': 'nuz',
+  };
+  const normId = ALIASES[String(itemId)] || itemId;
   
   // 1) Hledej v current shopu
   const allShop = [
@@ -120,19 +120,19 @@ function getItemById(itemId) {
     ...(gameState.currentShopItems?.armor || []),
     ...(gameState.currentShopItems?.special || [])
   ];
-  const foundInst = allShop.find(i => i.instance_id === itemId || i.id === itemId);
+  const foundInst = allShop.find(i => i.instance_id === normId || i.id === normId);
   if (foundInst) return foundInst;
 
   // 2) Hledej v inventáři
   const foundInv = (gameState.inventory || []).find(i => {
     if (!i) return false;
-    if (typeof i === 'object') return i.instance_id === itemId || i.id === itemId;
-    return i === itemId;
+    if (typeof i === 'object') return i.instance_id === normId || i.id === normId;
+    return i === normId;
   });
   if (foundInv) return foundInv;
 
   // 3) Fallback: base item
-  return getAllItems().find(item => item.id === itemId);
+  return getAllItems().find(item => item.id === normId);
 }
 
 function makeItemInstance(baseItem, level){
@@ -254,7 +254,7 @@ async function initUser() {
       // některé staré savy měly do stats omylem zapsané věci jako url/barvy/jméno → čistíme
       gameState.stats = sanitizeStats(data.stats ?? gameState.stats);
       gameState.inventory = data.inventory || [];
-      gameState.equipped = normalizeEquipped(data.equipped || gameState.equipped);
+      gameState.equipped = data.equipped || gameState.equipped;
       gameState.lastShopRotation = data.last_shop_rotation ?? data.lastShopRotation ?? null;
       gameState.currentShopItems = data.current_shop_items || data.currentShopItems || gameState.currentShopItems;
     } else {
@@ -285,7 +285,7 @@ async function saveToSupabase() {
       cigarettes: gameState.cigarettes,
       stats: sanitizeStats(gameState.stats),
       inventory: gameState.inventory,
-      equipped: normalizeEquipped(gameState.equipped),
+      equipped: gameState.equipped,
       last_shop_rotation: gameState.lastShopRotation,
       current_shop_items: gameState.currentShopItems
     };
@@ -294,28 +294,7 @@ async function saveToSupabase() {
 
     for (let attempts = 0; attempts < 6; attempts++) {
       const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
-      if (!error) {
-        // Sync do globálního SF stavu, aby se okamžitě propsalo do postavy / žebříčku
-        // (postava.js poslouchá sf:stats event).
-        try {
-          if (window.SF?.updateStats) {
-            window.SF.updateStats({
-              level: gameState.level,
-              xp: gameState.xp,
-              money: gameState.money,
-              cigarettes: gameState.cigarettes,
-              stats: sanitizeStats(gameState.stats),
-              inventory: gameState.inventory,
-            equipped: normalizeEquipped(gameState.equipped),
-              last_shop_rotation: gameState.lastShopRotation,
-              current_shop_items: gameState.currentShopItems,
-            }, { silent: true });
-          }
-        } catch (e) {
-          console.warn('⚠️ SF sync failed (shop):', e);
-        }
-        return true;
-      }
+      if (!error) return true;
 
       const msg = String(error?.message || "");
       const match = msg.match(/Could not find the '([^']+)' column/);
@@ -480,10 +459,11 @@ function renderInventory() {
     slot.dataset.itemId = itemId;
     slot.dataset.invIndex = index;
     
-    if (item.icon && item.icon.endsWith('.jpg')) {
-      slot.innerHTML = `<img src="${item.icon}" alt="${item.name}">`;
+    const iconHTML = renderItemIconHTML(item.icon, item.name);
+    if (iconHTML.startsWith('<img')) {
+      slot.innerHTML = iconHTML;
     } else {
-      slot.textContent = item.icon || '❓';
+      slot.textContent = iconHTML;
     }
     
     // Tooltip
@@ -540,10 +520,15 @@ function renderEquippedItems() {
       
       const itemId = item.instance_id || item.id;
       
-      if (item.icon && item.icon.endsWith('.jpg')) {
-        slotElement.innerHTML = `<img src="${item.icon}" alt="${item.name}" class="slot-item" draggable="true" data-item-id="${itemId}" data-from-slot="${slotName}">`;
+      const iconHTML = renderItemIconHTML(item.icon, item.name);
+      if (iconHTML.startsWith('<img')) {
+        // img musí mít draggable a data atributy
+        slotElement.innerHTML = iconHTML.replace(
+          '<img',
+          `<img class="slot-item" draggable="true" data-item-id="${itemId}" data-from-slot="${slotName}"`
+        );
       } else {
-        slotElement.innerHTML = `<span class="slot-item" draggable="true" data-item-id="${itemId}" data-from-slot="${slotName}">${item.icon}</span>`;
+        slotElement.innerHTML = `<span class="slot-item" draggable="true" data-item-id="${itemId}" data-from-slot="${slotName}">${iconHTML}</span>`;
       }
       
       // Tooltip
@@ -737,9 +722,12 @@ function handleDragStart(e) {
 }
 
 function handleEquippedDragStart(e) {
+  const fromSlot = e.target.dataset.fromSlot;
   draggedItem = {
-    itemId: e.target.dataset.itemId,
-    fromSlot: e.target.dataset.fromSlot
+    fromSlot,
+    // Ukládáme přímo referenci (objekt / id) tak, jak je ve state,
+    // ať při prohození nepřepíšeme výbavu stringem a neztratíme instance.
+    itemRef: gameState.equipped[fromSlot]
   };
   dragSource = 'equipped';
   e.target.classList.add('dragging');
@@ -781,21 +769,17 @@ async function handleDrop(e) {
   if (dragSource === 'inventory') {
     const currentItem = gameState.equipped[targetSlot];
     if (currentItem) {
-      // do inventáře vždy ukládáme jen ID
-      gameState.inventory[draggedItem.invIndex] = (typeof currentItem === 'object')
-        ? (currentItem.instance_id || currentItem.itemId || currentItem.id)
-        : currentItem;
+      gameState.inventory[draggedItem.invIndex] = currentItem;
     } else {
       gameState.inventory.splice(draggedItem.invIndex, 1);
     }
-
-    // do equipped vždy ukládáme jen ID
-    gameState.equipped[targetSlot] = draggedItem.itemId;
+    
+    gameState.equipped[targetSlot] = item;
     showNotification(`${item.name} nasazen!`, 'success');
   }
   else if (dragSource === 'equipped') {
     const temp = gameState.equipped[targetSlot];
-    gameState.equipped[targetSlot] = draggedItem.itemId;
+    gameState.equipped[targetSlot] = draggedItem.itemRef;
     gameState.equipped[draggedItem.fromSlot] = temp;
     showNotification(`Položky přesunuty!`, 'success');
   }
@@ -810,17 +794,15 @@ async function handleDrop(e) {
 async function unequipItem(slotName) {
   const itemRef = gameState.equipped[slotName];
   if (!itemRef) return;
-
-  const itemId = (typeof itemRef === 'object') ? (itemRef.instance_id || itemRef.itemId || itemRef.id) : itemRef;
   
   if (gameState.inventory.length >= INVENTORY_SIZE) {
     showNotification('Inventář je plný!', 'error');
     return;
   }
   
-  const item = getItemById(itemId);
+  const item = getItemById(itemRef);
   gameState.equipped[slotName] = null;
-  gameState.inventory.push(itemId);
+  gameState.inventory.push(itemRef);
   
   await saveToSupabase();
   updateUI();

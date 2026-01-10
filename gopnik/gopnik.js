@@ -90,9 +90,7 @@
 
     const st = getState(stats);
     const { cpc } = compute(st);
-    // Nepoužívej desetinný energyCost – mnoho saveů/DB schémat má energy jako INT a
-    // update by pak padal (a clicker vypadal "mrtvej").
-    await addMoney(cpc, 0);
+    await addMoney(cpc, 0.01);
   }
 
   async function buy(kind) {
