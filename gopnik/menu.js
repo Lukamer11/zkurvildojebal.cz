@@ -151,6 +151,32 @@
     for (const k of Object.keys(out)) {
       if (out[k] === undefined) delete out[k];
     }
+
+    // Základní numerická normalizace:
+    // - když nám UI někde vyrobí číslo jako string ("10" / "10.05"), převedeme na Number
+    // - desetinné číslo se ponechá jako Number (oříznutí na int řešíme níže při chybě 22P02)
+    for (const k of Object.keys(out)) {
+      const v = out[k];
+      if (typeof v === "string" && /^-?\d+(?:\.\d+)?$/.test(v.trim())) {
+        const n = Number(v);
+        if (!Number.isNaN(n)) out[k] = n;
+      }
+    }
+    return out;
+  }
+
+  function coerceIntegerishValues(obj) {
+    // Projde jen top-level klíče: typická INTEGER pole jsou právě tam (level/xp/money/energy...)
+    const out = { ...obj };
+    for (const k of Object.keys(out)) {
+      const v = out[k];
+      if (typeof v === "number" && Number.isFinite(v) && !Number.isInteger(v)) {
+        out[k] = Math.floor(v);
+      } else if (typeof v === "string" && /^-?\d+(?:\.\d+)?$/.test(v.trim())) {
+        const n = Number(v);
+        if (!Number.isNaN(n)) out[k] = Number.isInteger(n) ? n : Math.floor(n);
+      }
+    }
     return out;
   }
   async function upsertNow() {
@@ -189,8 +215,18 @@
 
     let lastError = null;
     for (const payload of attempts) {
-      const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
+      // Nejprve zkus "jak je".
+      let { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
       if (!error) return;
+
+      // Když narazíme na 22P02 (např. "invalid input syntax for type integer: '10.05'")
+      // zkusíme automaticky oříznout desetinné hodnoty na INTEGER a uložit znovu.
+      if (error?.code === "22P02" && (error?.message || "").toLowerCase().includes("type integer")) {
+        const fixed = coerceIntegerishValues(payload);
+        const retry = await sb.from("player_stats").upsert(fixed, { onConflict: "user_id" });
+        if (!retry.error) return;
+        error = retry.error;
+      }
       lastError = error;
 
       // Když jde o "neznámý sloupec", má smysl zkusit další variantu.
