@@ -630,7 +630,6 @@ body {
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="menu.css">
   <script src="menu.js"></script>
-<script type="module" src="js/globalAuth.js"></script>
 </head>
 <body>
 <audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
@@ -742,8 +741,6 @@ function safePlay(){
   if(p && typeof p.catch === 'function') p.catch(() => {});
 }
 
-if (localStorage.getItem("musicPlaying") === "true") {
-  music.currentTime = parseFloat(localStorage.getItem("musicTime")) || 0;
   music.volume = 0.4;
   safePlay();
 }
@@ -751,13 +748,11 @@ if (localStorage.getItem("musicPlaying") === "true") {
 document.addEventListener("click", () => {
   if (music.paused) {
     safePlay();
-    localStorage.setItem("musicPlaying", "true");
   }
 }, { once: true });
 
 setInterval(() => {
   if (!music.paused) {
-    localStorage.setItem("musicTime", music.currentTime);
   }
 }, 500);
 

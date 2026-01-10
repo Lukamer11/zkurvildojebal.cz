@@ -10,7 +10,6 @@
   <script src="items.js"></script>
   <link rel="stylesheet" href="menu.css">
   <script src="menu.js"></script>
-<script type="module" src="js/globalAuth.js"></script>
 </head>
 <body>
 <audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
@@ -209,8 +208,6 @@ function safePlay(){
   if(p && typeof p.catch === 'function') p.catch(() => {});
 }
 
-if (localStorage.getItem("musicPlaying") === "true") {
-  const savedTime = parseFloat(localStorage.getItem("musicTime")) || 0;
   if (savedTime > 0 && savedTime < music.duration) {
     music.currentTime = savedTime;
   }
@@ -221,13 +218,11 @@ if (localStorage.getItem("musicPlaying") === "true") {
 document.addEventListener("click", () => {
   if (music.paused) {
     safePlay();
-    localStorage.setItem("musicPlaying", "true");
   }
 }, { once: true });
 
 setInterval(() => {
   if (!music.paused) {
-    localStorage.setItem("musicTime", music.currentTime);
   }
 }, 1000);
 </script>

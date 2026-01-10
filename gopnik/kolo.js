@@ -99,7 +99,7 @@
       const lib = window.supabase;
       const sb = window.supabaseClient;
 
-      currentUserId = (window.SF && window.SF.user && window.SF.user.id) || null;
+      currentUserId = (window.SF?.user?.id || window.SF?.stats?.user_id || "1");
       
       console.log('👤 User ID:', currentUserId);
       
@@ -110,7 +110,9 @@
 
       const { data, error } = await sb
         .from("player_stats")
-        .select("level, xp, money, cigarettes, energy, max_energy, hp, max_hp")
+        // hp/max_hp sloupce nemusí v DB existovat (HP se může dopočítávat ze statů) –
+        // proto je neselectujeme, ať to nepadá na 400 (42703).
+        .select("level, xp, money, cigarettes, energy, max_energy")
         .eq("user_id", currentUserId)
         .limit(1)
         .single();
@@ -133,9 +135,7 @@
         money: clampVal(data.money, 0, 999999999),
         cigarettes: clampVal(data.cigarettes, 0, 999999),
         energy: clampVal(data.energy, 0, 1000),
-        max_energy: clampVal(data.max_energy, 100, 1000),
-        hp: clampVal(data.hp, 0, 99999),
-        max_hp: clampVal(data.max_hp, 1, 99999)
+        max_energy: clampVal(data.max_energy, 100, 1000)
       };
 
       console.log('✅ My stats loaded:', myStats);

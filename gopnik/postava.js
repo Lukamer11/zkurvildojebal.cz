@@ -7,7 +7,7 @@
   "use strict";
 
   // ---------- Tunables ----------
-  const STAT_UPGRADE_GAIN_BASE = 0.25;
+  const STAT_UPGRADE_GAIN_BASE = 0.08;
   const UPGRADE_COST_MULT = 1.35;
   const UPGRADE_COST_ADD = 15;
 
@@ -57,27 +57,47 @@
   }
 
   function getPlayerClass(statsObj) {
-    const cls = (statsObj?.player_class || localStorage.getItem("sf_class") || "padouch").toLowerCase();
+    const cls = (statsObj?.player_class || window.SF?.stats?.stats?.player_class || "padouch").toLowerCase();
     return cls;
   }
 
   function getUpgradeGain(stat, cls) {
-    // zachováno z tvé původní logiky (zjednodušené)
-    if (cls === "padouch") return STAT_UPGRADE_GAIN_BASE;
+    // GRIND režim: lineární přírůstky (žádné % z aktuální hodnoty).
+    // Třídy:
+    // - rvac = tank (CON/DEF výrazně lepší)
+    // - padouch = vyvážený (lehce lepší LUCK/INT)
+    // - mozek = "síla + burst, málo HP" (STR/DEX lepší, CON slabá)
     if (cls === "rvac") {
-      if (stat === "constitution") return 0.35;
-      if (stat === "strength") return 0.2;
+      if (stat === "constitution") return 0.12;
+      if (stat === "defense") return 0.11;
+      if (stat === "strength") return 0.09;
+      if (stat === "dexterity") return 0.07;
+      if (stat === "intelligence") return 0.06;
+      if (stat === "luck") return 0.07;
       return STAT_UPGRADE_GAIN_BASE;
     }
+
+    if (cls === "padouch") {
+      if (stat === "luck") return 0.09;
+      if (stat === "intelligence") return 0.09;
+      return STAT_UPGRADE_GAIN_BASE;
+    }
+
     if (cls === "mozek") {
-      if (stat === "strength" || stat === "intelligence") return 0.35;
-      if (stat === "constitution") return 0.2;
+      if (stat === "strength") return 0.12;
+      if (stat === "dexterity") return 0.10;
+      if (stat === "luck") return 0.08;
+      if (stat === "intelligence") return 0.07;
+      if (stat === "defense") return 0.06;
+      if (stat === "constitution") return 0.05; // málo HP
       return STAT_UPGRADE_GAIN_BASE;
     }
+
     return STAT_UPGRADE_GAIN_BASE;
   }
 
-  function nextCost(currCost) {
+
+function nextCost(currCost) {
     const c = Number(currCost ?? 100);
     return Math.max(1, Math.floor(c * UPGRADE_COST_MULT + UPGRADE_COST_ADD));
   }
@@ -152,7 +172,7 @@
     }
 
     // zvýšení: používáme float gain, ale UI držíme jako int (aby to nebylo divný)
-    const newVal = Math.max(1, Math.round((currentVal + currentVal * gain) * 100) / 100);
+    const newVal = Math.max(1, Math.round((currentVal + gain) * 100) / 100);
     const newCost = nextCost(currentCost);
 
     stats[stat] = newVal;

@@ -300,10 +300,6 @@
       }
     }
   </style>
-<script type="module">
-  import { redirectIfAuthed } from './js/authGuard.js';
-  redirectIfAuthed('menu.html');
-</script>
 </head>
 <body>
   <div class="bg-layer"></div>
@@ -411,17 +407,8 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
     const NEXT_URL = 'postava.html';
 
-    localStorage.setItem('SUPABASE_URL', SUPABASE_URL);
-    localStorage.setItem('SUPABASE_ANON_KEY', SUPABASE_ANON_KEY);
 
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    storage: window.localStorage,
-    autoRefreshToken: true,
-    detectSessionInUrl: false
-  }
-});
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const tabBtns = document.querySelectorAll('.tab-btn');
     const loginForm = document.getElementById('loginForm');
@@ -454,6 +441,13 @@
     function setBusy(isBusy) {
       document.getElementById('loginBtn').disabled = isBusy;
       document.getElementById('registerBtn').disabled = isBusy;
+    }
+
+    // Login jen online (bez internetu se Supabase auth stejně nechytí, jen to uděláme uživatelsky).
+    function requireOnline() {
+      if (navigator.onLine) return true;
+      showMessage('Musíš být online (připojení k internetu).', 'error');
+      return false;
     }
 
     tabBtns.forEach(btn => {
@@ -553,8 +547,6 @@
     }
 
     async function goToGame(playerRow) {
-      const uid = localStorage.getItem('user_id') || '';
-      const clsLs = (localStorage.getItem(`sf_class_${uid}`) || localStorage.getItem('sf_class') || '').toLowerCase();
       const clsDb = (playerRow?.stats?.player_class || '').toLowerCase();
       
       if (!clsLs && !clsDb) {
@@ -564,8 +556,6 @@
       }
       
       if (clsDb) {
-        localStorage.setItem(`sf_class_${uid}`, clsDb);
-        localStorage.setItem('sf_class', clsDb);
       }
       
       console.log('🎮 Redirecting to game...');
@@ -575,6 +565,8 @@
     // ===== LOGIN =====
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      if (!requireOnline()) return;
       
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
@@ -600,7 +592,7 @@
 
         console.log('✅ Logged in:', user.id);
 
-        localStorage.setItem('user_id', user.id);
+
         const row = await ensurePlayerStats(user.id, user.email || email, null);
 
         showMessage('Přihlášeno! Vstupuješ do arény...', 'success');
@@ -618,6 +610,8 @@
     // ===== REGISTER =====
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      if (!requireOnline()) return;
       
       const nickname = document.getElementById('registerNickname').value.trim() || null;
       const email = document.getElementById('registerEmail').value.trim();
@@ -659,7 +653,7 @@
           return;
         }
 
-        localStorage.setItem('user_id', user.id);
+
         const row = await ensurePlayerStats(user.id, user.email || email, nickname);
 
         showMessage('Registrace OK! Vstupuješ do arény...', 'success');
@@ -683,7 +677,7 @@
         
         if (sess?.user) {
           console.log('✅ Session found:', sess.user.id);
-          localStorage.setItem('user_id', sess.user.id);          
+          
           const row = await ensurePlayerStats(sess.user.id, sess.user.email || '', null);
           
           showNotification('Již jsi přihlášen! Přesměrování...', 'success');

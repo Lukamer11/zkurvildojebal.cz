@@ -19,13 +19,14 @@
   class Player {
     static getUserId() {
       return (
-        (window.SF && window.SF.user && window.SF.user.id) ||
+        (window.SF?.user?.id || window.SF?.stats?.user_id || "1") ||
         '1'
       );
     }
 
     static getName() {
       return (
+        sessionStorage.getItem('playerName') ||
         sessionStorage.getItem('nickname') ||
         sessionStorage.getItem('nick') ||
         'PLAYER'

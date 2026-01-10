@@ -211,7 +211,7 @@ const missionTemplates = {
 
 // Load saved data
 function loadGameData() {
-  const saved = localStorage.getItem('missionData');
+  const saved = sessionStorage.getItem('missionData');
   if (saved) {
     const data = JSON.parse(saved);
     playerLevel = data.level || 1;
@@ -237,16 +237,16 @@ function loadGameData() {
   }
   
   // Regenerate energy (1 per 5 minutes)
-  const lastEnergyUpdate = localStorage.getItem('lastEnergyUpdate');
+  const lastEnergyUpdate = sessionStorage.getItem('lastEnergyUpdate');
   if (lastEnergyUpdate) {
     const timePassed = Date.now() - parseInt(lastEnergyUpdate);
     const energyGained = Math.floor(timePassed / (5 * 60 * 1000));
     if (energyGained > 0) {
       playerEnergy = Math.min(playerMaxEnergy, playerEnergy + energyGained);
-      localStorage.setItem('lastEnergyUpdate', Date.now().toString());
+      sessionStorage.setItem('lastEnergyUpdate', Date.now().toString());
     }
   } else {
-    localStorage.setItem('lastEnergyUpdate', Date.now().toString());
+    sessionStorage.setItem('lastEnergyUpdate', Date.now().toString());
   }
   
   updateUI();
@@ -273,7 +273,7 @@ function saveGameData() {
       startTime: assassinStartTime
     }
   };
-  localStorage.setItem('missionData', JSON.stringify(data));
+  sessionStorage.setItem('missionData', JSON.stringify(data));
 }
 
 // Update UI
@@ -483,7 +483,7 @@ function missionComplete(slot) {
     slot: slot
   };
   
-  localStorage.setItem('arenaFromMission', JSON.stringify(missionData));
+  sessionStorage.setItem('arenaFromMission', JSON.stringify(missionData));
   
   // Show notification and redirect
   showNotification('Mise hotová! Přesměrování do areny...', 'success');
@@ -664,13 +664,13 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Energy regeneration
   setInterval(() => {
-    const lastUpdate = parseInt(localStorage.getItem('lastEnergyUpdate') || Date.now());
+    const lastUpdate = parseInt(sessionStorage.getItem('lastEnergyUpdate') || Date.now());
     const timePassed = Date.now() - lastUpdate;
     const energyGained = Math.floor(timePassed / (5 * 60 * 1000));
     
     if (energyGained > 0) {
       playerEnergy = Math.min(playerMaxEnergy, playerEnergy + energyGained);
-      localStorage.setItem('lastEnergyUpdate', Date.now().toString());
+      sessionStorage.setItem('lastEnergyUpdate', Date.now().toString());
       saveGameData();
       updateUI();
     }

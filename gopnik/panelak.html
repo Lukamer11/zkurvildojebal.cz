@@ -695,7 +695,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="menu.css">
   <script src="menu.js"></script>
-<script type="module" src="js/globalAuth.js"></script>
 </head>
 
 <body>
@@ -855,7 +854,6 @@
           </div>
 
           <div class="tinyNote">
-            Brat, všechno je v <b>localStorage</b>. Prestige resetne groše & upgrady, ale dá trvalý bonus.
           </div>
         </div>
 
@@ -900,7 +898,6 @@
     ];
 
     function loadSave(){
-      try{ return JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); }
       catch{ return null; }
     }
 
@@ -924,7 +921,6 @@
     }
 
     let S = loadSave() || defaultSave();
-    function saveNow(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
     function getBoss(id){ return BOSSES.find(b => b.id === id); }
 
     // DOM
@@ -1260,7 +1256,6 @@
     btnHardReset.addEventListener("click", ()=>{
       const ok = confirm("Hard reset = smaže úplně všechno. Jsi si jistý?");
       if(!ok) return;
-      localStorage.removeItem(SAVE_KEY);
       S = defaultSave();
       saveNow();
       render();

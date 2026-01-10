@@ -219,7 +219,6 @@ body{
   100%{ content:""; }
 }
 </style>
-<script type="module" src="js/globalAuth.js"></script>
 </head>
 
 <body>
@@ -303,9 +302,7 @@ function showStart(){
   // klik (stačí jednou)
   panel.addEventListener("click", () => {
     // řekneme hře, že se má hudba pustit
-    localStorage.setItem("musicPlaying", "true");
     // vynuluj čas, nebo nech jak chceš:
-    localStorage.setItem("musicTime", "0");
 
     location.href = NEXT_PAGE;
   }, { once: true });

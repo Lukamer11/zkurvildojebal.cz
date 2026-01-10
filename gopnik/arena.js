@@ -87,6 +87,45 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     { name: "VIKTOR NIGHTSTEP", level: 9, hp: 2200 }
   ];
 
+  // ===== CRYPTA BOSS OVERRIDE =====
+  // auto.js ukládá fight data do sessionStorage('cryptaBossFight'). Arena z toho umí
+  // 1) nastavit enemy (boss)  2) zobrazit ikonku v rámečku  3) automaticky spustit duel
+  let cryptaBossFight = null;
+  async function loadCryptaBossFight() {
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('fromCrypta') !== '1') return null;
+    if (window.SFReady) await window.SFReady;
+    const sb = window.SF?.sb;
+    const uid = window.SF?.user?.id || window.SF?.stats?.user_id;
+    if (!sb || !uid) return null;
+    const { data } = await sb.from('crypta_fights').select('payload').eq('user_id', uid).maybeSingle();
+    const payload = data?.payload;
+    if (!payload || !payload.boss) return null;
+    cryptaBossFight = payload;
+    return payload;
+  }
+
+  async function clearCryptaBossFight() {
+    if (window.SFReady) await window.SFReady;
+    const sb = window.SF?.sb;
+    const uid = window.SF?.user?.id || window.SF?.stats?.user_id;
+    if (sb && uid) await sb.from('crypta_fights').delete().eq('user_id', uid);
+  }
+
+  function getBossDmgScale(boss) {
+    // bosové mají být těžší než obyč. arena enemy na stejném levelu
+    const lvl = Number(boss?.level || 1);
+    const idx = Number(cryptaBossFight?.bossIndex || 0);
+    // start cca 1.35× a pomalu roste s cryptou
+    return 1.35 + (lvl * 0.05) + (idx * 0.05);
+  }
+
+  function getActiveEnemy() {
+    if (cryptaBossFight?.boss) return cryptaBossFight.boss;
+    return enemies[enemyIndex % enemies.length];
+  }
+
+
   let enemyIndex = 0;
   let enemyCurHp = enemies[0].hp;
   let enemyMaxHp = enemies[0].hp;
@@ -143,19 +182,21 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     return Math.floor(Math.random() * (b - a + 1)) + a;
   }
 
-    function computeMaxHpFromCore(core, cls) {
-    // Vypočítej HP POUZE z base Constitution (bez equipment bonusů)
-    const baseCon = Number(core.constitution ?? 0);
-    const base = 500 + (baseCon * 25);
-    let maxHp = clampHp(base);
-    
-    // Aplikuj class modifikátory
-    if (cls === "rvac") maxHp = clampHp(maxHp * 1.25);
-    if (cls === "mozek") maxHp = clampHp(maxHp * 0.8);
-    
-    console.log(`💪 computeMaxHpFromCore: baseCon=${baseCon}, cls=${cls}, maxHp=${maxHp}`);
-    return Math.max(1, maxHp);
+  function computeMaxHpFromCore(core) {
+    // MUSÍ být stejné jako v Postava: 500 + CON * 25
+    // V projektu se stat jmenuje "constitution" (ne "con").
+    const con =
+      Number(core?.constitution) ||
+      Number(core?.stats?.constitution) ||
+      Number(core?.con) ||
+      Number(core?.stats?.con) ||
+      0;
+
+    const maxHp = Math.max(1, clampHp(500 + (con * 25)));
+    console.log(`💪 computeMaxHpFromCore: con=${con}, maxHp=${maxHp}`);
+    return maxHp;
   }
+
 
 // ===== PŘIDEJ NOVOU FUNKCI pro synchronizaci měny =====
   function syncCurrencyUI() {
@@ -252,7 +293,7 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
   }
 
   function recomputePlayerTotals() {
-    const cls = (window.SF?.getPlayerClass ? window.SF.getPlayerClass() : (localStorage.getItem("sf_class") || "padouch")).toLowerCase();
+    const cls = String(window.SF?.stats?.stats?.player_class || "padouch").toLowerCase();
     const equipBonus = calcEquipBonuses(playerEquipped);
 
     // HP: if Postava/DB provided hp_max, keep it as the source of truth
@@ -272,24 +313,41 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
       _class: cls
     };
 
-    // ⚠️ NEPOUŽÍVEJ computeMaxHpFromCore - vezmi HP ze SF!
-    if (window.SF) {
-      const sfStats = sfGetStatsSync();
-      if (sfStats) {
-        if (!(playerHpFromDb && playerHpDb?.hp_max)) {
-          playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || 500);
-        }
+    // HP sync:
+    // - Pokud Postava/DB dodá hp_max, ber to jako zdroj pravdy.
+    // - Jinak spočítej stejně jako Postava (500 + constitution * 25).
+    // - SF maxHP použij jen pokud je "smysluplné" (ne placeholder 500) a vyšší než computed.
+    if (!(playerHpFromDb && playerHpDb?.hp_max)) {
+      const computedMax = computeMaxHpFromCore(playerCore);
+      const sfStats = window.SF ? sfGetStatsSync() : null;
+
+      const sfMaxRaw = sfStats
+        ? Number(sfStats.max_hp ?? sfStats.hp_max ?? sfStats.maxHp ?? sfStats.hpMax ?? 0)
+        : 0;
+
+      const sfMax = clampHp(sfMaxRaw);
+
+      // 500 bereme jako placeholder (pokud computed vychází > 500)
+      if (sfStats) console.log('📊 SF Stats:', sfStats);
+
+      if (computedMax > 500) {
+        playerMaxHp = computedMax;
+        console.log('💚 Using computed maxHP:', playerMaxHp);
+      } else if (sfMax > 0) {
+        playerMaxHp = sfMax;
         console.log('💚 Using maxHP from SF:', playerMaxHp);
-        console.log('📊 SF Stats:', sfStats);
       } else {
-        console.warn('⚠️ SF present but stats API missing; falling back to computed HP');
-        if (!(playerHpFromDb && playerHpDb?.hp_max)) playerMaxHp = computeMaxHpFromCore(playerCore, cls);
+        playerMaxHp = computedMax;
         console.log('💚 Using computed maxHP:', playerMaxHp);
       }
-    } else {
-      if (!(playerHpFromDb && playerHpDb?.hp_max)) playerMaxHp = computeMaxHpFromCore(playerCore, cls);
-      console.log('⚠️ SF not available, computed maxHP:', playerMaxHp);
+
+      // Pokud SF opravdu drží větší maxHP (a není to placeholder), respektuj ho
+      if (sfMax > playerMaxHp && sfMax > 500) {
+        playerMaxHp = sfMax;
+        console.log('💚 Using maxHP from SF (higher):', playerMaxHp);
+      }
     }
+
     console.log('🔥 === RECOMPUTE PLAYER TOTALS ===');
     console.log('playerCore:', playerCore);
     console.log('equipBonus:', equipBonus);
@@ -323,43 +381,96 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
   function healPlayerToFull() {
     console.log('🏥 === HEAL PLAYER TO FULL ===');
 
-    // Preferuj HP ze SF, ale nepadni, když stats API není k dispozici
-    const sfStats = window.SF ? sfGetStatsSync() : null;
-    if (sfStats) {
-      playerMaxHp = clampHp(sfStats.max_hp || sfStats.maxHp || playerMaxHp || 500);
-      console.log('  💚 Using maxHP from SF:', playerMaxHp);
-    } else {
-      const cls = (localStorage.getItem('sf_class') || 'padouch').toLowerCase();
-      playerMaxHp = computeMaxHpFromCore(playerCore, cls);
-      console.log('  ⚠️ SF stats missing, using computed maxHP:', playerMaxHp);
+    // HP:
+    // - Pokud už máš hp_max z Postavy/DB, nech ho.
+    // - Jinak spočítej stejně jako Postava (500 + constitution * 25).
+    // - SF maxHP použij jen pokud není placeholder 500 a je vyšší než computed.
+    if (!(playerHpFromDb && playerHpDb?.hp_max)) {
+      const computedMax = computeMaxHpFromCore(playerCore);
+      const sfStats = window.SF ? sfGetStatsSync() : null;
+      const sfMax = sfStats
+        ? clampHp(Number(sfStats.max_hp ?? sfStats.hp_max ?? sfStats.maxHp ?? sfStats.hpMax ?? 0))
+        : 0;
+
+      if (computedMax > 500) {
+        playerMaxHp = computedMax;
+        console.log('  💚 Using computed maxHP:', playerMaxHp);
+      } else if (sfMax > 0) {
+        playerMaxHp = sfMax;
+        console.log('  💚 Using maxHP from SF:', playerMaxHp);
+      } else {
+        playerMaxHp = computedMax;
+        console.log('  💚 Using computed maxHP:', playerMaxHp);
+      }
+
+      if (sfMax > playerMaxHp && sfMax > 500) {
+        playerMaxHp = sfMax;
+        console.log('  💚 Using maxHP from SF (higher):', playerMaxHp);
+      }
     }
 
     // Don't blindly heal to full here; keep current HP (Postava source of truth if available)
-    if (!Number.isFinite(playerCurrentHp) || playerCurrentHp <= 0) playerCurrentHp = playerMaxHp;
-    playerCurrentHp = Math.min(clampHp(playerCurrentHp), playerMaxHp);
+   // Když nemáme HP z DB, při bootu nastav full HP (stejně jako "heal to full")
+if (!(playerHpFromDb && playerHpDb?.hp_max)) {
+  playerCurrentHp = playerMaxHp;
+} else {
+  // pokud DB HP existuje, respektuj ho
+  if (!Number.isFinite(playerCurrentHp) || playerCurrentHp <= 0) playerCurrentHp = playerMaxHp;
+  playerCurrentHp = Math.min(clampHp(playerCurrentHp), playerMaxHp);
+}
+
     try { sfSetHpSync(playerCurrentHp, playerMaxHp); } catch (e) { console.warn('⚠️ SF.setHp failed:', e); }
     setBar(playerHealthFill, playerHealthText, playerCurrentHp, playerMaxHp);
   }
+
   function renderEnemy() {
-    const e = enemies[enemyIndex % enemies.length];
+    const e = getActiveEnemy();
+    if (!e) return;
+
+    // class pro obyč enemy, boss class neřešíme (ale necháme, když přijde)
     const clsPool = ["padouch","rvac","mozek"];
     if (!e._class) e._class = clsPool[randInt(0, clsPool.length-1)];
-    
-    enemyMaxHp = e.hp;
-    if (e._class === "rvac") enemyMaxHp = clampHp(enemyMaxHp * 1.25);
-    if (e._class === "mozek") enemyMaxHp = clampHp(enemyMaxHp * 0.8);
+
+    // HP
+    enemyMaxHp = Number(e.hp || 0);
+    if (enemyMaxHp <= 0) enemyMaxHp = 1000;
     enemyCurHp = enemyMaxHp;
 
-    if (enemyNameEl) enemyNameEl.textContent = e.name;
+    // Boss obrázek (stejný jako v cryptě), pokud existuje v DOM
+    if (cryptaBossFight?.boss && e.avatar) {
+      const img = document.querySelector('.enemy-section .character-arena img')
+        || document.querySelector('#enemyAvatar')
+        || document.querySelector('.enemy-section img');
+      if (img && img.tagName === 'IMG') {
+        img.src = e.avatar;
+      }
+      // background pokud používáš jednu vrstvu/sekci
+      const bg = document.querySelector('.enemy-section');
+      if (bg && e.background) {
+        // jen pokud už tam background používáš – když ne, nic to nerozbije
+        bg.style.backgroundImage = `url(${e.background})`;
+        bg.style.backgroundSize = 'cover';
+        bg.style.backgroundPosition = 'center';
+      }
+    }
+
+    // Ikonka bosse v rámečku: nejméně invazivní je prefix názvu
+    const icon = (cryptaBossFight?.boss ? (e.icon || '💀') : '');
+    if (enemyNameEl) enemyNameEl.textContent = icon ? `${icon} ${e.name}` : e.name;
     if (enemyLevelEl) enemyLevelEl.textContent = `Level ${e.level}`;
     setBar(enemyHealthFill, enemyHealthText, enemyCurHp, enemyMaxHp);
 
-    const eStr = 10 + (e.level * 3) + randInt(0, 5);
-    const eDef = 8 + (e.level * 2) + randInt(0, 4);
-    const eDex = 6 + (e.level * 2) + randInt(0, 3);
-    const eInt = 5 + e.level + randInt(0, 2);
-    const eCon = 12 + (e.level * 2) + randInt(0, 4);
-    const eLuck = 3 + e.level + randInt(0, 2);
+    // Enemy stats (jen pro zobrazení v UI).
+    // U bosse je chceme těžší než běžně: násobič podle crypty + malé posílení.
+    const lvl = Number(e.level ?? 1);
+    const bossMul = cryptaBossFight?.boss ? (1.25 + (Number(cryptaBossFight.bossIndex||0) * 0.07)) : 1;
+
+    const eStr = clampHp((10 + (lvl * 3) + randInt(0, 5)) * bossMul);
+    const eDef = clampHp((8 + (lvl * 2) + randInt(0, 4)) * bossMul);
+    const eDex = clampHp((6 + (lvl * 2) + randInt(0, 3)) * bossMul);
+    const eInt = clampHp((5 + lvl + randInt(0, 2)) * bossMul);
+    const eCon = clampHp((12 + (lvl * 2) + randInt(0, 4)) * bossMul);
+    const eLuck = clampHp((3 + lvl + randInt(0, 2)) * bossMul);
 
     const enemyStatElements = {
       eStr: eStr,
@@ -518,86 +629,56 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
               void dmgEl.offsetWidth;
               dmgEl.classList.add("show");
             }
-          }, 100);
-
-          setTimeout(() => {
-            defender.hp = clampHp(defender.hp - damage);
-            setBar(fillEl, textEl, defender.hp, maxHp);
-          }, 200);
+            setBar(fillEl, textEl, defender.curHp, maxHp);
+            setTimeout(resolve, 850);
+          }, 400);
           return;
         }
 
         const hole = holes[step];
-        if (!hole) {
-          step++;
-          showNextHole();
-          return;
-        }
-
-        const x = 40 + Math.random() * 120;
-        const y = 90 + Math.random() * 140;
-        hole.style.left = x + "px";
-        hole.style.top = y + "px";
+        // Random pozice díry (A): pokaždé jinde, bez změny vzhledu UI
+        try {
+          const parent = hole.parentElement;
+          if (parent) {
+            const pos = window.getComputedStyle(parent).position;
+            if (pos === 'static') parent.style.position = 'relative';
+          }
+          hole.style.position = 'absolute';
+          const x = 10 + Math.random() * 70; // %
+          const y = 10 + Math.random() * 70; // %
+          hole.style.left = x + '%';
+          hole.style.top  = y + '%';
+          hole.style.transform = 'translate(-50%, -50%)';
+        } catch {}
+        hole.style.opacity = "1";
         hole.classList.add("show-hit");
-
         step++;
-        setTimeout(showNextHole, 200);
+        setTimeout(showNextHole, 120);
       };
 
       showNextHole();
-
-      setTimeout(() => {
-        target.classList.remove("hit-shake");
-        holes.forEach(h => {
-          h.classList.remove("show-hit");
-          setTimeout(() => { h.style.opacity = "0"; }, 300);
-        });
-        resolve();
-      }, 1400);
     });
   }
 
-  async function performAttack(attacker, defender, isPlayer, attackerTotal, defenderInfo) {
-    const cls = isPlayer ? String(attackerTotal._class || "padouch").toLowerCase() : String(defenderInfo._class || "padouch").toLowerCase();
-    const dmgScale = 1;
+  async function performAttack(attacker, defender, isPlayerAttacking, attackerTotal, meta) {
+    const cls = String(meta._class || "padouch").toLowerCase();
+    await showWeapon(isPlayerAttacking);
+    await fireWeapon(isPlayerAttacking);
 
-    let damage;
-    if (isPlayer) {
-      damage = computePlayerHit(attackerTotal, cls, dmgScale);
+    if (isPlayerAttacking) {
+      const dmg = computePlayerHit(attackerTotal, cls);
+      enemyCurHp = clampHp(enemyCurHp - dmg);
+      if (enemyCurHp < 0) enemyCurHp = 0;
+      await showHitAnimation(".enemy-section .character-arena", "#enemyDmg", dmg, { curHp: enemyCurHp }, enemyHealthFill, enemyHealthText, enemyMaxHp);
     } else {
-      damage = computeEnemyHit(Number(defenderInfo.level ?? 1), cls, dmgScale);
+      const dmg = computeEnemyHit(Number(attackerTotal.level ?? 1), cls, (cryptaBossFight?.boss ? getBossDmgScale(getActiveEnemy()) : 1));
+      playerCurrentHp = clampHp(playerCurrentHp - dmg);
+      if (playerCurrentHp < 0) playerCurrentHp = 0;
+      await showHitAnimation(".player-section .character-arena", "#playerDmg", dmg, { curHp: playerCurrentHp }, playerHealthFill, playerHealthText, playerMaxHp);
+      try { sfSetHpSync(playerCurrentHp, playerMaxHp); } catch {}
     }
 
-    await showWeapon(isPlayer);
-    await fireWeapon(isPlayer);
-    await hideWeapon(isPlayer);
-
-    if (isPlayer) {
-      const enemyObj = { hp: enemyCurHp };
-      await showHitAnimation(
-        ".enemy-section .character-arena",
-        "#enemyDmg",
-        damage,
-        enemyObj,
-        enemyHealthFill,
-        enemyHealthText,
-        enemyMaxHp
-      );
-      enemyCurHp = enemyObj.hp;
-    } else {
-      const playerObj = { hp: playerCurrentHp };
-      await showHitAnimation(
-        ".player-section .character-arena",
-        "#playerDmg",
-        damage,
-        playerObj,
-        playerHealthFill,
-        playerHealthText,
-        playerMaxHp
-      );
-      playerCurrentHp = playerObj.hp;
-      sfSetHpSync(playerCurrentHp, playerMaxHp);
-    }
+    await hideWeapon(isPlayerAttacking);
   }
 
   function startFight() {
@@ -665,22 +746,25 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
         try { await window.SF.actions.arenaWin(); } catch {}
         if (hasMissionRewards) {
           try { /* exp řeší server */ } catch {}
-          const missionData = JSON.parse(localStorage.getItem('missionData') || '{}');
-          missionData.completed = (missionData.completed || 0) + 1;
-          missionData.totalExp = (missionData.totalExp || 0) + window.missionRewards.exp;
-          missionData.totalMoney = (missionData.totalMoney || 0) + reward;
-          missionData.battles = (missionData.battles || 0) + 1;
-          missionData.wins = (missionData.wins || 0) + 1;
-          localStorage.setItem('missionData', JSON.stringify(missionData));
+          const cur = window.SF?.stats?.missionData || {};
+          const missionData = {
+            ...cur,
+            completed: (cur.completed || 0) + 1,
+            totalExp: (cur.totalExp || 0) + window.missionRewards.exp,
+            totalMoney: (cur.totalMoney || 0) + reward,
+            battles: (cur.battles || 0) + 1,
+            wins: (cur.wins || 0) + 1
+          };
+          window.SF.updateStats({ missionData });
         }
         finishFight(true, reward);
         if (hasMissionRewards) setTimeout(() => window.location.href = 'mise.html', 3000);
       } else {
-        try { await window.SF.actions.arenaWin(); } catch {}
+        try { await (window.SF.actions.arenaLose ? window.SF.actions.arenaLose() : window.SF.actions.arenaWin()); } catch {}
         if (hasMissionRewards) {
-          const missionData = JSON.parse(localStorage.getItem('missionData') || '{}');
-          missionData.battles = (missionData.battles || 0) + 1;
-          localStorage.setItem('missionData', JSON.stringify(missionData));
+          const cur = window.SF?.stats?.missionData || {};
+          const missionData = { ...cur, battles: (cur.battles || 0) + 1 };
+          window.SF.updateStats({ missionData });
         }
         finishFight(false, loss);
         if (hasMissionRewards) setTimeout(() => window.location.href = 'mise.html', 3000);
@@ -693,91 +777,91 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     setTimeout(step, 900);
   }
 
-  
   async function hydratePlayerFromPostava() {
     try {
-      console.log('🔥 === HYDRATE PLAYER (SF) ===');
+      console.log('🔥 === HYDRATE PLAYER FROM SUPABASE ===');
+      
+      const lib = window.supabase;
+      const sb = window.supabaseClient;
 
-      // počkej na globální init z menu.js
-      if (window.SFReady) {
-        await window.SFReady;
-      }
-
-      const SF = window.SF || {};
-      const stats = (typeof SF.getStats === 'function') ? SF.getStats() : (SF.stats || null);
-
-      if (!stats) {
-        console.warn('⚠️ SF stats nejsou k dispozici (uživatel není přihlášen?)');
+      const uid = window.SF?.user?.id || window.SF?.stats?.user_id || "1";
+      
+      console.log('👤 User ID:', uid);
+      
+      if (!sb) {
+        console.warn('⚠️ Supabase not available');
         return;
       }
 
-      console.log('📦 SF stats:', stats);
+      const { data, error } = await sb
+        .from("player_stats")
+        .select("level,xp,money,stats,equipped")
+        .eq("user_id", uid)
+        .limit(1);
 
-      // mapování (DB: strength/endurance/agility/luck) -> arena core (strength/defense/dexterity/luck)
-      const st = stats.stats || {};
-      playerCore.strength = Number(st.strength ?? playerCore.strength);
-      playerCore.defense  = Number(st.endurance ?? playerCore.defense);
-      playerCore.dexterity = Number(st.agility ?? playerCore.dexterity);
-      playerCore.luck = Number(st.luck ?? playerCore.luck);
-
-      // peníze / xp / level (když je UI někde používá)
-
-      // HP se v DB neskladuje jako sloupec → dopočítej deterministicky z endurance + level
-      // (stejná logika jako fallback v aréně)
-      playerHpFromDb = false;
-      recomputePlayerTotals();
-
-      // energie do HUD (arena.js má vlastní bar, ale SF HUD se stará menu.js)
-      // nic dalšího – jen přepočet a render
-      renderPlayerStats();
-      renderHpBars();
-
-      // --- CRYPTA MODE (boss z auto.js) ---
-      const raw = sessionStorage.getItem('cryptaBossFight');
-      if (raw) {
-        try {
-          const payload = JSON.parse(raw);
-          if (payload && payload.boss && payload.autoStart) {
-            console.log('🧟 Crypta boss payload:', payload);
-
-            // nastav nepřítele jako jediného v seznamu
-            enemies.length = 0;
-            enemies.push({
-              name: payload.boss.name || 'CRYPTA BOSS',
-              level: Number(payload.boss.level || 1),
-              hp: Number(payload.boss.hp || 1000),
-              avatar: payload.boss.avatar || null,
-              background: payload.boss.background || null,
-              icon: payload.boss.icon || ''
-            });
-
-            enemyIndex = 0;
-            enemyCurHp = enemies[0].hp;
-            enemyMaxHp = enemies[0].hp;
-
-            // aby se po výsledku vrátil do crypta
-            window.cryptaRewards = payload.reward || null;
-
-            // vykresli a automaticky začni
-            renderEnemy();
-            setButtonsVisible(true);
-            setTimeout(() => {
-              try { startFight(); } catch (e) { console.error(e); }
-            }, 250);
-          }
-        } catch (e) {
-          console.warn('⚠️ cryptaBossFight parse failed', e);
-        } finally {
-          // boss fight data je jednorázová
-          sessionStorage.removeItem('cryptaBossFight');
-        }
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        return;
+      }
+      
+      console.log('📦 Raw Supabase data:', data);
+      
+      const row = data?.[0];
+      if (!row) {
+        console.warn('⚠️ No data found for user');
+        return;
       }
 
-    } catch (e) {
-      console.error('❌ hydratePlayerFromPostava failed:', e);
+      console.log('📊 Row data:', row);
+      console.log('📊 Stats from DB:', row.stats);
+
+      const st = row.stats || {};
+
+      // --- HP sync (match Postava) ---
+      const dbHpMax = (row.hp_max ?? row.hpMax ?? st.hp_max ?? st.max_hp ?? st.maxHp);
+      const dbHpCur = (row.hp ?? row.hp_current ?? row.hpCur ?? st.hp ?? st.hp_current ?? st.current_hp);
+      if (dbHpMax != null) {
+        playerHpFromDb = true;
+        playerHpDb.hp_max = clampHp(dbHpMax);
+        playerHpDb.hp = clampHp(dbHpCur != null ? dbHpCur : dbHpMax);
+        playerMaxHp = playerHpDb.hp_max;
+        playerCurrentHp = Math.min(playerHpDb.hp, playerMaxHp);
+        console.log('❤️ HP loaded from DB:', { hp: playerCurrentHp, hp_max: playerMaxHp });
+      } else {
+        playerHpFromDb = false;
+        playerHpDb = { hp: null, hp_max: null };
+        console.log('ℹ️ No hp_max in DB row; HP will be computed.');
+      }
+
+      
+      playerCore = {
+        strength: Number(st.strength ?? 18),
+        defense: Number(st.defense ?? 14),
+        dexterity: Number(st.dexterity ?? 11),
+        intelligence: Number(st.intelligence ?? 11),
+        constitution: Number(st.constitution ?? 16),
+        luck: Number(st.luck ?? 9),
+        level: Number(row.level ?? 1)
+      };
+
+      console.log('💪 playerCore after load:', playerCore);
+
+      playerEquipped = row.equipped || null;
+      console.log('🎒 playerEquipped:', playerEquipped);
+
+      const dbCls = String(st.player_class || "").toLowerCase();
+      if (dbCls) {
+        try { window.SF?.setPlayerClass?.(dbCls); } catch {}
+        try { window.SF?.updateStats?.({ stats: { ...(window.SF?.stats?.stats||{}), player_class: dbCls } }); } catch {}
+        console.log('🎭 Class set:', dbCls);
+      }
+
+      recomputePlayerTotals();
+      console.log('======================================');
+    } catch (err) {
+      console.error('❌ Error in hydratePlayerFromPostava:', err);
     }
   }
-
 
   function renderClassBadgeOnAvatar() {
     const meta = {
@@ -785,7 +869,7 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
       rvac: { icon: "✊", label: "Rváč" },
       mozek: { icon: "💡", label: "Mozek" }
     };
-    const cls = (window.SF?.getPlayerClass ? window.SF.getPlayerClass() : (localStorage.getItem("sf_class") || "padouch")).toLowerCase();
+    const cls = String(window.SF?.stats?.stats?.player_class || "padouch").toLowerCase();
     const m = meta[cls] || meta.padouch;
 
     const char = document.querySelector(".player-section .character-arena");
@@ -801,14 +885,34 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     badge.title = m.label;
   }
 
-   function boot() {
+   async function boot() {
     console.log('🚀 === ARENA BOOT ===');
+    // načti crypta boss fight (pokud přicházíš z crypt)
+    await loadCryptaBossFight();
+    if (cryptaBossFight?.boss) {
+      console.log('💀 Crypta boss fight detected:', cryptaBossFight);
+      // v cryptě nechceme přepínat enemy
+      if (nextBtn) nextBtn.style.display = 'none';
+    }
+
     
     hydratePlayerFromPostava().finally(() => {
       console.log('✅ Hydration complete, rendering...');
       renderClassBadgeOnAvatar();
       healPlayerToFull();
       renderEnemy();
+      // Auto-start duel, pokud přicházíš z Crypty
+      if (cryptaBossFight?.autoStart && cryptaBossFight?.boss) {
+        // schovej tlačítka (fight poběží sám)
+        setButtonsVisible(false);
+        // aby se to nespouštělo donekonečna po reloadu
+        clearCryptaBossFight();
+        // krátký delay kvůli DOM
+        setTimeout(() => {
+          try { startFight(); } catch (e) { console.error('❌ AutoStart fight failed:', e); }
+        }, 150);
+      }
+
       
       // ⭐ PŘIDEJ TOTO:
       syncCurrencyUI();

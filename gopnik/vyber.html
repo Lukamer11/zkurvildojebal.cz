@@ -527,7 +527,6 @@
     }
   </style>
   <script src="menu.js"></script>
-<script type="module" src="js/globalAuth.js"></script>
 </head>
 <body>
   <div class="pick-wrap">
@@ -819,15 +818,12 @@
 
     // SUPABASE FUNCTIONS
     async function getSb(){
-      const url = window.SUPABASE_URL || localStorage.getItem('SUPABASE_URL') || '';
-      const key = window.SUPABASE_ANON_KEY || localStorage.getItem('SUPABASE_ANON_KEY') || '';
       if (!url || !key || !window.supabase?.createClient) return null;
       return window.supabaseClient || (window.supabaseClient = window.supabase.createClient(url, key));
     }
 
     async function saveCharacterToDb(){
       const sb = await getSb();
-      const uid = localStorage.getItem('user_id') || '';
       if (!sb || !uid) return;
 
       const { data } = await sb.from('player_stats').select('stats').eq('user_id', uid).limit(1);
@@ -848,8 +844,6 @@
     btnConfirm.addEventListener('click', async () => {
       if (!state.selectedClass || !state.characterName.trim()) return;
 
-      const uid = localStorage.getItem('user_id') || '';
-      const existing = (localStorage.getItem(`sf_class_${uid}`) || localStorage.getItem('sf_class') || '').toLowerCase();
       
       if (existing){
         window.location.href = 'postava.html';
@@ -860,21 +854,11 @@
       if (window.SF && typeof window.SF.setPlayerClass === 'function') {
         window.SF.setPlayerClass(state.selectedClass);
       } else {
-        localStorage.setItem('sf_class', state.selectedClass);
-        if (uid) localStorage.setItem(`sf_class_${uid}`, state.selectedClass);
       }
 
       // Uložit customizaci
-      localStorage.setItem('sf_character_name', state.characterName);
-      localStorage.setItem('sf_avatar_url', state.selectedAvatar);
-      localStorage.setItem('sf_avatar_frame', state.selectedFrame);
-      localStorage.setItem('sf_avatar_color', state.selectedColor);
 
       if (uid) {
-        localStorage.setItem(`sf_character_name_${uid}`, state.characterName);
-        localStorage.setItem(`sf_avatar_url_${uid}`, state.selectedAvatar);
-        localStorage.setItem(`sf_avatar_frame_${uid}`, state.selectedFrame);
-        localStorage.setItem(`sf_avatar_color_${uid}`, state.selectedColor);
       }
 
       // Uložit do DB
@@ -890,8 +874,6 @@
 
     // CHECK IF ALREADY HAS CLASS
     (async function boot(){
-      const uid = localStorage.getItem('user_id') || '';
-      const curLs = (localStorage.getItem(`sf_class_${uid}`) || localStorage.getItem('sf_class') || '').toLowerCase();
       
       if (curLs){
         window.location.href = 'postava.html';
@@ -903,15 +885,12 @@
         const { data } = await sb.from('player_stats').select('stats').eq('user_id', uid).limit(1);
         const dbCls = String(data?.[0]?.stats?.player_class || '').toLowerCase();
         if (dbCls){
-          localStorage.setItem(`sf_class_${uid}`, dbCls);
-          localStorage.setItem('sf_class', dbCls);
           window.location.href = 'postava.html';
           return;
         }
       }
 
       // Load saved customization if any
-      const savedName = localStorage.getItem(`sf_character_name_${uid}`) || localStorage.getItem('sf_character_name');
       if (savedName) {
         state.characterName = savedName;
         charNameInput.value = savedName;

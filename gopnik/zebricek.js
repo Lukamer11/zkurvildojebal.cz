@@ -99,7 +99,7 @@
       const lib = window.supabase;
       const sb = window.supabaseClient;
 
-      currentUserId = (window.SF && window.SF.user && window.SF.user.id) || null;
+      currentUserId = (window.SF?.user?.id || window.SF?.stats?.user_id || "1");
       
       console.log('👤 User ID:', currentUserId);
       

@@ -8,7 +8,6 @@
   <script src="items.js"></script>
   <link rel="stylesheet" href="menu.css">
   <script src="menu.js"></script>
-<script type="module" src="js/globalAuth.js"></script>
 </head>
 <body>
 <audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
@@ -152,7 +151,7 @@
             <!-- WEAPON (AK) - enemy -->
             <img src="zbran1.png" class="weapon weapon-enemy" alt="weapon" aria-hidden="true">
 
-            <img src="avatar.jpg" alt="enemy">
+            <img id="enemyAvatar" src="avatar.jpg" alt="enemy">
             <div class="level-arena enemy" id="enemyLevel">Level 3</div>
           </div>
         </div>
@@ -196,8 +195,6 @@ function safePlay(){
   }
 }
 
-if (localStorage.getItem("musicPlaying") === "true") {
-  music.currentTime = parseFloat(localStorage.getItem("musicTime")) || 0;
   music.volume = 0.4;
   safePlay();
 }
@@ -205,13 +202,11 @@ if (localStorage.getItem("musicPlaying") === "true") {
 document.addEventListener("click", () => {
   if (music.paused) {
     safePlay();
-    localStorage.setItem("musicPlaying", "true");
   }
 }, { once: true });
 
 setInterval(() => {
   if (!music.paused) {
-    localStorage.setItem("musicTime", music.currentTime);
   }
 }, 500);
 </script>

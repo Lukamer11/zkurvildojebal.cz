@@ -5,53 +5,10 @@
   "use strict";
 
   // -------------------------
-  // AUTH: žádná perzistence (uživatel se musí přihlásit po každém načtení stránky)
+  // KONFIG (můžeš přepsat přes window.* nebo sessionStorage)
   // -------------------------
-  function clearSupabaseAuthStorage() {
-    try {
-      // vyčisti tokeny uložené Supabase (pokud tu zůstaly ze starých verzí)
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (!k) continue;
-        if (k.startsWith('sb-') && k.endsWith('-auth-token')) localStorage.removeItem(k);
-        if (k === 'user_id' || k === 'slavFantasyUserId') localStorage.removeItem(k);
-      }
-    } catch {}
-    try {
-      for (let i = sessionStorage.length - 1; i >= 0; i--) {
-        const k = sessionStorage.key(i);
-        if (!k) continue;
-        if (k.startsWith('sb-') && k.endsWith('-auth-token')) sessionStorage.removeItem(k);
-      }
-    } catch {}
-  }
-
-  // jednoduché in-memory úložiště pro supabase auth (zmizí při reloadu)
-  function makeMemoryStorage() {
-    const mem = new Map();
-    return {
-      getItem: (k) => (mem.has(k) ? mem.get(k) : null),
-      setItem: (k, v) => { mem.set(k, String(v)); },
-      removeItem: (k) => { mem.delete(k); },
-    };
-  }
-
-
-
-  // -------------------------
-  // KONFIG (můžeš přepsat přes window.* nebo localStorage)
-  // -------------------------
-  const DEFAULT_SUPABASE_URL = "https://wngzgptxrgfrwuyiyueu.supabase.co";
-  const DEFAULT_SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No";
-
-  const SUPABASE_URL =
-    window.SUPABASE_URL ||
-    DEFAULT_SUPABASE_URL;
-
-  const SUPABASE_ANON_KEY =
-    window.SUPABASE_ANON_KEY ||
-    DEFAULT_SUPABASE_ANON_KEY;
+  const SUPABASE_URL = "https://wngzgptxrgfrwuyiyueu.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No";
 
   const LOGIN_PAGE = "login.html";
 
@@ -135,8 +92,8 @@
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: false,
-        storage: window.localStorage,
+        detectSessionInUrl: true,
+        storage: window.sessionStorage,
       },
     });
   }
@@ -193,7 +150,7 @@
         intelligence: 10,
         constitution: 10,
         luck: 10,
-        player_class: (localStorage.getItem("sf_class") || "padouch").toLowerCase(),
+        player_class: ("padouch").toLowerCase(),
       },
       upgrade_costs: {
         strength: 100,
@@ -286,9 +243,6 @@
       return null;
     }
     window.SF.sb = sb;
-
-    // vynutit ruční login (žádná uložená session)
-    clearSupabaseAuthStorage();
     // kompatibilita se starými skripty (arena.js/guild.js/...) které čekají window.supabaseClient
     window.supabaseClient = sb;
 
@@ -412,28 +366,3 @@
     await window.SF.actions.logCheat("client_addExp_call", String(amount));
     throw new Error("Zakázáno: addExp. Použij serverové akce.");
   };
-
-
-// -------------------------
-// SF helpers (stats + energie)
-// -------------------------
-(function(){
-  if (!window.SF) return;
-
-  window.SF.getStats = function() {
-    return window.SF.stats;
-  };
-
-  // sjednocené odečítání energie + uložení do DB
-  window.SF.spendEnergy = async function(amount, reason = '') {
-    const a = Number(amount || 0);
-    if (a <= 0) return true;
-    const s = window.SF.stats;
-    if (!s) return false;
-    const cur = Number(s.energy ?? 0);
-    if (cur < a) return false;
-    const next = { energy: cur - a };
-    window.SF.updateStats(next, { merge: true });
-    return true;
-  };
-})();

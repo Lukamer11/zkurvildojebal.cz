@@ -313,7 +313,7 @@ function closeBossModal() {
   }
 }
 
-function startBossFight(bossIndex) {
+async function startBossFight(bossIndex) {
   const boss = BOSSES[bossIndex];
   
   const bossData = {
@@ -332,8 +332,15 @@ function startBossFight(bossIndex) {
     story: boss.story
   };
   
-  sessionStorage.setItem('cryptaBossFight', JSON.stringify(bossData));
-  window.location.href = 'arena.html';
+  if (window.SFReady) await window.SFReady;
+  const sb = window.SF?.sb;
+  const uid = window.SF?.user?.id || window.SF?.stats?.user_id;
+  if (sb && uid) {
+    await sb.from('crypta_fights').upsert({ user_id: uid, payload: bossData }, { onConflict: 'user_id' });
+  }
+  const qs = new URLSearchParams();
+  qs.set('fromCrypta', '1');
+  window.location.href = 'arena.html?' + qs.toString();
 }
 
 // ===== INIT =====
