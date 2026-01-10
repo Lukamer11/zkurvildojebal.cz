@@ -471,69 +471,50 @@
       });
     });
 
-    // ===== PLAYER STATS BOOTSTRAP =====
-    async function ensurePlayerStats(userId) {
-    // 1) zkus načíst existující řádek
-    const { data: existing, error: selErr } = await sb
-      .from("player_stats")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
+  // ===== PLAYER STATS BOOTSTRAP =====
+async function ensurePlayerStats(userId) {
+  // 1) zkus načíst existující řádek
+  const { data: existing, error: selErr } = await sb
+    .from("player_stats")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
 
-    if (selErr) throw selErr;
-    if (existing) return existing;
+  if (selErr) throw selErr;
+  if (existing) return existing;
 
-    // 2) když neexistuje, založ default
-    const payload = {
-      user_id: userId,
-      money: 5000,
-      cigarettes: 100,
-      energy: 100,
-      damage: 1,
-      mail_claimed: false
-    };
+  // 2) když neexistuje, založ default
+  const payload = {
+    user_id: userId,
+    money: 5000,
+    cigarettes: 100,
+    energy: 100,
+    damage: 1,
+    mail_claimed: false
+  };
 
-    const { data, error } = await sb
-      .from("player_stats")
-      .upsert(payload, { onConflict: "user_id" })
-      .select("*")
-      .single();
+  const { data, error } = await sb
+    .from("player_stats")
+    .upsert(payload, { onConflict: "user_id" })
+    .select("*")
+    .single();
 
-    if (error) throw error;
-    return data;
+  if (error) throw error;
+  return data;
+}
+
+async function goToGame(playerRow) {
+  const clsDb = (playerRow?.stats?.player_class || '').toLowerCase();
+
+  if (!clsDb) {
+    console.log('🎭 No class selected, redirecting to vyber.html');
+    window.location.href = 'vyber.html';
+    return;
   }
 
-
-      const { data: ins, error: insErr } = await sb
-        .from('player_stats')
-        .upsert(payload, { onConflict: 'user_id' })
-        .select('*')
-        .single();
-
-      if (insErr) {
-        console.error('❌ player_stats insert error:', insErr);
-        return null;
-      }
-
-      console.log('✅ Player stats created:', ins);
-      return ins;
-    }
-
-    async function goToGame(playerRow) {
-      const clsDb = (playerRow?.stats?.player_class || '').toLowerCase();
-      
-      if (!clsDb) {
-        console.log('🎭 No class selected, redirecting to vyber.html');
-        window.location.href = 'vyber.html';
-        return;
-      }
-      
-      if (clsDb) {
-      }
-      
-      console.log('🎮 Redirecting to game...');
-      window.location.href = NEXT_URL;
-    }
+  console.log('🎮 Redirecting to game...');
+  window.location.href = NEXT_URL;
+}
 
     // ===== LOGIN =====
     loginForm.addEventListener('submit', async (e) => {
@@ -566,7 +547,7 @@
         console.log('✅ Logged in:', user.id);
 
 
-        const row = await ensurePlayerStats(user.id, user.email || email, null);
+        const row = await ensurePlayerStats(user.id);
 
         showMessage('Přihlášeno! Vstupuješ do arény...', 'success');
         showNotification('Vítej zpět, bojovníku! ⚔️', 'success');
