@@ -147,6 +147,40 @@ function nextCost(currCost) {
       if (eEl) eEl.textContent = calculateStatBonus(st, v, level);
       if (cEl) cEl.textContent = fmtInt(cost) + "₽";
     }
+
+    // --- Equipped (sync se shopem) ---
+    try {
+      const eq = row.equipped || {};
+      const slots = document.querySelectorAll('.slot-shop[data-slot]');
+      slots.forEach((slotEl) => {
+        const slotName = slotEl.dataset.slot;
+        const raw = eq[slotName];
+        // Normalizace (pro staré savy, kde se omylem uložil objekt)
+        const itemId = (raw && typeof raw === 'object') ? (raw.instance_id || raw.itemId || raw.id) : raw;
+
+        if (itemId) {
+          const item = (typeof window.getItemById === 'function') ? window.getItemById(itemId) : null;
+          slotEl.classList.add('has-item');
+
+          if (item) {
+            const icon = item.icon || item.emoji || '📦';
+            if (typeof icon === 'string' && icon.endsWith('.jpg')) {
+              slotEl.innerHTML = `<img src="${icon}" alt="${item.name || 'item'}" class="slot-item">`;
+            } else {
+              slotEl.innerHTML = `<span class="slot-item">${icon}</span>`;
+            }
+          } else {
+            slotEl.innerHTML = `<span class="slot-item">📦</span>`;
+          }
+        } else {
+          slotEl.classList.remove('has-item');
+          const fallback = (typeof window.getSlotEmoji === 'function') ? window.getSlotEmoji(slotName) : '⬜';
+          slotEl.innerHTML = `<span class="slot-emoji">${fallback}</span>`;
+        }
+      });
+    } catch (e) {
+      console.warn('⚠️ render equipped failed:', e);
+    }
   }
 
   // ---------- Upgrade handling ----------

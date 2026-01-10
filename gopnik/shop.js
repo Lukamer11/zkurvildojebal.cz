@@ -63,6 +63,29 @@ function sanitizeStats(input) {
   return out;
 }
 
+// ===== EQUIPPED NORMALIZATION =====
+// V DB i mezi stránkami chceme ve "equipped" vždycky jen itemId (string/number),
+// ne celý objekt itemu. Dřív se někdy ukládal objekt → postava pak nezobrazila item v "čtverečku".
+function normalizeEquipped(equipped) {
+  const src = (equipped && typeof equipped === 'object') ? equipped : {};
+  const out = {};
+  Object.keys(gameState.equipped).forEach((slot) => {
+    const v = src[slot];
+    if (!v) {
+      out[slot] = null;
+      return;
+    }
+    // pokud je to objekt, vytáhneme id
+    if (typeof v === 'object') {
+      out[slot] = v.instance_id || v.itemId || v.id || null;
+      return;
+    }
+    // jinak je to přímo id
+    out[slot] = v;
+  });
+  return out;
+}
+
 function formatStatValue(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return '0';
@@ -231,7 +254,7 @@ async function initUser() {
       // některé staré savy měly do stats omylem zapsané věci jako url/barvy/jméno → čistíme
       gameState.stats = sanitizeStats(data.stats ?? gameState.stats);
       gameState.inventory = data.inventory || [];
-      gameState.equipped = data.equipped || gameState.equipped;
+      gameState.equipped = normalizeEquipped(data.equipped || gameState.equipped);
       gameState.lastShopRotation = data.last_shop_rotation ?? data.lastShopRotation ?? null;
       gameState.currentShopItems = data.current_shop_items || data.currentShopItems || gameState.currentShopItems;
     } else {
@@ -262,7 +285,7 @@ async function saveToSupabase() {
       cigarettes: gameState.cigarettes,
       stats: sanitizeStats(gameState.stats),
       inventory: gameState.inventory,
-      equipped: gameState.equipped,
+      equipped: normalizeEquipped(gameState.equipped),
       last_shop_rotation: gameState.lastShopRotation,
       current_shop_items: gameState.currentShopItems
     };
@@ -283,7 +306,7 @@ async function saveToSupabase() {
               cigarettes: gameState.cigarettes,
               stats: sanitizeStats(gameState.stats),
               inventory: gameState.inventory,
-              equipped: gameState.equipped,
+            equipped: normalizeEquipped(gameState.equipped),
               last_shop_rotation: gameState.lastShopRotation,
               current_shop_items: gameState.currentShopItems,
             }, { silent: true });
@@ -758,12 +781,16 @@ async function handleDrop(e) {
   if (dragSource === 'inventory') {
     const currentItem = gameState.equipped[targetSlot];
     if (currentItem) {
-      gameState.inventory[draggedItem.invIndex] = currentItem;
+      // do inventáře vždy ukládáme jen ID
+      gameState.inventory[draggedItem.invIndex] = (typeof currentItem === 'object')
+        ? (currentItem.instance_id || currentItem.itemId || currentItem.id)
+        : currentItem;
     } else {
       gameState.inventory.splice(draggedItem.invIndex, 1);
     }
-    
-    gameState.equipped[targetSlot] = item;
+
+    // do equipped vždy ukládáme jen ID
+    gameState.equipped[targetSlot] = draggedItem.itemId;
     showNotification(`${item.name} nasazen!`, 'success');
   }
   else if (dragSource === 'equipped') {
@@ -783,15 +810,17 @@ async function handleDrop(e) {
 async function unequipItem(slotName) {
   const itemRef = gameState.equipped[slotName];
   if (!itemRef) return;
+
+  const itemId = (typeof itemRef === 'object') ? (itemRef.instance_id || itemRef.itemId || itemRef.id) : itemRef;
   
   if (gameState.inventory.length >= INVENTORY_SIZE) {
     showNotification('Inventář je plný!', 'error');
     return;
   }
   
-  const item = getItemById(itemRef);
+  const item = getItemById(itemId);
   gameState.equipped[slotName] = null;
-  gameState.inventory.push(itemRef);
+  gameState.inventory.push(itemId);
   
   await saveToSupabase();
   updateUI();
