@@ -18,6 +18,11 @@
 
   // ===== helpers =====
   const LS_KEY = "sf_mail_threads_v1";
+  const DB_COL = "mailbox"; // ukládáme celé vlákna do player_stats.mailbox (pokud sloupec existuje)
+
+  let onlineEnabled = false;
+  let onlineUserId = null;
+  let onlineThreads = [];
 
   function nowIso() {
     return new Date().toISOString();
@@ -38,8 +43,9 @@
   }
 
   // ===== data model =====
-  // Jednoduché lokální zprávy + 1 systémová (welcome). Zatím bez serveru.
-  function loadThreads() {
+  // Zprávy jsou primárně v player_stats.mailbox (online). Když sloupec/tabulka neexistuje,
+  // padáme zpět na localStorage.
+  function loadThreadsLocal() {
     try {
       const raw = localStorage.getItem(LS_KEY);
       const parsed = raw ? JSON.parse(raw) : null;
@@ -48,10 +54,79 @@
     return [];
   }
 
-  function saveThreads(threads) {
+  function loadThreads() {
+    return onlineEnabled ? (Array.isArray(onlineThreads) ? onlineThreads : []) : loadThreadsLocal();
+  }
+
+  async function persistOnline() {
+    if (!onlineEnabled || !onlineUserId) return;
     try {
-      localStorage.setItem(LS_KEY, JSON.stringify(threads));
-    } catch {}
+      if (window.SFReady) await window.SFReady;
+      const sb = window.SF?.sb || window.supabaseClient;
+      if (!sb) return;
+
+      const payload = { [DB_COL]: onlineThreads };
+      // některá schémata nemusí mít mailbox sloupec → v tom případě to vypneme
+      const { error } = await sb
+        .from('player_stats')
+        .update(payload)
+        .eq('user_id', onlineUserId);
+
+      if (error) {
+        const msg = String(error?.message || '').toLowerCase();
+        if (error?.code === 'PGRST204' || msg.includes('could not find') || msg.includes('column')) {
+          onlineEnabled = false;
+          console.warn('[mail] DB_COL missing -> fallback to localStorage');
+        } else {
+          throw error;
+        }
+      }
+    } catch (e) {
+      console.warn('[mail] persistOnline failed:', e);
+    }
+  }
+
+  function saveThreads(threads) {
+    // vždycky držíme kopii i lokálně jako fallback
+    try { localStorage.setItem(LS_KEY, JSON.stringify(threads)); } catch {}
+    if (onlineEnabled) {
+      onlineThreads = threads;
+      // fire-and-forget
+      persistOnline();
+    }
+  }
+
+  async function initOnline(stats) {
+    try {
+      if (window.SFReady) await window.SFReady;
+      const sb = window.SF?.sb || window.supabaseClient;
+      const uid = window.SF?.user?.id || stats?.user_id || window.SF?.stats?.user_id;
+      if (!sb || !uid) return false;
+
+      const { data, error } = await sb
+        .from('player_stats')
+        .select(`user_id, ${DB_COL}`)
+        .eq('user_id', uid)
+        .maybeSingle();
+
+      if (error) {
+        const msg = String(error?.message || '').toLowerCase();
+        if (error?.code === 'PGRST204' || msg.includes('could not find') || msg.includes('column')) {
+          return false;
+        }
+        throw error;
+      }
+
+      onlineUserId = uid;
+      onlineEnabled = true;
+      onlineThreads = Array.isArray(data?.[DB_COL]) ? data[DB_COL] : loadThreadsLocal();
+      // zapiš lokální mirror
+      try { localStorage.setItem(LS_KEY, JSON.stringify(onlineThreads)); } catch {}
+      return true;
+    } catch (e) {
+      console.warn('[mail] initOnline failed:', e);
+      return false;
+    }
   }
 
   function ensureWelcome(stats) {
@@ -263,7 +338,7 @@
         return;
       }
 
-      // Zatím jen lokálně (offline). Později to můžeš napojit na DB.
+      // Online (player_stats.mailbox) + fallback lokálně
       addLocalMessage({ to, subject, body });
       clearCompose();
       closeCompose();
@@ -298,7 +373,10 @@
     wireTabs(stats);
   }
 
-  function start() {
+  async function start() {
+    if (window.SFReady) await window.SFReady;
+    // jednorázově zapnout online mailbox, když je sloupec k dispozici
+    await initOnline(window.SF?.stats);
     // Re-render při změně statů (kvůli welcome claim)
     document.addEventListener("sf:stats", (e) => {
       const st = e.detail || window.SF?.stats;

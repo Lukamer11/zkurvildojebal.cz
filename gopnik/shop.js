@@ -271,7 +271,28 @@ async function saveToSupabase() {
 
     for (let attempts = 0; attempts < 6; attempts++) {
       const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
-      if (!error) return true;
+      if (!error) {
+        // Sync do globálního SF stavu, aby se okamžitě propsalo do postavy / žebříčku
+        // (postava.js poslouchá sf:stats event).
+        try {
+          if (window.SF?.updateStats) {
+            window.SF.updateStats({
+              level: gameState.level,
+              xp: gameState.xp,
+              money: gameState.money,
+              cigarettes: gameState.cigarettes,
+              stats: sanitizeStats(gameState.stats),
+              inventory: gameState.inventory,
+              equipped: gameState.equipped,
+              last_shop_rotation: gameState.lastShopRotation,
+              current_shop_items: gameState.currentShopItems,
+            }, { silent: true });
+          }
+        } catch (e) {
+          console.warn('⚠️ SF sync failed (shop):', e);
+        }
+        return true;
+      }
 
       const msg = String(error?.message || "");
       const match = msg.match(/Could not find the '([^']+)' column/);

@@ -382,7 +382,18 @@
       
       console.log('📦 Player data:', data);
       
-      const playerData = data || player;
+      // Pro "sebe" bereme server-authoritative stav přes SF.refresh(), aby se
+      // nestávalo, že různý stránky/keše ukazují jiné hodnoty.
+      let playerData = data || player;
+      const isMeFetched = playerData?.user_id === currentUserId;
+      if (isMeFetched && window.SF?.refresh) {
+        try {
+          const fresh = await window.SF.refresh();
+          if (fresh && fresh.user_id === currentUserId) playerData = { ...playerData, ...fresh };
+        } catch (e) {
+          console.warn('⚠️ SF.refresh failed (leaderboard self sync):', e);
+        }
+      }
       
       // Update player name
       const isMe = playerData.user_id === currentUserId;
