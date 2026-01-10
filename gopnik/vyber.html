@@ -525,23 +525,55 @@
       }
     });
 
-    // BOOT
-    (async function boot() {
-      try {
-        uid = await getUidOrRedirect();
-        if (!uid) return;
+   (async function boot() {
+  try {
+    console.log('🔍 boot vyber start');
 
-        const row = await loadPlayerRow(uid);
+    const { data, error } = await sb.auth.getSession();
+    if (error) throw error;
+
+    const session = data?.session;
+    if (!session?.user?.id) {
+      // jen když není session -> login
+      window.location.href = 'login.html';
+      return;
+    }
+
+    uid = session.user.id;
+    console.log('✅ uid:', uid);
+
+    // DB check – pokud failne fetch, NEPOSÍLEJ na login
+    try {
+      const { data: row, error: rowErr } = await sb
+        .from('player_stats')
+        .select('stats')
+        .eq('user_id', uid)
+        .maybeSingle();
+
+      if (rowErr) {
+        console.warn('⚠️ player_stats error (not redirecting):', rowErr);
+      } else {
         const cls = String(row?.stats?.player_class || '').toLowerCase();
+        console.log('player_class:', cls);
         if (cls) {
           window.location.href = 'postava.html';
           return;
         }
-      } catch (e) {
-        console.error('❌ boot vyber:', e);
-        window.location.href = 'login.html';
       }
-    })();
+    } catch (dbFetchErr) {
+      console.warn('⚠️ DB fetch failed (not redirecting):', dbFetchErr);
+      // zůstaneš na vyberu, aby se to neloopovalo
+    }
+
+    console.log('✅ staying on vyber');
+  } catch (e) {
+    console.error('❌ boot vyber failed:', e);
+    // tady dávej login jen když reálně není session; ale když to spadne tady,
+    // je to většinou session problém, takže ok:
+    window.location.href = 'login.html';
+  }
+})();
+
   </script>
 </body>
 </html>
