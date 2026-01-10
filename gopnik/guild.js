@@ -211,20 +211,48 @@
       }
     }
 
-    static async createGuild({ name, tag, ownerId }) {
+    static async createGuild(g) {
       try {
         this._ensure();
-        const { data, error } = await sb
-          .from('guilds')
-          .insert([{ name, tag, owner_id: ownerId }])
-          .select('*')
-          .maybeSingle();
-        if (error) throw error;
-        return data;
+
+        // podporujeme více variant pojmenování (owner / ownerId / owner_id)
+        const name = g?.name;
+        const tag = g?.tag; // volitelné
+        const ownerId = g?.ownerId ?? g?.owner ?? g?.owner_id;
+
+        // PostgREST vrací PGRST204 pokud sloupec v tabulce neexistuje.
+        // Některé verze schématu používají 'owner' místo 'owner_id'.
+        const tries = [
+          { name, tag, owner_id: ownerId },
+          { name, tag, owner: ownerId },
+          // poslední záchrana bez owner sloupce (když je ownership řešený jinak)
+          { name, tag },
+        ];
+
+        let lastError = null;
+        for (const row of tries) {
+          const { data, error } = await sb
+            .from('guilds')
+            .insert([row])
+            .select('*')
+            .maybeSingle();
+
+          if (!error) return data;
+          lastError = error;
+
+          const msg = (error?.message || '').toLowerCase();
+          if (error?.code === 'PGRST204' || msg.includes('could not find') || msg.includes('column')) {
+            continue;
+          }
+          break;
+        }
+
+        throw lastError;
       } catch (e) {
         console.warn('[guild] createGuild failed:', e);
         throw e;
       }
+    }
     }
 
     static async joinGuild({ guildId, userId }) {

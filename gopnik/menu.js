@@ -157,9 +157,53 @@
     const sb = window.SF.sb;
     const stats = window.SF.stats;
     if (!sb || !stats?.user_id) return;
-    const payload = normalizeRowForDb(stats);
-    const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
-    if (error) console.warn("SF upsert error:", error);
+
+    // 1) Standardní payload (bez neznámých klíčů)
+    const payloadBase = normalizeRowForDb(stats);
+
+    // 2) Některé DB instance můžou mít sloupec pojmenovaný jinak (missiondata vs "missionData").
+    // Zkusíme postupně obě varianty, a když DB některý sloupec nezná, spadneme na druhou.
+    const attempts = [];
+
+    // varianta A: missiondata (lowercase)
+    if (payloadBase.missiondata !== undefined) {
+      const a = { ...payloadBase };
+      delete a.missionData;
+      attempts.push(a);
+    } else {
+      attempts.push({ ...payloadBase });
+    }
+
+    // varianta B: "missionData" (camelCase) – jen pokud máme co uložit
+    if (stats.missionData !== undefined || stats.missiondata !== undefined) {
+      const b = { ...payloadBase, missionData: stats.missionData ?? stats.missiondata };
+      delete b.missiondata;
+      attempts.push(b);
+    }
+
+    // poslední záchrana: úplně bez misí (když DB nemá ani jeden sloupec)
+    const c = { ...payloadBase };
+    delete c.missiondata;
+    delete c.missionData;
+    attempts.push(c);
+
+    let lastError = null;
+    for (const payload of attempts) {
+      const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
+      if (!error) return;
+      lastError = error;
+
+      // Když jde o "neznámý sloupec", má smysl zkusit další variantu.
+      const msg = (error?.message || "").toLowerCase();
+      if (error?.code === "PGRST204" || msg.includes("could not find") || msg.includes("column")) {
+        continue;
+      }
+
+      // Pro ostatní chyby už další pokusy typicky nepomůžou.
+      break;
+    }
+
+    if (lastError) console.warn("SF upsert error:", lastError);
   }
 
   window.SF.updateStats = function updateStats(patch, opts = {}) {
