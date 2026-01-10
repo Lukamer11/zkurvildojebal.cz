@@ -118,11 +118,47 @@
   }
 
   let saveTimer = null;
+
+  // Pozn.: PostgreSQL bez uvozovek převádí identifikátory na lower-case.
+  // V supabase_setup.sql je sloupec napsaný jako missionData, ale v DB se vytvoří jako "missiondata".
+  // Pokud klient pošle JSON klíč "missionData", PostgREST vrátí 400 (neznámé pole).
+  // Tady to normalizujeme, aby se ukládání nerozbilo napříč stránkami.
+  function normalizeRowForDb(row) {
+    if (!row || typeof row !== "object") return row;
+
+    // Vezmeme jen sloupce, které skutečně existují v tabulce.
+    // (cokoliv navíc může dělat 400)
+    const out = {
+      user_id: row.user_id,
+      level: row.level,
+      xp: row.xp,
+      money: row.money,
+      cigarettes: row.cigarettes,
+      energy: row.energy,
+      max_energy: row.max_energy,
+      stats: row.stats,
+      upgrade_costs: row.upgrade_costs,
+      inventory: row.inventory,
+      equipped: row.equipped,
+      flags: row.flags,
+      clicker: row.clicker,
+      // DB sloupec je missiondata (lowercase)
+      missiondata: row.missiondata ?? row.missionData,
+      mail_claimed: row.mail_claimed,
+    };
+
+    // Odstraň undefined (PostgREST to umí poslat jako "null" nebo to může vadit u NOT NULL)
+    for (const k of Object.keys(out)) {
+      if (out[k] === undefined) delete out[k];
+    }
+    return out;
+  }
   async function upsertNow() {
     const sb = window.SF.sb;
     const stats = window.SF.stats;
     if (!sb || !stats?.user_id) return;
-    const { error } = await sb.from("player_stats").upsert(stats, { onConflict: "user_id" });
+    const payload = normalizeRowForDb(stats);
+    const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
     if (error) console.warn("SF upsert error:", error);
   }
 
@@ -235,7 +271,12 @@
         },
         (payload) => {
           if (payload?.new) {
-            window.SF.stats = payload.new;
+            const next = payload.new;
+            // kompatibilita: DB => missiondata, klient často čte missionData
+            if (next.missiondata !== undefined && next.missionData === undefined) {
+              next.missionData = next.missiondata;
+            }
+            window.SF.stats = next;
             emitStats();
           }
         }
@@ -275,8 +316,12 @@
     window.SF.user = user;
 
     const row = await loadOrCreateStats(user.id);
-    // zajisti user_id vždy
-    window.SF.stats = { ...(row || {}), user_id: user.id };
+    // zajisti user_id vždy + kompatibilita: missionData (camelCase) vs missiondata (reálný název sloupce v DB)
+    const baseRow = { ...(row || {}), user_id: user.id };
+    if (baseRow.missiondata !== undefined && baseRow.missionData === undefined) {
+      baseRow.missionData = baseRow.missiondata;
+    }
+    window.SF.stats = baseRow;
     emitStats();
 
     initRealtime(user.id);
