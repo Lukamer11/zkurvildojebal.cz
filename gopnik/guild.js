@@ -253,7 +253,6 @@
         throw e;
       }
     }
-    }
 
     static async joinGuild({ guildId, userId }) {
       try {
