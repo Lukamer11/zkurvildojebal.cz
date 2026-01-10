@@ -64,6 +64,17 @@
     }
   }
 
+  const ALLOWED_STATS = ['strength','defense','dexterity','intelligence','constitution','luck'];
+
+  function sanitizeStats(input) {
+    const src = (input && typeof input === 'object') ? input : {};
+    const out = {};
+    for (const k of ALLOWED_STATS) {
+      out[k] = clampVal(src[k], 0, 9999);
+    }
+    return out;
+  }
+
   function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.textContent = message;
@@ -382,18 +393,11 @@
       document.getElementById('playerLevel').textContent = `Level ${clampVal(playerData.level, 1, 9999)}`;
       
       // Update stats
-      const stats = playerData.stats || {
-        strength: 0,
-        defense: 0,
-        dexterity: 0,
-        intelligence: 0,
-        constitution: 0,
-        luck: 0
-      };
+      const stats = sanitizeStats(playerData.stats);
       
       console.log('📊 Player stats:', stats);
       
-      Object.keys(stats).forEach(stat => {
+      ALLOWED_STATS.forEach(stat => {
         const value = clampVal(stats[stat], 0, 9999);
         const statEl = document.getElementById(`stat${stat.charAt(0).toUpperCase() + stat.slice(1)}`);
         const extraEl = document.getElementById(`stat${stat.charAt(0).toUpperCase() + stat.slice(1)}Extra`);

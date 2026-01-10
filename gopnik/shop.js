@@ -50,6 +50,28 @@ let gameState = {
 
 let currentCategory = 'weapons';
 
+// ===== SAFE STATS (prevence "undefined" řádků) =====
+const ALLOWED_STATS = ['strength','defense','dexterity','intelligence','constitution','luck'];
+
+function sanitizeStats(input) {
+  const src = (input && typeof input === 'object') ? input : {};
+  const out = {};
+  for (const k of ALLOWED_STATS) {
+    const v = Number(src[k]);
+    out[k] = Number.isFinite(v) ? v : 0;
+  }
+  return out;
+}
+
+function formatStatValue(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '0';
+  // hezky: 25.119999 -> 25.12, 10.00 -> 10
+  const rounded = Math.round(n * 100) / 100;
+  const s = String(rounded);
+  return s.includes('.') ? rounded.toFixed(2).replace(/\.00$/, '').replace(/(\.[0-9])0$/, '$1') : s;
+}
+
 // ===== UTILITY FUNCTIONS =====
 function getRequiredXP(level) {
   return Math.floor(100 * Math.pow(1.5, level - 1));
@@ -110,21 +132,23 @@ function makeItemInstance(baseItem, level){
 }
 
 function calculateStatBonus(stat, value) {
+  const v = Number(value);
+  const val = Number.isFinite(v) ? v : 0;
   switch(stat) {
     case 'strength':
-      return `+${value * 2} DMG`;
+      return `+${Math.round(val * 2)} DMG`;
     case 'defense':
-      const defPercent = Math.min(Math.floor((value / 28) * 100), 100);
+      const defPercent = Math.min(Math.floor((val / 28) * 100), 100);
       return `${defPercent}% Redukce`;
     case 'dexterity':
-      return `+${Math.floor(value * 0.5)}% Crit`;
+      return `+${Math.floor(val * 0.5)}% Crit`;
     case 'intelligence':
-      return `+${Math.floor(value * 1.5)}% Magie`;
+      return `+${Math.floor(val * 1.5)}% Magie`;
     case 'constitution':
-      const hp = 500 + (value * 25);
+      const hp = Math.round(500 + (val * 25));
       return `${hp} HP`;
     case 'luck':
-      const luckPercent = Math.min(value, 100);
+      const luckPercent = Math.min(Math.floor(val), 100);
       return `${luckPercent}% / 100%`;
     default:
       return '';
@@ -204,7 +228,8 @@ async function initUser() {
       gameState.xp = data.xp || 0;
       gameState.money = data.money ?? gameState.money;
       gameState.cigarettes = data.cigarettes ?? gameState.cigarettes;
-      gameState.stats = data.stats || gameState.stats;
+      // některé staré savy měly do stats omylem zapsané věci jako url/barvy/jméno → čistíme
+      gameState.stats = sanitizeStats(data.stats ?? gameState.stats);
       gameState.inventory = data.inventory || [];
       gameState.equipped = data.equipped || gameState.equipped;
       gameState.lastShopRotation = data.last_shop_rotation ?? data.lastShopRotation ?? null;
@@ -235,7 +260,7 @@ async function saveToSupabase() {
       xp: gameState.xp,
       money: gameState.money,
       cigarettes: gameState.cigarettes,
-      stats: gameState.stats,
+      stats: sanitizeStats(gameState.stats),
       inventory: gameState.inventory,
       equipped: gameState.equipped,
       last_shop_rotation: gameState.lastShopRotation,
@@ -522,15 +547,16 @@ function renderCharacterStats() {
   
   let statsHTML = '<div class="section-header"><h2>📊 STATISTIKY</h2></div>';
   
-  Object.keys(gameState.stats).forEach(stat => {
-    const baseValue = gameState.stats[stat];
+  // pevné pořadí + pouze povolené staty
+  ALLOWED_STATS.forEach(stat => {
+    const baseValue = Number(gameState.stats[stat] ?? 0);
     const bonus = bonuses[stat] || 0;
     const totalValue = baseValue + bonus;
     
     statsHTML += `
       <div class="stat">
         <span>${statNames[stat]}</span>
-        <b id="${stat}Value">${baseValue}${bonus !== 0 ? ` <span style="color: #4af;" id="${stat}Bonus">+${bonus}</span>` : ''}</b>
+        <b id="${stat}Value">${formatStatValue(baseValue)}${bonus !== 0 ? ` <span style="color: #4af;" id="${stat}Bonus">+${bonus}</span>` : ''}</b>
         <span class="stat-extra" id="${stat}Extra">${calculateStatBonus(stat, totalValue)}</span>
       </div>
     `;

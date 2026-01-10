@@ -217,16 +217,21 @@
 
         // podporujeme více variant pojmenování (owner / ownerId / owner_id)
         const name = g?.name;
-        const tag = g?.tag; // volitelné
+        const tag = (typeof g?.tag === 'string' && g.tag.trim()) ? g.tag.trim() : null; // volitelné
         const ownerId = g?.ownerId ?? g?.owner ?? g?.owner_id;
+
+        // supabase-js/postgrest přidá do query parametrů "columns" i klíče s undefined.
+        // Když tabulka nemá např. "tag", padne to na PGRST204 i když je hodnota undefined.
+        const base = { name };
+        if (tag) base.tag = tag;
 
         // PostgREST vrací PGRST204 pokud sloupec v tabulce neexistuje.
         // Některé verze schématu používají 'owner' místo 'owner_id'.
         const tries = [
-          { name, tag, owner_id: ownerId },
-          { name, tag, owner: ownerId },
+          { ...base, owner_id: ownerId },
+          { ...base, owner: ownerId },
           // poslední záchrana bez owner sloupce (když je ownership řešený jinak)
-          { name, tag },
+          { ...base },
         ];
 
         let lastError = null;
@@ -254,12 +259,16 @@
       }
     }
 
-    static async joinGuild({ guildId, userId }) {
+    // podporuje volání joinGuild(userId, guildId, role) i joinGuild({userId,guildId,role})
+    static async joinGuild(arg1, arg2, arg3) {
       try {
         this._ensure();
+        const userId = (arg1 && typeof arg1 === 'object') ? arg1.userId : arg1;
+        const guildId = (arg1 && typeof arg1 === 'object') ? arg1.guildId : arg2;
+        const role = (arg1 && typeof arg1 === 'object') ? (arg1.role || null) : (arg3 || null);
         const { error } = await sb
           .from('guild_members')
-          .insert([{ guild_id: guildId, user_id: userId }]);
+          .insert([{ guild_id: guildId, user_id: userId, ...(role ? { role } : {}) }]);
         if (error) throw error;
       } catch (e) {
         console.warn('[guild] joinGuild failed:', e);
@@ -267,9 +276,12 @@
       }
     }
 
-    static async leaveGuild({ guildId, userId }) {
+    // podporuje leaveGuild(userId, guildId) i leaveGuild({userId,guildId})
+    static async leaveGuild(arg1, arg2) {
       try {
         this._ensure();
+        const userId = (arg1 && typeof arg1 === 'object') ? arg1.userId : arg1;
+        const guildId = (arg1 && typeof arg1 === 'object') ? arg1.guildId : arg2;
         const { error } = await sb
           .from('guild_members')
           .delete()
