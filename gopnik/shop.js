@@ -814,6 +814,17 @@ async function handleDrop(e) {
   if (!draggedItem) return;
   
   const targetSlot = e.currentTarget.dataset.slot;
+  const isTrashZone = e.currentTarget.dataset.dropzone === 'trash';
+  
+  // PRODEJ DO KOŠE
+  if (isTrashZone) {
+    await sellItem(draggedItem);
+    draggedItem = null;
+    dragSource = null;
+    return;
+  }
+  
+  // Normální equipování (původní logika)
   const item = getItemById(draggedItem.itemId);
   
   if (!item) return;
@@ -846,6 +857,52 @@ async function handleDrop(e) {
   
   draggedItem = null;
   dragSource = null;
+}
+
+// ===== SELL ITEM (PRODEJ) =====
+async function sellItem(dragData) {
+  let item = null;
+  let removeFromInventory = false;
+  
+  // Z inventáře
+  if (dragSource === 'inventory' && dragData.invIndex !== undefined) {
+    item = getItemById(dragData.itemId);
+    removeFromInventory = true;
+  }
+  // Z equipped slotu
+  else if (dragSource === 'equipped' && dragData.fromSlot) {
+    item = getItemById(dragData.itemRef);
+    // Odstraň z equipped
+    gameState.equipped[dragData.fromSlot] = null;
+  }
+  
+  if (!item) {
+    console.error('❌ Item nenalezen pro prodej');
+    return;
+  }
+  
+  // Vypočti prodejní cenu (25% z původní ceny)
+  const sellPrice = Math.floor((item.price || 0) * 0.25);
+  
+  if (sellPrice <= 0) {
+    showNotification('Tento item nemá žádnou hodnotu!', 'error');
+    return;
+  }
+  
+  // Přidej peníze
+  gameState.money += sellPrice;
+  
+  // Odstraň z inventáře pokud byl v inventáři
+  if (removeFromInventory && dragData.invIndex !== undefined) {
+    gameState.inventory.splice(dragData.invIndex, 1);
+  }
+  
+  console.log(`💰 Item prodán za ${sellPrice}₽`);
+  
+  await saveToSupabase();
+  updateUI();
+  
+  showNotification(`${item.name} prodán za ${sellPrice}₽!`, 'success');
 }
 
 async function unequipItem(slotName) {
@@ -953,6 +1010,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       unequipItem(slotName);
     });
   });
+  
+  // Setup trash zone (koše pro prodej)
+  const trashZone = document.getElementById('trashZone');
+  if (trashZone) {
+    trashZone.addEventListener('dragover', handleDragOver);
+    trashZone.addEventListener('dragleave', handleDragLeave);
+    trashZone.addEventListener('drop', handleDrop);
+  }
   
   // Update rotation timer every second
   setInterval(() => {
