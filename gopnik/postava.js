@@ -1,10 +1,14 @@
 // postava.js — čisté napojení na globální SF (menu.js)
-// - žádný vlastní Supabase klient
-// - žádné inline onclick
-// - vše jde přes window.SF.stats + window.SF.updateStats
 
 (() => {
   "use strict";
+
+  // ===== CLASS METADATA =====
+  const CLASS_META = {
+    padouch: { icon: "👻", label: "Padouch" },
+    rvac: { icon: "✊", label: "Rváč" },
+    mozek: { icon: "💡", label: "Mozek" }
+  };
 
   // ---------- Tunables ----------
   const STAT_UPGRADE_GAIN_BASE = 0.08;
@@ -28,10 +32,8 @@
   }
 
   function getItemById(itemRef, row) {
-    // 1) Když je reference už objekt (instance), použij ji.
     if (itemRef && typeof itemRef === "object") return itemRef;
 
-    // Legacy aliasy (pro starší uložená data)
     const ALIASES = {
       knife: "nuz",
       tactical_knife: "nuz",
@@ -43,7 +45,6 @@
     const id = ALIASES[rawId] || rawId;
     if (!id) return null;
 
-    // 2) Hledej v inventáři (tam často ukládáš celé instance)
     const inv = (row?.inventory || window.SF?.stats?.inventory || []);
     const foundInv = inv.find((x) => {
       if (!x) return false;
@@ -52,12 +53,10 @@
     });
     if (foundInv && typeof foundInv === "object") return foundInv;
 
-    // 2b) Hledej i ve výbavě (kdyby někde zůstalo uložené jen instance_id jako string)
     const eq = (row?.equipped || window.SF?.stats?.equipped || {});
     const eqObj = Object.values(eq).find((x) => x && typeof x === "object" && (x.instance_id === id || x.id === id));
     if (eqObj && typeof eqObj === "object") return eqObj;
 
-    // 3) Fallback: base item podle id
     return getAllItems().find((it) => it.id === id) || null;
   }
 
@@ -75,12 +74,10 @@
     return m[slotName] || "❓";
   }
 
-  // Vykreslení ikonky itemu: emoji/text nebo obrázek.
   function renderItemIconHTML(icon, alt) {
     const safeAlt = String(alt || "item").replace(/"/g, "&quot;");
     const ic = icon == null ? "" : String(icon);
 
-    // obrázek: URL / dataURL / nebo souborový název s příponou
     const isImage =
       /^data:image\//i.test(ic) ||
       /^https?:\/\//i.test(ic) ||
@@ -168,11 +165,6 @@
   }
 
   function getUpgradeGain(stat, cls) {
-    // GRIND režim: lineární přírůstky (žádné % z aktuální hodnoty).
-    // Třídy:
-    // - rvac = tank (CON/DEF výrazně lepší)
-    // - padouch = vyvážený (lehce lepší LUCK/INT)
-    // - mozek = "síla + burst, málo HP" (STR/DEX lepší, CON slabá)
     if (cls === "rvac") {
       if (stat === "constitution") return 0.12;
       if (stat === "defense") return 0.11;
@@ -195,17 +187,102 @@
       if (stat === "luck") return 0.08;
       if (stat === "intelligence") return 0.07;
       if (stat === "defense") return 0.06;
-      if (stat === "constitution") return 0.05; // málo HP
+      if (stat === "constitution") return 0.05;
       return STAT_UPGRADE_GAIN_BASE;
     }
 
     return STAT_UPGRADE_GAIN_BASE;
   }
 
-
-function nextCost(currCost) {
+  function nextCost(currCost) {
     const c = Number(currCost ?? 100);
     return Math.max(1, Math.floor(c * UPGRADE_COST_MULT + UPGRADE_COST_ADD));
+  }
+
+  // ===== RENDER CLASS BADGE =====
+  function renderClassBadge(cls) {
+    const char = document.querySelector(".character");
+    if (!char) return;
+
+    let badge = char.querySelector(".class-badge");
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.className = "class-badge";
+      char.appendChild(badge);
+    }
+
+    const meta = CLASS_META[cls] || CLASS_META.padouch;
+    badge.textContent = meta.icon;
+    badge.title = meta.label;
+
+    console.log('🎭 Class badge rendered:', meta.label, meta.icon);
+  }
+
+  // ===== SYNC CURRENCY UI =====
+  function syncCurrencyUI() {
+    console.log('💰 === SYNC CURRENCY UI ===');
+    
+    if (!window.SF) {
+      console.warn('⚠️ SF not available');
+      return;
+    }
+    
+    const stats = window.SF.stats;
+    if (!stats) {
+      console.warn("⚠️ SF stats not available");
+      return;
+    }
+    console.log('📊 Stats from SF:', stats);
+    
+    const moneyEl = $('money');
+    const cigarettesEl = $('cigarettes');
+    const energyEl = $('energy');
+    
+    if (moneyEl) {
+      moneyEl.textContent = Number(stats.money || 0).toLocaleString('cs-CZ');
+      console.log('  💵 Money:', stats.money);
+    }
+    
+    if (cigarettesEl) {
+      cigarettesEl.textContent = String(stats.cigarettes || 0);
+      console.log('  🚬 Cigarettes:', stats.cigarettes);
+    }
+    
+    if (energyEl) {
+      energyEl.textContent = String(stats.energy || 0);
+      console.log('  ⚡ Energy:', stats.energy);
+    }
+    
+    // Update XP bar
+    const xpFill = $('xpFill');
+    const xpText = $('xpText');
+    
+    if (xpFill && xpText) {
+      const xp = stats.xp || 0;
+      const level = stats.level || 1;
+      const requiredXP = getRequiredXP(level);
+      const xpPercent = (xp / requiredXP) * 100;
+      
+      xpFill.style.width = `${xpPercent}%`;
+      xpText.textContent = `${xp} / ${requiredXP}`;
+      console.log('  📈 XP:', xp, '/', requiredXP);
+    }
+    
+    // Update energy bar
+    const energyFill = $('energyFill');
+    const energyText = $('energyText');
+    
+    if (energyFill && energyText) {
+      const energy = stats.energy || 0;
+      const maxEnergy = stats.max_energy || 100;
+      const energyPercent = (energy / maxEnergy) * 100;
+      
+      energyFill.style.width = `${energyPercent}%`;
+      energyText.textContent = `${energy} / ${maxEnergy}`;
+      console.log('  ⚡ Energy bar:', energy, '/', maxEnergy);
+    }
+    
+    console.log('===========================');
   }
 
   // ---------- Render ----------
@@ -217,13 +294,11 @@ function nextCost(currCost) {
     const money = Number(row.money ?? 0);
     const cigarettes = Number(row.cigarettes ?? 0);
 
-    // Základní UI (pokud na stránce existuje)
-    if ($("level")) $("level").textContent = fmtInt(level);
-    if ($("xp")) $("xp").textContent = fmtInt(xp);
+    if ($("levelDisplay")) $("levelDisplay").textContent = fmtInt(level);
+    if ($("levelChar")) $("levelChar").textContent = `Level ${fmtInt(level)}`;
     if ($("money")) $("money").textContent = fmtInt(money);
     if ($("cigarettes")) $("cigarettes").textContent = fmtInt(cigarettes);
 
-    // XP bar (pokud existuje)
     const req = getRequiredXP(level);
     const pct = req > 0 ? Math.max(0, Math.min(100, (xp / req) * 100)) : 0;
     if ($("xpFill")) $("xpFill").style.width = pct + "%";
@@ -254,8 +329,14 @@ function nextCost(currCost) {
       if (cEl) cEl.textContent = fmtInt(cost) + "₽";
     }
 
-    // Výbava (z shopu) → Postava
     renderEquipment(row);
+    
+    // Render class badge
+    const cls = getPlayerClass(stats);
+    renderClassBadge(cls);
+    
+    // Sync currency UI
+    syncCurrencyUI();
   }
 
   // ---------- Upgrade handling ----------
@@ -276,19 +357,16 @@ function nextCost(currCost) {
     const currentCost = Number(costs[stat] ?? 100);
 
     if (money < currentCost) {
-      // nic – později můžeš přidat toast
+      showNotification('Nemáš dost peněz!', 'error');
       return;
     }
 
-    // zvýšení: používáme float gain, ale UI držíme jako int (aby to nebylo divný)
     const newVal = Math.max(1, Math.round((currentVal + gain) * 100) / 100);
     const newCost = nextCost(currentCost);
 
     stats[stat] = newVal;
     costs[stat] = newCost;
 
-    // přepočet HP při constitution (volitelné)
-    // (zůstává kompatibilní s tvými ostatními stránkami, které třeba hp neřeší)
     const patch = {
       money: money - currentCost,
       stats,
@@ -297,6 +375,36 @@ function nextCost(currCost) {
     };
 
     window.SF.updateStats(patch);
+    
+    showNotification(`+${gain.toFixed(2)} ${stat}!`, 'success');
+  }
+
+  // ===== NOTIFICATIONS =====
+  function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)'};
+      color: white;
+      border-radius: 12px;
+      font-weight: 900;
+      font-size: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.6);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
   }
 
   function wireButtons() {
@@ -320,3 +428,19 @@ function nextCost(currCost) {
   });
 
 })();
+
+// CSS Animations
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(400px); opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
+
+console.log('✅ Postava system loaded!');
