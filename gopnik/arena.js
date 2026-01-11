@@ -351,15 +351,16 @@
   function healPlayerToFull() {
     console.log('🏥 === HEAL PLAYER TO FULL ===');
 
-    // Vypočítat maxHP z constitution
+    // Vypočítat maxHP z constitution (500 + constitution * 25)
     const computedMax = computeMaxHpFromCore(playerTotal);
     
-    // Pokud máme HP z DB, použij ho
+    // VŽDY respektuj HP z databáze pokud existuje
     if (playerHpFromDb && playerHpDb?.hp_max) {
       playerMaxHp = clampHp(playerHpDb.hp_max);
       playerCurrentHp = clampHp(playerHpDb.hp);
       console.log('  💚 Using HP from DB:', playerCurrentHp, '/', playerMaxHp);
     } else {
+      // Pokud není v DB, použij computed
       playerMaxHp = computedMax;
       playerCurrentHp = playerMaxHp;
       console.log('  💚 Using computed maxHP:', playerMaxHp);
@@ -372,6 +373,7 @@
     setBar(playerHealthFill, playerHealthText, playerCurrentHp, playerMaxHp);
     
     console.log('  🏥 Final HP:', playerCurrentHp, '/', playerMaxHp);
+    console.log('  📊 HP Bar should show:', `HP ${fmtHp(playerCurrentHp)} / ${fmtHp(playerMaxHp)}`);
   }
 
   function renderEnemy() {
@@ -407,12 +409,12 @@
     const lvl = Number(e.level ?? 1);
     const bossMul = cryptaBossFight?.boss ? (1.25 + (Number(cryptaBossFight.bossIndex||0) * 0.07)) : 1;
 
-    const eStr = clampHp((10 + (lvl * 3) + randInt(0, 5)) * bossMul);
-    const eDef = clampHp((8 + (lvl * 2) + randInt(0, 4)) * bossMul);
-    const eDex = clampHp((6 + (lvl * 2) + randInt(0, 3)) * bossMul);
-    const eInt = clampHp((5 + lvl + randInt(0, 2)) * bossMul);
-    const eCon = clampHp((12 + (lvl * 2) + randInt(0, 4)) * bossMul);
-    const eLuck = clampHp((3 + lvl + randInt(0, 2)) * bossMul);
+    const eStr = Math.round((10 + (lvl * 3) + randInt(0, 5)) * bossMul);
+    const eDef = Math.round((8 + (lvl * 2) + randInt(0, 4)) * bossMul);
+    const eDex = Math.round((6 + (lvl * 2) + randInt(0, 3)) * bossMul);
+    const eInt = Math.round((5 + lvl + randInt(0, 2)) * bossMul);
+    const eCon = Math.round((12 + (lvl * 2) + randInt(0, 4)) * bossMul);
+    const eLuck = Math.round((3 + lvl + randInt(0, 2)) * bossMul);
 
     const enemyStatElements = {
       eStr: eStr,
