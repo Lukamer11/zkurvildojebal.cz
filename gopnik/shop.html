@@ -94,7 +94,7 @@
               <button class="tab-btn" data-category="special">Speciální</button>
             </div>
             <div id="shopTimer" style="font-size: 11px; color: #c9a44a; font-weight: 900;">🔄 Další rotace: 0:00:00</div>
-            <button id="shopRerollBtn" class="skinBtn" style="padding: 6px 10px; font-size: 12px; font-weight: 900;">
+            <button id="shopRerollBtn" class="reroll-btn">
               🎲 NAHRADIT (10 cig)
             </button>
           </div>
@@ -105,7 +105,7 @@
         </div>
       </div>
 
-      <!-- PROSTŘEDNÍ ČÁST - INVENTÁŘ S AVATAREM (wrapper pro sell zone) -->
+      <!-- PROSTŘEDNÍ ČÁST - INVENTÁŘ S AVATAREM -->
       <div class="inventory-wrapper">
         <div class="inventory-section">
           
@@ -166,18 +166,12 @@
             <!-- Inventory items will be loaded here by JS -->
           </div>
         </div>
-
-        <!-- SELL ZONE - pravý dolní roh -->
-        <div class="sell-zone" id="sellZone" data-dropzone="sell">
-          <div class="sell-icon">💰</div>
-          <div class="sell-text">PRODAT ITEM</div>
-          <div class="sell-price">35% z ceny</div>
-        </div>
       </div>
 
-      <!-- PRAVÁ ČÁST - CHARACTER STATS -->
+      <!-- PRAVÁ ČÁST - CHARACTER STATS + SELL ZONE -->
       <div class="character-stats-section" id="statsSection">
-        <!-- Will be rendered by JS -->
+        <!-- Stats will be rendered by JS -->
+        <!-- SELL ZONE bude přidána JS pod statistiky -->
       </div>
 
     </div>
