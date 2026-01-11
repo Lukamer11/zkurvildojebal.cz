@@ -8,6 +8,24 @@
   <script src="items.js"></script>
   <link rel="stylesheet" href="menu.css">
   <script src="menu.js"></script>
+  <style>
+    /* Better button layout */
+    .arena-title-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .arena-title {
+      margin: 0 !important;
+    }
+    
+    .arena-swap-btn {
+      white-space: nowrap;
+      min-width: 140px;
+    }
+  </style>
 </head>
 <body>
 <audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
@@ -78,11 +96,11 @@
   <!-- STŘED - ARENA -->
   <main class="arena-area">
 
-    <!-- NÁZEV -->
+    <!-- NÁZEV + TLAČÍTKA -->
     <div class="arena-title-row">
       <div class="arena-title">⚔️ ARENA ⚔️</div>
-      <button id="nextEnemyBtn" class="arena-swap-btn" type="button">NAHRADIT</button>
-      <button id="attackBtn" class="arena-swap-btn" type="button">ZAÚTOČIT</button>
+      <button id="nextEnemyBtn" class="arena-swap-btn" type="button">🔄 NAHRADIT</button>
+      <button id="attackBtn" class="arena-swap-btn" type="button">⚔️ ZAÚTOČIT</button>
     </div>
 
     <div class="arena-container">
