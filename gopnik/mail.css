@@ -677,3 +677,77 @@ body{
 @media (max-width: 520px){
   .compose-grid{ grid-template-columns: 1fr; }
 }
+
+/* Přidej toto do mail.css na konec */
+
+/* ===== BULK ACTIONS ===== */
+.bulk-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.bulk-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 2px solid #5a4520;
+  background: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-weight: 900;
+  font-size: 11px;
+  color: #c9a44a;
+  cursor: pointer;
+  transition: all .3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 3px 10px rgba(0,0,0,.4);
+  image-rendering: crisp-edges;
+  white-space: nowrap;
+}
+
+.bulk-btn:hover {
+  border-color: #c9a44a;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,.5);
+}
+
+.bulk-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+
+.bulk-btn.danger {
+  border-color: #8b4513;
+  color: #ff6b6b;
+}
+
+.bulk-btn.danger:hover {
+  border-color: #ff6b6b;
+  box-shadow: 0 5px 15px rgba(255,107,107,0.3), 0 0 15px rgba(255,107,107,0.2);
+}
+
+/* Spin animation pro refresh button */
+.bulk-btn.spin {
+  animation: spin 0.5s ease-in-out;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .bulk-actions {
+    flex-direction: column;
+  }
+  
+  .bulk-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
