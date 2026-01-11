@@ -1,4 +1,4 @@
-// postava.js — čisté napojení na globální SF (menu.js)
+// postava.js — čisté napojení na globální SF (menu.js) + tooltip system
 
 (() => {
   "use strict";
@@ -14,12 +14,87 @@
   const STAT_UPGRADE_GAIN_BASE = 0.08;
   const UPGRADE_COST_MULT = 1.35;
   const UPGRADE_COST_ADD = 15;
+  const SELL_MULTIPLIER = 0.35; // 35% z ceny (stejně jako v shop)
 
   // ---------- DOM helpers ----------
   const $ = (id) => document.getElementById(id);
 
   // ---------- Items / equipment helpers ----------
   const EQUIP_SLOTS = ["weapon", "shield", "ring", "backpack", "helmet", "armor", "boots", "gloves"];
+  const ALLOWED_STATS = ['strength','defense','dexterity','intelligence','constitution','luck'];
+
+  // ===== TOOLTIP SYSTEM (stejně jako v shop) =====
+  let tooltip = null;
+
+  function createTooltip() {
+    tooltip = document.createElement('div');
+    tooltip.className = 'item-tooltip';
+    tooltip.style.cssText = `
+      position: fixed;
+      background: linear-gradient(135deg, rgba(40,30,20,0.98), rgba(25,18,12,0.99));
+      border: 3px solid #c9a44a;
+      border-radius: 12px;
+      padding: 14px;
+      pointer-events: none;
+      z-index: 10000;
+      display: none;
+      min-width: 250px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    `;
+    document.body.appendChild(tooltip);
+  }
+
+  function showTooltip(item, x, y) {
+    if (!tooltip) createTooltip();
+    
+    let bonusesHTML = '';
+    if (item.bonuses) {
+      bonusesHTML = '<div style="margin-top: 10px; padding-top: 10px; border-top: 2px solid rgba(201,164,74,0.3);">';
+      Object.keys(item.bonuses).forEach(stat => {
+        const value = item.bonuses[stat];
+        const color = value > 0 ? '#4af' : '#f44';
+        const sign = value > 0 ? '+' : '';
+        const statNames = {
+          strength: '⚔️ Síla',
+          defense: '🛡️ Obrana',
+          dexterity: '🎯 Obratnost',
+          intelligence: '🧠 Inteligence',
+          constitution: '💪 Výdrž',
+          luck: '🍀 Štěstí'
+        };
+        bonusesHTML += `<div style="color: ${color}; font-weight: 900; font-size: 13px; margin: 3px 0;">${statNames[stat]}: ${sign}${value}</div>`;
+      });
+      bonusesHTML += '</div>';
+    }
+    
+    const sellPrice = Math.floor((item.price || 0) * SELL_MULTIPLIER);
+    
+    tooltip.innerHTML = `
+      <div style="font-size: 18px; font-weight: 900; color: #f1d27a; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
+        ${item.icon} ${item.name}
+      </div>
+      <div style="font-size: 12px; color: #c9a44a; margin-bottom: 8px; line-height: 1.4;">
+        ${item.description}
+      </div>
+      <div style="font-size: 16px; font-weight: 900; color: #f1d27a; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
+        💰 ${item.price}₽
+      </div>
+      <div style="font-size: 12px; font-weight: 900; color: #ff6b6b; margin-top: 4px;">
+        Prodej: ${sellPrice}₽ (35%)
+      </div>
+      ${bonusesHTML}
+    `;
+    
+    tooltip.style.display = 'block';
+    tooltip.style.left = (x + 20) + 'px';
+    tooltip.style.top = (y - tooltip.offsetHeight / 2) + 'px';
+  }
+
+  function hideTooltip() {
+    if (tooltip) {
+      tooltip.style.display = 'none';
+    }
+  }
 
   function getAllItems() {
     const db = window.SHOP_ITEMS;
@@ -90,6 +165,34 @@
     return ic ? ic : "❓";
   }
 
+  // ===== CALCULATE TOTAL BONUSES (stejně jako v shop) =====
+  function calculateTotalBonuses(row) {
+    const bonuses = {
+      strength: 0,
+      defense: 0,
+      dexterity: 0,
+      intelligence: 0,
+      constitution: 0,
+      luck: 0
+    };
+    
+    const equipped = (row?.equipped || window.SF?.stats?.equipped || {});
+    
+    Object.values(equipped).forEach(itemRef => {
+      if (!itemRef) return;
+      const item = getItemById(itemRef, row);
+      if (!item || !item.bonuses) return;
+      
+      Object.keys(item.bonuses).forEach(stat => {
+        if (bonuses[stat] !== undefined) {
+          bonuses[stat] += item.bonuses[stat];
+        }
+      });
+    });
+    
+    return bonuses;
+  }
+
   function renderEquipment(row) {
     const equipped = (row?.equipped || window.SF?.stats?.equipped || {});
 
@@ -114,12 +217,36 @@
       slotEl.classList.add("has-item");
       const iconHTML = renderItemIconHTML(item.icon, item.name);
       slotEl.innerHTML = `<span class="slot-item">${iconHTML}</span>`;
+      
+      // Přidat tooltip event listenery
+      slotEl.addEventListener('mouseenter', (e) => {
+        showTooltip(item, e.clientX, e.clientY);
+      });
+      
+      slotEl.addEventListener('mousemove', (e) => {
+        if (tooltip && tooltip.style.display === 'block') {
+          tooltip.style.left = (e.clientX + 20) + 'px';
+          tooltip.style.top = (e.clientY - tooltip.offsetHeight / 2) + 'px';
+        }
+      });
+      
+      slotEl.addEventListener('mouseleave', () => {
+        hideTooltip();
+      });
     });
   }
 
   function fmtInt(n) {
     const x = Number(n ?? 0);
     return Number.isFinite(x) ? x.toLocaleString("cs-CZ") : "0";
+  }
+
+  function formatStatValue(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '0';
+    const rounded = Math.round(n * 100) / 100;
+    const s = String(rounded);
+    return s.includes('.') ? rounded.toFixed(2).replace(/\.00$/, '').replace(/(\.[0-9])0$/, '$1') : s;
   }
 
   function getRequiredXP(level) {
@@ -133,25 +260,28 @@
   }
 
   function calculateStatBonus(stat, value, level) {
+    const v = Number(value);
+    const val = Number.isFinite(v) ? v : 0;
+    
     switch (stat) {
       case "strength":
-        return `+${value * 2} DMG`;
+        return `+${Math.round(val * 2)} DMG`;
       case "defense": {
-        const defPercent = Math.min(Math.floor((value / 28) * 100), 100);
+        const defPercent = Math.min(Math.floor((val / 28) * 100), 100);
         return `${defPercent}% Redukce`;
       }
       case "dexterity": {
-        const crit = getCritChanceFromDexAndLevel(value, level);
+        const crit = getCritChanceFromDexAndLevel(val, level);
         return `+${crit}% Crit`;
       }
       case "intelligence":
-        return `+${Math.floor(value * 1.5)}% Magie`;
+        return `+${Math.floor(val * 1.5)}% Magie`;
       case "constitution": {
-        const hp = 500 + value * 25;
+        const hp = Math.round(500 + val * 25);
         return `${hp} HP`;
       }
       case "luck": {
-        const luckPercent = Math.min(value, 100);
+        const luckPercent = Math.min(Math.floor(val), 100);
         return `${luckPercent}% / 100%`;
       }
       default:
@@ -307,27 +437,41 @@
     const stats = row.stats || {};
     const costs = row.upgrade_costs || {};
 
-    const map = [
-      "strength",
-      "defense",
-      "dexterity",
-      "intelligence",
-      "constitution",
-      "luck",
-    ];
+    // Vypočítat bonusy z equipmentu (stejně jako v shop)
+    const bonuses = calculateTotalBonuses(row);
 
-    for (const st of map) {
-      const v = Number(stats[st] ?? 10);
-      const cost = Number(costs[st] ?? 100);
+    const statNames = {
+      strength: '⚔️ Strength',
+      defense: '🛡️ Defense',
+      dexterity: '🎯 Dexterity',
+      intelligence: '🧠 Intelligence',
+      constitution: '💪 Constitution',
+      luck: '🍀 Luck'
+    };
 
-      const vEl = $(st + "Value");
-      const eEl = $(st + "Extra");
-      const cEl = $(st + "Cost");
+    ALLOWED_STATS.forEach(stat => {
+      const baseValue = Number(stats[stat] ?? 10);
+      const bonus = bonuses[stat] || 0;
+      const totalValue = baseValue + bonus;
+      const cost = Number(costs[stat] ?? 100);
 
-      if (vEl) vEl.textContent = fmtInt(v);
-      if (eEl) eEl.textContent = calculateStatBonus(st, v, level);
+      const vEl = $(stat + "Value");
+      const eEl = $(stat + "Extra");
+      const cEl = $(stat + "Cost");
+
+      // Zobrazit BASE hodnotu + BONUS (stejně jako v shop)
+      if (vEl) {
+        if (bonus !== 0) {
+          vEl.innerHTML = `${formatStatValue(baseValue)} <span style="color: #4af;">+${bonus}</span>`;
+        } else {
+          vEl.textContent = formatStatValue(baseValue);
+        }
+      }
+      
+      // Vypočítat extra bonus s CELKOVOU hodnotou (base + bonus)
+      if (eEl) eEl.textContent = calculateStatBonus(stat, totalValue, level);
       if (cEl) cEl.textContent = fmtInt(cost) + "₽";
-    }
+    });
 
     renderEquipment(row);
     
