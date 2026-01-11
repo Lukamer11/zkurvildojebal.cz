@@ -113,6 +113,7 @@ async function saveToSupabase() {
 
     const payload = {
       user_id: gameState.userId,
+      money: gameState.money, // Ulož i do hlavního sloupce
       clicker: clickerData
     };
 
@@ -127,6 +128,7 @@ async function saveToSupabase() {
       throw error;
     }
 
+    // Synchronizuj s menu.js
     if (window.SF?.updateStats) {
       window.SF.updateStats(payload);
     }
@@ -235,6 +237,20 @@ async function onClick() {
   const finalCpc = isCrit ? cpc * 2 : cpc;
   
   gameState.money += finalCpc;
+  
+  // DŮLEŽITÉ: Synchronizuj s menu.js
+  if (window.SF?.updateStats) {
+    window.SF.updateStats({
+      money: gameState.money,
+      clicker: {
+        money: gameState.money,
+        cursor: gameState.cursor,
+        granny: gameState.granny,
+        clickLevel: gameState.clickLevel,
+        sp: gameState.sp
+      }
+    });
+  }
   
   console.log('💰 Money:', gameState.money, '| Combo:', gameState.combo.toFixed(2));
   
