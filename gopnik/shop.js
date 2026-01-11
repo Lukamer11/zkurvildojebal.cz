@@ -721,7 +721,24 @@ function renderCharacterStats() {
     `;
   });
   
+  // Přidat SELL ZONE pod statistiky
+  statsHTML += `
+    <div class="sell-zone" id="sellZone">
+      <div class="sell-icon">💰</div>
+      <div class="sell-text">PRODAT ITEM</div>
+      <div class="sell-price">35% z hodnoty</div>
+    </div>
+  `;
+  
   statsSection.innerHTML = statsHTML;
+  
+  // Přidat event listenery pro sell zone
+  const sellZone = document.getElementById('sellZone');
+  if (sellZone) {
+    sellZone.addEventListener('dragover', handleDragOver);
+    sellZone.addEventListener('dragleave', handleDragLeave);
+    sellZone.addEventListener('drop', handleSellDrop);
+  }
 }
 
 function getSlotEmoji(slotName) {
@@ -1098,14 +1115,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       unequipItem(slotName);
     });
   });
-  
-  // Setup SELL ZONE drop
-  const sellZone = document.getElementById('sellZone');
-  if (sellZone) {
-    sellZone.addEventListener('dragover', handleDragOver);
-    sellZone.addEventListener('dragleave', handleDragLeave);
-    sellZone.addEventListener('drop', handleSellDrop);
-  }
   
   // Update rotation timer every second
   setInterval(() => {
