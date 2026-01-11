@@ -337,6 +337,29 @@
   min-width: 80px;
 }
 
+.class-badge-shop {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  background: 
+    radial-gradient(circle at center, rgba(80,85,92,0.95), rgba(40,45,50,0.98)),
+    url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 3px solid #c9a44a;
+  border-radius: 50%;
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,.6),
+    inset 0 0 15px rgba(0,0,0,.4);
+}
+
 .slots-shop {
   display: flex;
   flex-direction: column;
@@ -410,6 +433,15 @@
   padding-right: 8px;
 }
 
+.inventory-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.inventory-grid::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
 .inventory-grid::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,.3);
   border-radius: 10px;
@@ -468,6 +500,15 @@
   margin-bottom: 4px;
 }
 
+/* ===== RIGHT COLUMN ===== */
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow: hidden;
+}
+
 .character-stats-section {
   background: 
     linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
@@ -485,8 +526,22 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
-  overflow: hidden;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.character-stats-section::-webkit-scrollbar {
+  width: 8px;
+}
+
+.character-stats-section::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
+.character-stats-section::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.3);
+  border-radius: 10px;
 }
 
 .character-name-shop {
@@ -570,7 +625,6 @@
 
 /* ===== TRASH ZONE (KOŠE) ===== */
 .trash-zone {
-  grid-column: 1 / -1;
   background: 
     linear-gradient(135deg, rgba(139, 0, 0, 0.3), rgba(80, 0, 0, 0.4)),
     url('tlacitko.jpg');
@@ -579,19 +633,20 @@
   background-blend-mode: overlay;
   border: 4px dashed #c9a44a;
   border-radius: 14px;
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   transition: all 0.3s ease;
   box-shadow: 
     0 8px 25px rgba(0,0,0,.6),
     inset 0 2px 10px rgba(0,0,0,0.4);
-  min-height: 120px;
+  min-height: 100px;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .trash-zone::before {
@@ -626,7 +681,7 @@
 }
 
 .trash-icon {
-  font-size: 48px;
+  font-size: 36px;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,.8));
   transition: transform 0.3s ease;
 }
@@ -637,7 +692,7 @@
 }
 
 .trash-text {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 900;
   color: #f1d27a;
   text-shadow: 
@@ -648,7 +703,7 @@
 }
 
 .trash-subtext {
-  font-size: 12px;
+  font-size: 10px;
   color: #c9a44a;
   font-weight: 700;
 }
@@ -679,13 +734,4 @@
     transform: translateX(400px);
     opacity: 0;
   }
-}-scrollbar {
-  width: 8px;
 }
-
-.inventory-grid::-webkit-scrollbar-track {
-  background: rgba(0,0,0,.2);
-  border-radius: 10px;
-}
-
-.inventory-grid::-webkit
