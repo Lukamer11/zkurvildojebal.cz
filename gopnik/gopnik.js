@@ -32,7 +32,7 @@ const critEl = document.getElementById("crit");
 // ===== GAME STATE =====
 let gameState = {
   userId: null,
-  clickerMoney: 0, // LOKÁLNÍ peníze pro clicker (odděleně od hlavních grošů)
+  pendingMoneyToAdd: 0, // Peníze co se mají přidat do hlavních grošů
   cursor: 0,
   granny: 0,
   clickLevel: 0,
@@ -46,6 +46,7 @@ window.animState = false;
 
 let tick = null;
 let saveTimer = null;
+let flushTimer = null;
 
 // ===== UTILITY FUNCTIONS =====
 function fmt(n) {
@@ -68,7 +69,9 @@ function compute(state) {
 }
 
 function calculateSPGain(money) {
-  return Math.floor(money / 10000);
+  // SP se počítá z celkových hlavních grošů
+  const totalMoney = (window.SF?.stats?.money || 0);
+  return Math.floor(totalMoney / 10000);
 }
 
 // ===== INIT =====
@@ -85,7 +88,7 @@ async function initUser() {
 
     // Načti clicker data z stats
     const clickerData = stats.clicker || {};
-    gameState.clickerMoney = clickerData.money || 0;
+    gameState.pendingMoneyToAdd = 0; // Vždycky začneme s 0 pendingu
     gameState.cursor = clickerData.cursor || 0;
     gameState.granny = clickerData.granny || 0;
     gameState.clickLevel = clickerData.clickLevel || 0;
@@ -100,23 +103,38 @@ async function initUser() {
   }
 }
 
-// ===== SAVE - POUZE přes window.SF.updateStats() =====
+// ===== SAVE - Přidává peníze inkrementálně =====
 function saveClickerData() {
   if (!window.SF?.updateStats) {
     console.error("❌ window.SF.updateStats není dostupné!");
     return;
   }
 
-  // Ulož POUZE clicker data, NEDOTÝKEJ SE money/cigarettes/energy!
+  // Ulož jen clicker upgrady (bez peněz)
   window.SF.updateStats({
     clicker: {
-      money: gameState.clickerMoney,
       cursor: gameState.cursor,
       granny: gameState.granny,
       clickLevel: gameState.clickLevel,
       sp: gameState.sp
     }
   });
+}
+
+// Flush pending money do hlavních grošů (každou sekundu)
+function flushPendingMoney() {
+  if (gameState.pendingMoneyToAdd > 0 && window.SF?.stats) {
+    const currentMoney = Number(window.SF.stats.money || 0);
+    const newMoney = currentMoney + gameState.pendingMoneyToAdd;
+    
+    console.log(`💰 Flushing ${gameState.pendingMoneyToAdd}₽ to main money (${currentMoney} → ${newMoney})`);
+    
+    window.SF.updateStats({
+      money: newMoney
+    });
+    
+    gameState.pendingMoneyToAdd = 0;
+  }
 }
 
 function debouncedSave() {
@@ -130,14 +148,17 @@ function debouncedSave() {
 function render() {
   const { cpc, cps, prestigeBonus } = compute(gameState);
   
-  if (moneyEl) moneyEl.textContent = fmt(gameState.clickerMoney);
+  // Zobraz CELKOVÉ peníze (hlavní groše)
+  const totalMoney = (window.SF?.stats?.money || 0);
+  
+  if (moneyEl) moneyEl.textContent = fmt(totalMoney);
   if (cpcEl) cpcEl.textContent = fmt(cpc);
   if (cpsEl) cpsEl.textContent = fmt(cps);
 
   if (spEl) spEl.textContent = fmt(gameState.sp);
   if (bonusEl) bonusEl.textContent = `+${((prestigeBonus - 1) * 100).toFixed(0)}%`;
   
-  const spGain = calculateSPGain(gameState.clickerMoney);
+  const spGain = calculateSPGain();
   if (spGainEl) spGainEl.textContent = fmt(spGain);
   
   if (btnPrestige) {
@@ -147,30 +168,30 @@ function render() {
   if (comboEl) comboEl.textContent = `x${gameState.combo.toFixed(2)}`;
   if (critEl) critEl.textContent = "10%";
 
-  // Shop buttons
+  // Shop buttons - používají HLAVNÍ groše
   const cursorCost = 125 * Math.pow(1.15, gameState.cursor);
   const grannyCost = 750 * Math.pow(1.15, gameState.granny);
   const clickCost = 400 * Math.pow(1.15, gameState.clickLevel);
 
   if (buyCursorBtn) {
     buyCursorBtn.textContent = `Koupit (${fmt(cursorCost)})`;
-    buyCursorBtn.disabled = gameState.clickerMoney < cursorCost;
+    buyCursorBtn.disabled = totalMoney < cursorCost;
   }
   
   if (buyGrannyBtn) {
     buyGrannyBtn.textContent = `Koupit (${fmt(grannyCost)})`;
-    buyGrannyBtn.disabled = gameState.clickerMoney < grannyCost;
+    buyGrannyBtn.disabled = totalMoney < grannyCost;
   }
   
   if (buyClickBtn) {
     buyClickBtn.textContent = `Vylepšit (${fmt(clickCost)})`;
-    buyClickBtn.disabled = gameState.clickerMoney < clickCost;
+    buyClickBtn.disabled = totalMoney < clickCost;
   }
 }
 
 // ===== GAME ACTIONS =====
 function onClick() {
-  console.log('🖱️ CLICK! anim before:', window.animState);
+  console.log('🖱️ CLICK!');
   
   // Sound
   if (clickSnd) {
@@ -185,7 +206,6 @@ function onClick() {
   window.animState = !window.animState;
   if (img) {
     const newSrc = window.animState ? "./gopnik_B.png" : "./gopnik_A.png";
-    console.log('🖼️ Changing image to:', newSrc);
     img.src = newSrc;
   }
 
@@ -210,15 +230,18 @@ function onClick() {
   const { cpc } = compute(gameState);
   const finalCpc = isCrit ? cpc * 2 : cpc;
   
-  gameState.clickerMoney += finalCpc;
+  // PŘIDEJ do pending money (místo přímého zápisu)
+  gameState.pendingMoneyToAdd += finalCpc;
   
-  console.log('💰 Clicker Money:', gameState.clickerMoney, '| Combo:', gameState.combo.toFixed(2));
+  console.log(`💰 +${finalCpc.toFixed(6)}₽ (pending: ${gameState.pendingMoneyToAdd.toFixed(6)})`);
   
   render();
   debouncedSave();
 }
 
 function buy(kind) {
+  const totalMoney = Number(window.SF?.stats?.money || 0);
+  
   const cursorCost = 125 * Math.pow(1.15, gameState.cursor);
   const grannyCost = 750 * Math.pow(1.15, gameState.granny);
   const clickCost = 400 * Math.pow(1.15, gameState.clickLevel);
@@ -228,9 +251,11 @@ function buy(kind) {
   if (kind === "granny") cost = grannyCost;
   if (kind === "click") cost = clickCost;
 
-  if (gameState.clickerMoney < cost) return;
+  if (totalMoney < cost) return;
 
-  gameState.clickerMoney -= cost;
+  // ODEBER z hlavních grošů
+  const newMoney = totalMoney - cost;
+  window.SF.updateStats({ money: newMoney });
   
   if (kind === "cursor") gameState.cursor += 1;
   if (kind === "granny") gameState.granny += 1;
@@ -241,10 +266,10 @@ function buy(kind) {
 }
 
 function doPrestige() {
-  const spGain = calculateSPGain(gameState.clickerMoney);
+  const spGain = calculateSPGain();
   
   if (spGain === 0) {
-    showNotification("Potřebuješ alespoň 10,000 peněz pro prestige!", "error");
+    showNotification("Potřebuješ alespoň 10,000₽ pro prestige!", "error");
     return;
   }
 
@@ -259,11 +284,14 @@ function doPrestige() {
 
   // Reset všeho kromě SP
   gameState.sp += spGain;
-  gameState.clickerMoney = 0;
+  gameState.pendingMoneyToAdd = 0;
   gameState.cursor = 0;
   gameState.granny = 0;
   gameState.clickLevel = 0;
   gameState.combo = 1.0;
+  
+  // Resetuj hlavní groše na 0
+  window.SF.updateStats({ money: 0 });
 
   render();
   saveClickerData();
@@ -276,9 +304,9 @@ function tickLoop() {
   const { cps } = compute(gameState);
   
   if (cps > 0) {
-    gameState.clickerMoney += cps;
+    // PŘIDEJ do pending money
+    gameState.pendingMoneyToAdd += cps;
     render();
-    debouncedSave();
   }
 }
 
@@ -344,7 +372,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener("sf:stats", (e) => {
     const clickerData = e.detail?.clicker;
     if (clickerData) {
-      gameState.clickerMoney = clickerData.money || 0;
       gameState.cursor = clickerData.cursor || 0;
       gameState.granny = clickerData.granny || 0;
       gameState.clickLevel = clickerData.clickLevel || 0;
@@ -356,6 +383,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Start passive income
   if (tick) clearInterval(tick);
   tick = setInterval(tickLoop, 1000);
+  
+  // Start money flush timer (každou sekundu flush pending money)
+  if (flushTimer) clearInterval(flushTimer);
+  flushTimer = setInterval(flushPendingMoney, 1000);
   
   console.log('✅ Gopnik Clicker ready!');
 });
