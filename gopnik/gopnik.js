@@ -6,9 +6,9 @@ async function ensureOnline() {
   return sb;
 }
 
-// ===== DOM ELEMENTS =====
-const img = document.getElementById("gopnikImg");
-const clickSnd = document.getElementById("clickSnd");
+// ===== DOM ELEMENTS (budou nastaveny až po načtení) =====
+let img = null;
+let clickSnd = null;
 
 const moneyEl = document.getElementById("clickerMoney");
 const cpcEl = document.getElementById("clickerCpc");
@@ -329,10 +329,23 @@ function showNotification(message, type) {
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🎮 Initializing Gopnik Clicker...');
   
+  // Nastav DOM elementy TEĎ (až jsou načtené)
+  img = document.getElementById("gopnikImg");
+  clickSnd = document.getElementById("clickSnd");
+  
+  console.log('🖼️ Gopnik image:', img);
+  console.log('🔊 Click sound:', clickSnd);
+  
   await initUser();
   
   // Event listeners
-  if (img) img.addEventListener("click", onClick);
+  if (img) {
+    img.addEventListener("click", onClick);
+    console.log('✅ Click listener attached to gopnik');
+  } else {
+    console.error('❌ Gopnik image not found!');
+  }
+  
   if (buyCursorBtn) buyCursorBtn.addEventListener("click", () => buy("cursor"));
   if (buyGrannyBtn) buyGrannyBtn.addEventListener("click", () => buy("granny"));
   if (buyClickBtn) buyClickBtn.addEventListener("click", () => buy("click"));
