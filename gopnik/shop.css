@@ -628,7 +628,21 @@
   flex-direction: column;
   gap: 12px;
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto; /* Přidat scroll pokud je moc obsahu */
+}
+
+.character-stats-section::-webkit-scrollbar {
+  width: 8px;
+}
+
+.character-stats-section::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
+.character-stats-section::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.3);
+  border-radius: 10px;
 }
 
 .character-name-shop {
