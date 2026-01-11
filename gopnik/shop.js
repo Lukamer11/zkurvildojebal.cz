@@ -234,10 +234,12 @@ function updateClassBadge() {
   const playerClass = gameState.stats?.player_class;
   
   if (classBadge) {
+    // Pokud je player_class null nebo není v CLASS_ICONS, skryj badge
     if (playerClass && CLASS_ICONS[playerClass]) {
       classBadge.textContent = CLASS_ICONS[playerClass];
+      classBadge.style.display = 'flex';
     } else {
-      classBadge.textContent = '❓';
+      classBadge.style.display = 'none'; // Skrýt místo otazníku
     }
   }
   
