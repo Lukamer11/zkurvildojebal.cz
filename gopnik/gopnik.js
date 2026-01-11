@@ -338,18 +338,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   await initUser();
   
-  // Event listeners
+  // Event listeners - použij onclick místo addEventListener
   if (img) {
-    img.addEventListener("click", onClick);
+    img.onclick = onClick;
     console.log('✅ Click listener attached to gopnik');
+    console.log('🧪 Test: img.onclick =', img.onclick);
   } else {
     console.error('❌ Gopnik image not found!');
   }
   
-  if (buyCursorBtn) buyCursorBtn.addEventListener("click", () => buy("cursor"));
-  if (buyGrannyBtn) buyGrannyBtn.addEventListener("click", () => buy("granny"));
-  if (buyClickBtn) buyClickBtn.addEventListener("click", () => buy("click"));
-  if (btnPrestige) btnPrestige.addEventListener("click", doPrestige);
+  if (buyCursorBtn) buyCursorBtn.onclick = () => buy("cursor");
+  if (buyGrannyBtn) buyGrannyBtn.onclick = () => buy("granny");
+  if (buyClickBtn) buyClickBtn.onclick = () => buy("click");
+  if (btnPrestige) btnPrestige.onclick = doPrestige;
   
   // Listen to stats updates from menu.js
   document.addEventListener("sf:stats", (e) => {
