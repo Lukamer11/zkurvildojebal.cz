@@ -200,7 +200,7 @@ async function onClick() {
   // ANIMACE: A -> B -> A -> B ...
   anim = !anim;
   if (img) {
-    img.src = anim ? "gopnik_B.png" : "gopnik_A.png";
+    img.src = anim ? "./gopnik_B.png" : "./gopnik_A.png";
   }
 
   // Combo system
