@@ -1,390 +1,163 @@
-const supabaseClient = () => window.supabaseClient;
-async function ensureOnline() {
-  if (window.SFReady) await window.SFReady;
-  const sb = supabaseClient();
-  if (!sb) throw new Error('Supabase client není inicializovaný (načti menu.js před tímto skriptem)');
-  return sb;
-}
+(() => {
+  "use strict";
 
-// ===== DOM ELEMENTS =====
-const img = document.getElementById("gopnikImg");
-const clickSnd = document.getElementById("clickSnd");
+  const img = document.getElementById("gopnikImg");
+  const clickSnd = document.getElementById("clickSnd");
 
-const moneyEl = document.getElementById("clickerMoney");
-const cpcEl = document.getElementById("clickerCpc");
-const cpsEl = document.getElementById("clickerCps");
+  const moneyEl = document.getElementById("clickerMoney");
+  const cpcEl = document.getElementById("clickerCpc");
+  const cpsEl = document.getElementById("clickerCps");
 
-const buyCursorBtn = document.getElementById("buyCursor");
-const buyGrannyBtn = document.getElementById("buyGranny");
-const buyClickBtn = document.getElementById("buyClick");
+  const buyCursorBtn = document.getElementById("buyCursor");
+  const buyGrannyBtn = document.getElementById("buyGranny");
+  const buyClickBtn = document.getElementById("buyClick");
 
-// Prestige elements
-const spEl = document.getElementById("sp");
-const bonusEl = document.getElementById("bonus");
-const spGainEl = document.getElementById("spGain");
-const btnPrestige = document.getElementById("btnPrestige");
+  let tick = null;
 
-const comboEl = document.getElementById("combo");
-const critEl = document.getElementById("crit");
+  const defaults = () => ({
+    money: 0,
+    cursor: 0,
+    granny: 0,
+    clickLevel: 0
+  });
 
-// ===== GAME STATE =====
-let gameState = {
-  userId: null,
-  money: 0,
-  cursor: 0,
-  granny: 0,
-  clickLevel: 0,
-  sp: 0, // Slav Points (prestige currency)
-  combo: 1.0,
-  lastClickTime: 0
-};
+  function getState(stats) {
+    const c = stats?.clicker;
+    if (c && typeof c === "object") return { ...defaults(), ...c };
+    return defaults();
+  }
 
-let anim = false; // A/B animace
-let tick = null;
-let saveTimer = null;
+  function compute(state) {
+    const cpc = 0.00001 + state.clickLevel * 0.00001;
+    const cps = state.cursor * 0.00002 + state.granny * 0.0002;
+    return { cpc, cps };
+  }
 
-// ===== UTILITY FUNCTIONS =====
-function fmt(n) {
-  const x = Number(n ?? 0);
-  if (!Number.isFinite(x)) return "0";
-  if (Math.abs(x) < 1) return x.toFixed(6);
-  return x.toLocaleString("cs-CZ", { maximumFractionDigits: 2 });
-}
+  function fmt(n) {
+    const x = Number(n ?? 0);
+    if (!Number.isFinite(x)) return "0";
+    if (Math.abs(x) < 1) return x.toFixed(6);
+    return x.toLocaleString("cs-CZ", { maximumFractionDigits: 6 });
+  }
 
-function compute(state) {
-  const prestigeBonus = 1 + (state.sp * 0.1); // +10% za každý SP
-  
-  const baseCpc = 1 + state.clickLevel * 1;
-  const cpc = baseCpc * prestigeBonus * state.combo;
-  
-  const baseCps = state.cursor * 0.2 + state.granny * 2;
-  const cps = baseCps * prestigeBonus;
-  
-  return { cpc, cps, prestigeBonus };
-}
+  function render(stats) {
+    const st = getState(stats);
+    const { cpc, cps } = compute(st);
+    if (moneyEl) moneyEl.textContent = fmt(st.money);
+    if (cpcEl) cpcEl.textContent = fmt(cpc);
+    if (cpsEl) cpsEl.textContent = fmt(cps);
 
-function calculateSPGain(money) {
-  // 1 SP za každých 10,000 peněz
-  return Math.floor(money / 10000);
-}
+    const cursorCost = 12.5 * Math.pow(1.15, st.cursor);
+    const grannyCost = 75 * Math.pow(1.15, st.granny);
+    const clickCost = 40 * Math.pow(1.15, st.clickLevel);
 
-// ===== SUPABASE FUNCTIONS =====
-async function initUser() {
-  try {
-    await ensureOnline();
-    const row = window.SF?.stats;
-    if (!row?.user_id) {
-      location.href = "login.html";
-      return;
+    if (buyCursorBtn) buyCursorBtn.textContent = `Koupit (${fmt(cursorCost)})`;
+    if (buyGrannyBtn) buyGrannyBtn.textContent = `Koupit (${fmt(grannyCost)})`;
+    if (buyClickBtn) buyClickBtn.textContent = `Vylepšit (${fmt(clickCost)})`;
+  }
+
+  async function addMoney(delta, energyCost) {
+    if (window.SFReady) await window.SFReady;
+    const stats = window.SF?.stats;
+    if (!stats) return;
+
+    const energy = Number(stats.energy ?? 100);
+    if (energyCost > 0 && energy < energyCost) return;
+
+    const st = getState(stats);
+    st.money = Number(st.money) + Number(delta);
+
+    const patch = { clicker: st };
+    if (energyCost > 0) patch.energy = Math.max(0, energy - energyCost);
+
+    window.SF.updateStats(patch);
+  }
+
+  async function onClick() {
+    // Zvuk
+    if (clickSnd) {
+      try { clickSnd.currentTime = 0; } catch {}
+      try { clickSnd.play(); } catch {}
     }
 
-    gameState.userId = row.user_id;
-
-    const clickerData = row.clicker || {};
-    gameState.money = clickerData.money || 0;
-    gameState.cursor = clickerData.cursor || 0;
-    gameState.granny = clickerData.granny || 0;
-    gameState.clickLevel = clickerData.clickLevel || 0;
-    gameState.sp = clickerData.sp || 0;
-    gameState.combo = 1.0;
-    gameState.lastClickTime = 0;
-
-    render();
-    console.log('✅ Gopnik Clicker loaded!', gameState);
-  } catch (error) {
-    console.error("Error initializing clicker:", error);
-  }
-}
-
-async function saveToSupabase() {
-  try {
-    const sb = await ensureOnline();
-
-    const clickerData = {
-      money: gameState.money,
-      cursor: gameState.cursor,
-      granny: gameState.granny,
-      clickLevel: gameState.clickLevel,
-      sp: gameState.sp
-    };
-
-    const payload = {
-      user_id: gameState.userId,
-      clicker: clickerData
-    };
-
-    const { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
-    
-    if (error) {
-      // Pokud sloupec clicker neexistuje, zkusíme bez něj
-      if (error?.code === "PGRST204") {
-        console.warn("⚠️ Sloupec 'clicker' neexistuje v DB.");
-        return false;
+    // Animace A → B → A → B
+    if (img) {
+      const current = img.src;
+      if (current.includes("gopnik_A.png")) {
+        img.src = "gopnik_B.png";
+      } else {
+        img.src = "gopnik_A.png";
       }
-      throw error;
     }
 
-    if (window.SF?.updateStats) {
-      window.SF.updateStats(payload);
-    }
+    // Supabase sync
+    if (window.SFReady) await window.SFReady;
+    const stats = window.SF?.stats;
+    if (!stats) return;
 
-    return true;
-  } catch (error) {
-    console.error("Error saving clicker:", error);
-    return false;
-  }
-}
-
-function debouncedSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    saveToSupabase();
-  }, 500);
-}
-
-// ===== RENDER =====
-function render() {
-  const { cpc, cps, prestigeBonus } = compute(gameState);
-  
-  if (moneyEl) moneyEl.textContent = fmt(gameState.money);
-  if (cpcEl) cpcEl.textContent = fmt(cpc);
-  if (cpsEl) cpsEl.textContent = fmt(cps);
-
-  // Prestige info
-  if (spEl) spEl.textContent = fmt(gameState.sp);
-  if (bonusEl) bonusEl.textContent = `+${((prestigeBonus - 1) * 100).toFixed(0)}%`;
-  
-  const spGain = calculateSPGain(gameState.money);
-  if (spGainEl) spGainEl.textContent = fmt(spGain);
-  
-  if (btnPrestige) {
-    btnPrestige.disabled = spGain === 0;
+    const st = getState(stats);
+    const { cpc } = compute(st);
+    await addMoney(cpc, 0.01);
   }
 
-  // HUD
-  if (comboEl) comboEl.textContent = `x${gameState.combo.toFixed(2)}`;
-  if (critEl) critEl.textContent = "10%";
+  async function buy(kind) {
+    if (window.SFReady) await window.SFReady;
+    const stats = window.SF?.stats;
+    if (!stats) return;
 
-  // Shop buttons
-  const cursorCost = 25 * Math.pow(1.15, gameState.cursor);
-  const grannyCost = 150 * Math.pow(1.15, gameState.granny);
-  const clickCost = 80 * Math.pow(1.15, gameState.clickLevel);
+    const st = getState(stats);
 
-  if (buyCursorBtn) {
-    buyCursorBtn.textContent = `Koupit (${fmt(cursorCost)})`;
-    buyCursorBtn.disabled = gameState.money < cursorCost;
-  }
-  
-  if (buyGrannyBtn) {
-    buyGrannyBtn.textContent = `Koupit (${fmt(grannyCost)})`;
-    buyGrannyBtn.disabled = gameState.money < grannyCost;
-  }
-  
-  if (buyClickBtn) {
-    buyClickBtn.textContent = `Vylepšit (${fmt(clickCost)})`;
-    buyClickBtn.disabled = gameState.money < clickCost;
-  }
-}
+    const cursorCost = 12.5 * Math.pow(1.15, st.cursor);
+    const grannyCost = 75 * Math.pow(1.15, st.granny);
+    const clickCost = 40 * Math.pow(1.15, st.clickLevel);
 
-// ===== GAME ACTIONS =====
-async function onClick() {
-  // Sound effect
-  if (clickSnd) {
-    try { 
-      clickSnd.currentTime = 0;
-      clickSnd.volume = 0.3;
-      clickSnd.play(); 
-    } catch {}
+    let cost = 0;
+    if (kind === "cursor") cost = cursorCost;
+    if (kind === "granny") cost = grannyCost;
+    if (kind === "click") cost = clickCost;
+
+    if (st.money < cost) return;
+
+    st.money = Number(st.money) - Number(cost);
+    if (kind === "cursor") st.cursor += 1;
+    if (kind === "granny") st.granny += 1;
+    if (kind === "click") st.clickLevel += 1;
+
+    window.SF.updateStats({ clicker: st });
   }
 
-  // ANIMACE: A -> B -> A -> B ...
-  anim = !anim;
-  if (img) {
-    img.src = anim ? "gopnik_B.png" : "gopnik_A.png";
+  async function tickLoop() {
+    if (window.SFReady) await window.SFReady;
+    const stats = window.SF?.stats;
+    if (!stats) return;
+    const st = getState(stats);
+    const { cps } = compute(st);
+    if (cps > 0) await addMoney(cps, 0);
   }
 
-  // Combo system
-  const now = Date.now();
-  const timeSinceLastClick = now - gameState.lastClickTime;
-  
-  if (timeSinceLastClick < 500) {
-    // Rychlé kliky = combo roste
-    gameState.combo = Math.min(gameState.combo + 0.05, 3.0);
-  } else if (timeSinceLastClick > 2000) {
-    // Dlouhá pauza = combo resetuje
-    gameState.combo = 1.0;
+  function start() {
+    // Sync ze Supabase
+    document.addEventListener("sf:stats", (e) => render(e.detail));
+    
+    // Klikání na gopnika
+    if (img) img.addEventListener("click", onClick);
+    
+    // Shop buttony
+    if (buyCursorBtn) buyCursorBtn.addEventListener("click", () => buy("cursor"));
+    if (buyGrannyBtn) buyGrannyBtn.addEventListener("click", () => buy("granny"));
+    if (buyClickBtn) buyClickBtn.addEventListener("click", () => buy("click"));
+    
+    // Pasivní příjem každou sekundu
+    if (tick) clearInterval(tick);
+    tick = setInterval(tickLoop, 1000);
+    
+    // První render
+    if (window.SF?.stats) render(window.SF.stats);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
   } else {
-    // Normální tempo = combo klesá pomalu
-    gameState.combo = Math.max(gameState.combo - 0.02, 1.0);
+    start();
   }
-  
-  gameState.lastClickTime = now;
-
-  // Crit chance
-  const critChance = 0.1; // 10%
-  const isCrit = Math.random() < critChance;
-  
-  const { cpc } = compute(gameState);
-  const finalCpc = isCrit ? cpc * 2 : cpc;
-  
-  gameState.money += finalCpc;
-  
-  render();
-  debouncedSave();
-}
-
-async function buy(kind) {
-  const cursorCost = 25 * Math.pow(1.15, gameState.cursor);
-  const grannyCost = 150 * Math.pow(1.15, gameState.granny);
-  const clickCost = 80 * Math.pow(1.15, gameState.clickLevel);
-
-  let cost = 0;
-  if (kind === "cursor") cost = cursorCost;
-  if (kind === "granny") cost = grannyCost;
-  if (kind === "click") cost = clickCost;
-
-  if (gameState.money < cost) return;
-
-  gameState.money -= cost;
-  
-  if (kind === "cursor") gameState.cursor += 1;
-  if (kind === "granny") gameState.granny += 1;
-  if (kind === "click") gameState.clickLevel += 1;
-
-  render();
-  await saveToSupabase();
-}
-
-async function doPrestige() {
-  const spGain = calculateSPGain(gameState.money);
-  
-  if (spGain === 0) {
-    showNotification("Potřebuješ alespoň 10,000 peněz pro prestige!", "error");
-    return;
-  }
-
-  const confirmed = confirm(
-    `Opravdu chceš udělat PRESTIGE?\n\n` +
-    `Získáš: ${spGain} Slav Points\n` +
-    `Bonus: +${spGain * 10}% na vše\n\n` +
-    `Ztratíš: všechny peníze a upgrady!`
-  );
-
-  if (!confirmed) return;
-
-  // Reset všeho kromě SP
-  gameState.sp += spGain;
-  gameState.money = 0;
-  gameState.cursor = 0;
-  gameState.granny = 0;
-  gameState.clickLevel = 0;
-  gameState.combo = 1.0;
-
-  render();
-  await saveToSupabase();
-  
-  showNotification(`🌟 PRESTIGE! Získal jsi ${spGain} Slav Points!`, "success");
-}
-
-// ===== PASSIVE INCOME =====
-async function tickLoop() {
-  const { cps } = compute(gameState);
-  
-  if (cps > 0) {
-    gameState.money += cps;
-    render();
-    debouncedSave();
-  }
-}
-
-// ===== NOTIFICATIONS =====
-function showNotification(message, type) {
-  const notification = document.createElement('div');
-  notification.className = `notification ${type}`;
-  notification.textContent = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 16px 24px;
-    background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)'};
-    color: white;
-    border-radius: 12px;
-    font-weight: 900;
-    font-size: 14px;
-    box-shadow: 0 8px 20px rgba(0,0,0,.6);
-    z-index: 10000;
-    animation: slideIn 0.3s ease;
-  `;
-
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
-}
-
-// ===== SETTINGS MODAL =====
-const settingsModal = document.getElementById("settingsModal");
-const btnSettings = document.getElementById("btnSettings");
-const btnCloseSettings = document.getElementById("btnCloseSettings");
-
-if (btnSettings) {
-  btnSettings.addEventListener("click", () => {
-    if (settingsModal) {
-      settingsModal.classList.add("show");
-      settingsModal.setAttribute("aria-hidden", "false");
-    }
-  });
-}
-
-if (btnCloseSettings) {
-  btnCloseSettings.addEventListener("click", () => {
-    if (settingsModal) {
-      settingsModal.classList.remove("show");
-      settingsModal.setAttribute("aria-hidden", "true");
-    }
-  });
-}
-
-// ===== INIT =====
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🎮 Initializing Gopnik Clicker...');
-  
-  await initUser();
-  
-  // Event listeners
-  if (img) img.addEventListener("click", onClick);
-  if (buyCursorBtn) buyCursorBtn.addEventListener("click", () => buy("cursor"));
-  if (buyGrannyBtn) buyGrannyBtn.addEventListener("click", () => buy("granny"));
-  if (buyClickBtn) buyClickBtn.addEventListener("click", () => buy("click"));
-  if (btnPrestige) btnPrestige.addEventListener("click", doPrestige);
-  
-  // Listen to stats updates from menu.js
-  document.addEventListener("sf:stats", (e) => {
-    const clickerData = e.detail?.clicker;
-    if (clickerData) {
-      gameState.money = clickerData.money || 0;
-      gameState.cursor = clickerData.cursor || 0;
-      gameState.granny = clickerData.granny || 0;
-      gameState.clickLevel = clickerData.clickLevel || 0;
-      gameState.sp = clickerData.sp || 0;
-      render();
-    }
-  });
-  
-  // Start passive income loop
-  if (tick) clearInterval(tick);
-  tick = setInterval(tickLoop, 1000);
-  
-  console.log('✅ Gopnik Clicker loaded!');
-});
-
-// Auto-save every 10 seconds
-setInterval(() => {
-  saveToSupabase();
-  console.log('💾 Auto-save completed');
-}, 10000);
-
-console.log('✅ Gopnik Clicker system loaded!');
+})();
