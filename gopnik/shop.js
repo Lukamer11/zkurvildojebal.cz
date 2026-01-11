@@ -767,9 +767,190 @@ async function buyItem(itemId) {
 let draggedItem = null;
 let dragSource = null;
 
+// Add this to complete your shop.js file after line 775
+
 function handleDragStart(e) {
   draggedItem = {
     itemId: e.target.dataset.itemId,
     invIndex: parseInt(e.target.dataset.invIndex)
   };
-  dragSource =
+  dragSource = 'inventory';
+  e.target.style.opacity = '0.5';
+}
+
+function handleEquippedDragStart(e) {
+  draggedItem = {
+    itemId: e.target.dataset.itemId,
+    fromSlot: e.target.dataset.fromSlot
+  };
+  dragSource = 'equipped';
+  e.target.style.opacity = '0.5';
+}
+
+function handleDragEnd(e) {
+  e.target.style.opacity = '1';
+  draggedItem = null;
+  dragSource = null;
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  return false;
+}
+
+async function handleDropOnSlot(e, targetSlot) {
+  e.preventDefault();
+  
+  if (!draggedItem) return;
+  
+  const item = getItemById(draggedItem.itemId);
+  if (!item) return;
+  
+  // Check if item can be equipped in this slot
+  if (item.slot !== targetSlot) {
+    showNotification(`Tento item patří do slotu: ${item.slot}`, 'error');
+    return;
+  }
+  
+  // Unequip current item in slot if exists
+  if (gameState.equipped[targetSlot]) {
+    const currentItem = gameState.equipped[targetSlot];
+    gameState.inventory.push(currentItem);
+  }
+  
+  // Equip new item
+  if (dragSource === 'inventory') {
+    gameState.inventory.splice(draggedItem.invIndex, 1);
+  } else if (dragSource === 'equipped') {
+    gameState.equipped[draggedItem.fromSlot] = null;
+  }
+  
+  gameState.equipped[targetSlot] = item;
+  
+  const saved = await saveToSupabase();
+  if (saved) {
+    updateUI();
+    showNotification(`${item.name} nasazen!`, 'success');
+  }
+}
+
+async function handleDropOnInventory(e) {
+  e.preventDefault();
+  
+  if (!draggedItem || dragSource !== 'equipped') return;
+  
+  if (gameState.inventory.length >= INVENTORY_SIZE) {
+    showNotification('Inventář je plný!', 'error');
+    return;
+  }
+  
+  const item = gameState.equipped[draggedItem.fromSlot];
+  if (!item) return;
+  
+  gameState.equipped[draggedItem.fromSlot] = null;
+  gameState.inventory.push(item);
+  
+  const saved = await saveToSupabase();
+  if (saved) {
+    updateUI();
+    showNotification(`${item.name} odložen do inventáře`, 'success');
+  }
+}
+
+// Setup drag & drop event listeners
+function setupDragAndDrop() {
+  // Equipment slots
+  document.querySelectorAll('.equip-slot').forEach(slot => {
+    slot.addEventListener('dragover', handleDragOver);
+    slot.addEventListener('drop', (e) => {
+      const targetSlot = e.currentTarget.dataset.slot;
+      handleDropOnSlot(e, targetSlot);
+    });
+  });
+  
+  // Inventory grid
+  const inventoryGrid = document.getElementById('inventoryGrid');
+  if (inventoryGrid) {
+    inventoryGrid.addEventListener('dragover', handleDragOver);
+    inventoryGrid.addEventListener('drop', handleDropOnInventory);
+  }
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    background: ${type === 'success' ? '#2d5' : type === 'error' ? '#d52' : '#25d'};
+    color: white;
+    border-radius: 8px;
+    font-weight: bold;
+    z-index: 10001;
+    animation: slideIn 0.3s ease;
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+// Category switching
+function switchCategory(category) {
+  currentCategory = category;
+  
+  document.querySelectorAll('.category-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  const activeBtn = document.querySelector(`[data-category="${category}"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+  }
+  
+  renderShopItems();
+}
+
+// Initialize everything when page loads
+async function initShop() {
+  console.log('🎮 Inicializuji shop...');
+  
+  await initUser();
+  updateUI();
+  renderShopItems();
+  setupDragAndDrop();
+  
+  // Update timer every second
+  setInterval(updateRotationTimer, 1000);
+  
+  // Check for shop rotation every minute
+  setInterval(async () => {
+    if (shouldRotateShop()) {
+      rotateShopItems();
+      await saveToSupabase();
+      renderShopItems();
+      showNotification('🔄 Shop se automaticky obnovil!', 'success');
+    }
+  }, 60000);
+  
+  console.log('✅ Shop inicializován');
+}
+
+// Make functions globally available
+window.buyItem = buyItem;
+window.switchCategory = switchCategory;
+window.paidRerollShop = paidRerollShop;
+
+// Start the shop when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initShop);
+} else {
+  initShop();
+}
