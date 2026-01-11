@@ -1,12 +1,8 @@
-// arena.js – VERZE S EXTRA DEBUG LOGY
+// arena.js – VERZE S PLNOU SYNCHRONIZACÍ HP A STATS (jako v postava.js)
 (() => {
   "use strict";
 
-  
-
   // ====== SF COMPAT LAYER ======
-  // Některé verze menu.js / core mají jiné API než SF.getStats().
-  // Tohle sjednocuje čtení statistik tak, aby aréna nespadla, když getStats neexistuje.
   function sfGetStatsSync() {
     try {
       const SF = window.SF;
@@ -14,13 +10,11 @@
 
       if (typeof SF.getStats === 'function') return SF.getStats();
 
-      // běžné alternativy (podle různých verzí projektu)
       if (SF.stats && typeof SF.stats === 'object') return SF.stats;
       if (SF.playerStats && typeof SF.playerStats === 'object') return SF.playerStats;
       if (SF.state?.stats && typeof SF.state.stats === 'object') return SF.state.stats;
       if (SF.store?.stats && typeof SF.store.stats === 'object') return SF.store.stats;
 
-      // pokud existuje async getter, nevoláme ho zde (sync kontext)
       return null;
     } catch (e) {
       console.warn('⚠️ sfGetStatsSync failed:', e);
@@ -28,7 +22,6 @@
     }
   }
 
-  // Safe setter pro HP (kompatibilita: různé verze SF)
   function sfSetHpSync(hp, hpMax) {
     try {
       const SF = window.SF;
@@ -37,7 +30,6 @@
       if (typeof SF.setHp === 'function') { SF.setHp(hp, hpMax); return true; }
       if (SF.actions && typeof SF.actions.setHp === 'function') { SF.actions.setHp(hp, hpMax); return true; }
 
-      // fallback: zapis do běžných míst, pokud existují
       if (SF.stats && typeof SF.stats === 'object') {
         if (typeof SF.stats.hp === 'number' || SF.stats.hp === undefined) SF.stats.hp = hp;
         if (typeof SF.stats.hp_max === 'number' || SF.stats.hp_max === undefined) SF.stats.hp_max = hpMax;
@@ -60,8 +52,7 @@
     }
   }
 
-
-const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
+  const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
 
   const nextBtn = document.getElementById("nextEnemyBtn");
@@ -88,8 +79,6 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
   ];
 
   // ===== CRYPTA BOSS OVERRIDE =====
-  // auto.js ukládá fight data do sessionStorage('cryptaBossFight'). Arena z toho umí
-  // 1) nastavit enemy (boss)  2) zobrazit ikonku v rámečku  3) automaticky spustit duel
   let cryptaBossFight = null;
   async function loadCryptaBossFight() {
     const qs = new URLSearchParams(location.search);
@@ -113,10 +102,8 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
   }
 
   function getBossDmgScale(boss) {
-    // bosové mají být těžší než obyč. arena enemy na stejném levelu
     const lvl = Number(boss?.level || 1);
     const idx = Number(cryptaBossFight?.bossIndex || 0);
-    // start cca 1.35× a pomalu roste s cryptou
     return 1.35 + (lvl * 0.05) + (idx * 0.05);
   }
 
@@ -124,7 +111,6 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     if (cryptaBossFight?.boss) return cryptaBossFight.boss;
     return enemies[enemyIndex % enemies.length];
   }
-
 
   let enemyIndex = 0;
   let enemyCurHp = enemies[0].hp;
@@ -144,12 +130,10 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
   let playerEquipped = null;
   let playerTotal = { ...playerCore };
   let playerMaxHp = 500;
-
-  let playerHpFromDb = false; // true if hp/hp_max loaded from DB (Postava)
-  let playerHpDb = { hp: null, hp_max: null };
-
-  
   let playerCurrentHp = 500;
+
+  let playerHpFromDb = false;
+  let playerHpDb = { hp: null, hp_max: null };
 
   function fmtInt(n) {
     return Number(n ?? 0).toLocaleString("cs-CZ");
@@ -161,7 +145,6 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     const isInt = Math.abs(v - Math.round(v)) < 1e-9;
     return v.toLocaleString("cs-CZ", { minimumFractionDigits: isInt ? 0 : 2, maximumFractionDigits: isInt ? 0 : 2 });
   }
-
 
   function setBar(fillEl, textEl, cur, max) {
     if (!fillEl || !textEl) return;
@@ -182,23 +165,15 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     return Math.floor(Math.random() * (b - a + 1)) + a;
   }
 
+  // ===== COMPUTE MAX HP (stejně jako v postava.js) =====
   function computeMaxHpFromCore(core) {
-    // MUSÍ být stejné jako v Postava: 500 + CON * 25
-    // V projektu se stat jmenuje "constitution" (ne "con").
-    const con =
-      Number(core?.constitution) ||
-      Number(core?.stats?.constitution) ||
-      Number(core?.con) ||
-      Number(core?.stats?.con) ||
-      0;
-
+    const con = Number(core?.constitution || core?.stats?.constitution || 0);
     const maxHp = Math.max(1, clampHp(500 + (con * 25)));
     console.log(`💪 computeMaxHpFromCore: con=${con}, maxHp=${maxHp}`);
     return maxHp;
   }
 
-
-// ===== PŘIDEJ NOVOU FUNKCI pro synchronizaci měny =====
+  // ===== SYNC CURRENCY UI (stejně jako v postava.js) =====
   function syncCurrencyUI() {
     console.log('💰 === SYNC CURRENCY UI ===');
     
@@ -209,7 +184,7 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     
     const stats = sfGetStatsSync();
     if (!stats) {
-      console.warn("⚠️ SF stats not available (no getStats/stats object)");
+      console.warn("⚠️ SF stats not available");
       return;
     }
     console.log('📊 Stats from SF:', stats);
@@ -217,6 +192,7 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     const moneyEl = document.getElementById('money');
     const cigarettesEl = document.getElementById('cigarettes');
     const energyEl = document.getElementById('energy');
+    const levelDisplay = document.getElementById('levelDisplay');
     
     if (moneyEl) {
       moneyEl.textContent = Number(stats.money || 0).toLocaleString('cs-CZ');
@@ -231,6 +207,11 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     if (energyEl) {
       energyEl.textContent = String(stats.energy || 0);
       console.log('  ⚡ Energy:', stats.energy);
+    }
+    
+    if (levelDisplay) {
+      levelDisplay.textContent = String(stats.level || 1);
+      console.log('  🎯 Level:', stats.level);
     }
     
     // Update XP bar
@@ -263,8 +244,8 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     }
     
     console.log('===========================');
-  }  
-  
+  }
+
   function getAllItems() {
     if (!window.SHOP_ITEMS) return [];
     return [
@@ -292,16 +273,24 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
     return bonus;
   }
 
+  function formatStatValue(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '0';
+    const rounded = Math.round(n * 100) / 100;
+    const s = String(rounded);
+    return s.includes('.') ? rounded.toFixed(2).replace(/\.00$/, '').replace(/(\.[0-9])0$/, '$1') : s;
+  }
+
+  // ===== RECOMPUTE PLAYER TOTALS (stejně jako v postava.js) =====
   function recomputePlayerTotals() {
     const cls = String(window.SF?.stats?.stats?.player_class || "padouch").toLowerCase();
     const equipBonus = calcEquipBonuses(playerEquipped);
 
-    // HP: if Postava/DB provided hp_max, keep it as the source of truth
-    if (playerHpFromDb && playerHpDb?.hp_max) {
-      playerMaxHp = clampHp(playerHpDb.hp_max);
-    }
-    
-    // Total stats = base + equipment bonuses
+    console.log('🔥 === RECOMPUTE PLAYER TOTALS ===');
+    console.log('playerCore:', playerCore);
+    console.log('equipBonus:', equipBonus);
+
+    // Total stats = base + equipment bonuses (stejně jako v postava.js)
     playerTotal = {
       strength: Number(playerCore.strength||0) + Number(equipBonus.strength||0),
       defense: Number(playerCore.defense||0) + Number(equipBonus.defense||0),
@@ -313,63 +302,44 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
       _class: cls
     };
 
-    // HP sync:
-    // - Pokud Postava/DB dodá hp_max, ber to jako zdroj pravdy.
-    // - Jinak spočítej stejně jako Postava (500 + constitution * 25).
-    // - SF maxHP použij jen pokud je "smysluplné" (ne placeholder 500) a vyšší než computed.
-    if (!(playerHpFromDb && playerHpDb?.hp_max)) {
-      const computedMax = computeMaxHpFromCore(playerCore);
-      const sfStats = window.SF ? sfGetStatsSync() : null;
+    console.log('playerTotal:', playerTotal);
 
-      const sfMaxRaw = sfStats
-        ? Number(sfStats.max_hp ?? sfStats.hp_max ?? sfStats.maxHp ?? sfStats.hpMax ?? 0)
-        : 0;
-
-      const sfMax = clampHp(sfMaxRaw);
-
-      // 500 bereme jako placeholder (pokud computed vychází > 500)
-      if (sfStats) console.log('📊 SF Stats:', sfStats);
-
-      if (computedMax > 500) {
-        playerMaxHp = computedMax;
-        console.log('💚 Using computed maxHP:', playerMaxHp);
-      } else if (sfMax > 0) {
-        playerMaxHp = sfMax;
-        console.log('💚 Using maxHP from SF:', playerMaxHp);
-      } else {
-        playerMaxHp = computedMax;
-        console.log('💚 Using computed maxHP:', playerMaxHp);
-      }
-
-      // Pokud SF opravdu drží větší maxHP (a není to placeholder), respektuj ho
-      if (sfMax > playerMaxHp && sfMax > 500) {
-        playerMaxHp = sfMax;
-        console.log('💚 Using maxHP from SF (higher):', playerMaxHp);
-      }
+    // HP SYNC: Vypočítat maxHP z constitution (500 + constitution * 25)
+    const computedMax = computeMaxHpFromCore(playerTotal);
+    
+    // Pokud máme HP z DB, použij ho
+    if (playerHpFromDb && playerHpDb?.hp_max) {
+      playerMaxHp = clampHp(playerHpDb.hp_max);
+      console.log('💚 Using maxHP from DB:', playerMaxHp);
+    } else {
+      playerMaxHp = computedMax;
+      console.log('💚 Using computed maxHP:', playerMaxHp);
     }
 
-    console.log('🔥 === RECOMPUTE PLAYER TOTALS ===');
-    console.log('playerCore:', playerCore);
-    console.log('equipBonus:', equipBonus);
-    console.log('playerTotal:', playerTotal);
     console.log('playerMaxHp:', playerMaxHp);
     
-    // UPDATE UI ELEMENTS
+    // UPDATE UI ELEMENTS - zobrazit BASE + BONUS (stejně jako v postava.js)
     const statMap = {
-      pStr: playerTotal.strength,
-      pDef: playerTotal.defense,
-      pDex: playerTotal.dexterity,
-      pInt: playerTotal.intelligence,
-      pCon: playerTotal.constitution,
-      pLuck: playerTotal.luck
+      pStr: { base: playerCore.strength, bonus: equipBonus.strength, total: playerTotal.strength },
+      pDef: { base: playerCore.defense, bonus: equipBonus.defense, total: playerTotal.defense },
+      pDex: { base: playerCore.dexterity, bonus: equipBonus.dexterity, total: playerTotal.dexterity },
+      pInt: { base: playerCore.intelligence, bonus: equipBonus.intelligence, total: playerTotal.intelligence },
+      pCon: { base: playerCore.constitution, bonus: equipBonus.constitution, total: playerTotal.constitution },
+      pLuck: { base: playerCore.luck, bonus: equipBonus.luck, total: playerTotal.luck }
     };
     
     console.log('📊 Updating UI elements...');
     Object.keys(statMap).forEach((id) => {
       const el = document.getElementById(id);
+      const stat = statMap[id];
       if (el) {
-        el.textContent = String(statMap[id]);
-        console.log(`  ✅ ${id}: ${statMap[id]}`);
+        // Zobrazit BASE + BONUS (stejně jako v postava.js)
+        if (stat.bonus !== 0) {
+          el.innerHTML = `${formatStatValue(stat.base)} <span style="color: #4af;">+${stat.bonus}</span>`;
+        } else {
+          el.textContent = formatStatValue(stat.base);
+        }
+        console.log(`  ✅ ${id}: ${stat.base} + ${stat.bonus} = ${stat.total}`);
       } else {
         console.warn(`  ⚠️ Element not found: ${id}`);
       }
@@ -381,70 +351,47 @@ const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
   function healPlayerToFull() {
     console.log('🏥 === HEAL PLAYER TO FULL ===');
 
-    // HP:
-    // - Pokud už máš hp_max z Postavy/DB, nech ho.
-    // - Jinak spočítej stejně jako Postava (500 + constitution * 25).
-    // - SF maxHP použij jen pokud není placeholder 500 a je vyšší než computed.
-    if (!(playerHpFromDb && playerHpDb?.hp_max)) {
-      const computedMax = computeMaxHpFromCore(playerCore);
-      const sfStats = window.SF ? sfGetStatsSync() : null;
-      const sfMax = sfStats
-        ? clampHp(Number(sfStats.max_hp ?? sfStats.hp_max ?? sfStats.maxHp ?? sfStats.hpMax ?? 0))
-        : 0;
-
-      if (computedMax > 500) {
-        playerMaxHp = computedMax;
-        console.log('  💚 Using computed maxHP:', playerMaxHp);
-      } else if (sfMax > 0) {
-        playerMaxHp = sfMax;
-        console.log('  💚 Using maxHP from SF:', playerMaxHp);
-      } else {
-        playerMaxHp = computedMax;
-        console.log('  💚 Using computed maxHP:', playerMaxHp);
-      }
-
-      if (sfMax > playerMaxHp && sfMax > 500) {
-        playerMaxHp = sfMax;
-        console.log('  💚 Using maxHP from SF (higher):', playerMaxHp);
-      }
+    // Vypočítat maxHP z constitution
+    const computedMax = computeMaxHpFromCore(playerTotal);
+    
+    // Pokud máme HP z DB, použij ho
+    if (playerHpFromDb && playerHpDb?.hp_max) {
+      playerMaxHp = clampHp(playerHpDb.hp_max);
+      playerCurrentHp = clampHp(playerHpDb.hp);
+      console.log('  💚 Using HP from DB:', playerCurrentHp, '/', playerMaxHp);
+    } else {
+      playerMaxHp = computedMax;
+      playerCurrentHp = playerMaxHp;
+      console.log('  💚 Using computed maxHP:', playerMaxHp);
     }
 
-    // Don't blindly heal to full here; keep current HP (Postava source of truth if available)
-   // Když nemáme HP z DB, při bootu nastav full HP (stejně jako "heal to full")
-if (!(playerHpFromDb && playerHpDb?.hp_max)) {
-  playerCurrentHp = playerMaxHp;
-} else {
-  // pokud DB HP existuje, respektuj ho
-  if (!Number.isFinite(playerCurrentHp) || playerCurrentHp <= 0) playerCurrentHp = playerMaxHp;
-  playerCurrentHp = Math.min(clampHp(playerCurrentHp), playerMaxHp);
-}
+    // Zajisti, že current HP není větší než max
+    playerCurrentHp = Math.min(clampHp(playerCurrentHp), playerMaxHp);
 
     try { sfSetHpSync(playerCurrentHp, playerMaxHp); } catch (e) { console.warn('⚠️ SF.setHp failed:', e); }
     setBar(playerHealthFill, playerHealthText, playerCurrentHp, playerMaxHp);
+    
+    console.log('  🏥 Final HP:', playerCurrentHp, '/', playerMaxHp);
   }
 
   function renderEnemy() {
     const e = getActiveEnemy();
     if (!e) return;
 
-    // class pro obyč enemy, boss class neřešíme (ale necháme, když přijde)
     const clsPool = ["padouch","rvac","mozek"];
     if (!e._class) e._class = clsPool[randInt(0, clsPool.length-1)];
 
-    // HP
     enemyMaxHp = Number(e.hp || 0);
     if (enemyMaxHp <= 0) enemyMaxHp = 1000;
     enemyCurHp = enemyMaxHp;
 
-    // Avatar nepřítele / bosse: patří do <img id="enemyAvatar">, ne jako background celé sekce.
-    // (Background dělal "fight" v pozadí a boss obrázek přes celou pravou stranu.)
     if (e.avatar) {
       const img = document.querySelector('#enemyAvatar')
         || document.querySelector('.enemy-section .character-arena img')
         || document.querySelector('.enemy-section img');
       if (img && img.tagName === 'IMG') img.src = e.avatar;
     }
-    // Pro jistotu vždy zruš případný background nastavený dřív (boss/crypta).
+    
     const bg = document.querySelector('.enemy-section');
     if (bg) {
       bg.style.backgroundImage = '';
@@ -452,14 +399,11 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
       bg.style.backgroundPosition = '';
     }
 
-    // Ikonka bosse v rámečku: nejméně invazivní je prefix názvu
     const icon = (cryptaBossFight?.boss ? (e.icon || '💀') : '');
     if (enemyNameEl) enemyNameEl.textContent = icon ? `${icon} ${e.name}` : e.name;
     if (enemyLevelEl) enemyLevelEl.textContent = `Level ${e.level}`;
     setBar(enemyHealthFill, enemyHealthText, enemyCurHp, enemyMaxHp);
 
-    // Enemy stats (jen pro zobrazení v UI).
-    // U bosse je chceme těžší než běžně: násobič podle crypty + malé posílení.
     const lvl = Number(e.level ?? 1);
     const bossMul = cryptaBossFight?.boss ? (1.25 + (Number(cryptaBossFight.bossIndex||0) * 0.07)) : 1;
 
@@ -634,7 +578,6 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
         }
 
         const hole = holes[step];
-        // Random pozice díry (A): pokaždé jinde, bez změny vzhledu UI
         try {
           const parent = hole.parentElement;
           if (parent) {
@@ -642,8 +585,8 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
             if (pos === 'static') parent.style.position = 'relative';
           }
           hole.style.position = 'absolute';
-          const x = 10 + Math.random() * 70; // %
-          const y = 10 + Math.random() * 70; // %
+          const x = 10 + Math.random() * 70;
+          const y = 10 + Math.random() * 70;
           hole.style.left = x + '%';
           hole.style.top  = y + '%';
           hole.style.transform = 'translate(-50%, -50%)';
@@ -688,8 +631,12 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
 
     recomputePlayerTotals();
     
-    const st = sfGetStatsSync() || { money: playerMoney || 0 };
-    playerCurrentHp = clampHp(st.hp ?? playerMaxHp);
+    const st = sfGetStatsSync() || { money: 0 };
+    
+    // Použij aktuální HP (ne vždy full)
+    if (playerHpFromDb && playerHpDb?.hp != null) {
+      playerCurrentHp = clampHp(playerHpDb.hp);
+    }
     playerCurrentHp = Math.min(playerCurrentHp, playerMaxHp);
 
     const enemy = enemies[enemyIndex % enemies.length];
@@ -735,7 +682,7 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
         loss = Math.min(reward, sfGetStatsSync()?.money ?? 0);
       } else {
         reward = clampHp((enemyLvlEnd * 55) + randInt(20, 110));
-        const stNow = sfGetStatsSync() || { money: playerMoney || 0 };
+        const stNow = sfGetStatsSync() || { money: 0 };
         const curMoney = clampHp(stNow.money ?? 0);
         loss = Math.min(curMoney, reward);
       }
@@ -779,7 +726,6 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
     try {
       console.log('🔥 === HYDRATE PLAYER FROM SUPABASE ===');
       
-      const lib = window.supabase;
       const sb = window.supabaseClient;
 
       const sf = await (window.SFReady || Promise.resolve(window.SF));
@@ -798,7 +744,7 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
 
       const { data, error } = await sb
         .from("player_stats")
-        .select("level,xp,money,stats,equipped")
+        .select("level,xp,money,stats,equipped,hp,hp_max")
         .eq("user_id", uid)
         .limit(1);
 
@@ -823,6 +769,7 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
       // --- HP sync (match Postava) ---
       const dbHpMax = (row.hp_max ?? row.hpMax ?? st.hp_max ?? st.max_hp ?? st.maxHp);
       const dbHpCur = (row.hp ?? row.hp_current ?? row.hpCur ?? st.hp ?? st.hp_current ?? st.current_hp);
+      
       if (dbHpMax != null) {
         playerHpFromDb = true;
         playerHpDb.hp_max = clampHp(dbHpMax);
@@ -836,7 +783,6 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
         console.log('ℹ️ No hp_max in DB row; HP will be computed.');
       }
 
-      
       playerCore = {
         strength: Number(st.strength ?? 18),
         defense: Number(st.defense ?? 14),
@@ -888,36 +834,31 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
     badge.title = m.label;
   }
 
-   async function boot() {
+  async function boot() {
     console.log('🚀 === ARENA BOOT ===');
-    // načti crypta boss fight (pokud přicházíš z crypt)
+    
     await loadCryptaBossFight();
     if (cryptaBossFight?.boss) {
       console.log('💀 Crypta boss fight detected:', cryptaBossFight);
-      // v cryptě nechceme přepínat enemy
       if (nextBtn) nextBtn.style.display = 'none';
     }
 
-    
     hydratePlayerFromPostava().finally(() => {
       console.log('✅ Hydration complete, rendering...');
       renderClassBadgeOnAvatar();
       healPlayerToFull();
       renderEnemy();
-      // Auto-start duel, pokud přicházíš z Crypty
+      
+      // Auto-start duel pokud přicházíš z Crypty
       if (cryptaBossFight?.autoStart && cryptaBossFight?.boss) {
-        // schovej tlačítka (fight poběží sám)
         setButtonsVisible(false);
-        // aby se to nespouštělo donekonečna po reloadu
         clearCryptaBossFight();
-        // krátký delay kvůli DOM
         setTimeout(() => {
           try { startFight(); } catch (e) { console.error('❌ AutoStart fight failed:', e); }
         }, 150);
       }
 
-      
-      // ⭐ PŘIDEJ TOTO:
+      // ⭐ SYNC CURRENCY UI
       syncCurrencyUI();
       
       console.log('✅ Boot complete!');
@@ -933,5 +874,13 @@ if (!(playerHpFromDb && playerHpDb?.hp_max)) {
       });
     }
   }
+
+  // ===== LISTEN TO SF STATS CHANGES =====
+  document.addEventListener("sf:stats", async (e) => {
+    console.log('🔄 Stats changed, resyncing...');
+    await hydratePlayerFromPostava();
+    syncCurrencyUI();
+  });
+
   document.addEventListener("DOMContentLoaded", boot);
 })();
