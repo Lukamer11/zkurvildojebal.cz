@@ -263,6 +263,15 @@
   filter: grayscale(0.5);
 }
 
+/* ===== INVENTORY WRAPPER (pro sell zone) ===== */
+.inventory-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 /* ===== INVENTORY SECTION ===== */
 .inventory-section {
   background: 
@@ -275,6 +284,7 @@
   border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
   border-radius: 14px;
   padding: 18px;
+  padding-bottom: 140px; /* prostor pro sell zone */
   box-shadow: 
     0 15px 45px rgba(0,0,0,.8),
     inset 0 2px 10px rgba(255,215,100,0.1);
@@ -318,6 +328,26 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+/* IKONA TŘÍDY (stejně jako v postava.html) */
+.character-shop .class-badge {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: rgba(0,0,0,0.55);
+  border: 2px solid rgba(201,164,74,.85);
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.55);
+  text-shadow: 0 2px 8px rgba(0,0,0,.95);
+  pointer-events: none;
+  z-index: 10;
 }
 
 .level-shop {
@@ -392,6 +422,12 @@
   cursor: grabbing;
 }
 
+.slot-item img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
 .item-count {
   font-size: 14px;
   font-weight: 900;
@@ -408,6 +444,15 @@
   flex-shrink: 0;
   overflow-y: auto;
   padding-right: 8px;
+}
+
+.inventory-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.inventory-grid::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
 }
 
 .inventory-grid::-webkit-scrollbar-thumb {
@@ -468,6 +513,75 @@
   margin-bottom: 4px;
 }
 
+/* ===== SELL ZONE (pravý dolní roh) ===== */
+.sell-zone {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 180px;
+  height: 120px;
+  background: 
+    linear-gradient(135deg, rgba(139, 69, 19, 0.95), rgba(101, 67, 33, 0.98)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid #c9a44a;
+  border-radius: 14px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 
+    0 -8px 30px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,215,100,0.1);
+  transition: all 0.3s ease;
+  z-index: 100;
+  cursor: pointer;
+}
+
+.sell-zone:hover {
+  border-color: #f1d27a;
+  box-shadow: 
+    0 -12px 40px rgba(0,0,0,.9),
+    0 0 30px rgba(241, 210, 122, 0.4);
+  transform: scale(1.03);
+}
+
+.sell-zone.drag-over {
+  border-color: #ff6b6b !important;
+  background: 
+    linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(220, 38, 38, 0.4)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  box-shadow: 0 0 40px rgba(255, 107, 107, 0.8) !important;
+  transform: scale(1.08);
+}
+
+.sell-icon {
+  font-size: 36px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.8));
+}
+
+.sell-text {
+  font-size: 13px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  text-align: center;
+}
+
+.sell-price {
+  font-size: 11px;
+  font-weight: 900;
+  color: #4af;
+  text-shadow: 0 0 10px rgba(74, 170, 255, 0.8);
+}
+
+/* ===== CHARACTER STATS SECTION ===== */
 .character-stats-section {
   background: 
     linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
@@ -568,6 +682,20 @@
   box-shadow: 0 0 30px rgba(74, 170, 255, 0.6) !important;
 }
 
+/* Tooltip */
+.item-tooltip {
+  position: fixed;
+  background: linear-gradient(135deg, rgba(40,30,20,0.98), rgba(25,18,12,0.99));
+  border: 3px solid #c9a44a;
+  border-radius: 12px;
+  padding: 14px;
+  pointer-events: none;
+  z-index: 10000;
+  display: none;
+  min-width: 250px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(400px);
@@ -588,13 +716,4 @@
     transform: translateX(400px);
     opacity: 0;
   }
-}-scrollbar {
-  width: 8px;
 }
-
-.inventory-grid::-webkit-scrollbar-track {
-  background: rgba(0,0,0,.2);
-  border-radius: 10px;
-}
-
-.inventory-grid::-webkit
