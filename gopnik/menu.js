@@ -1,320 +1,234 @@
-// menu.js — jediný globální init (Supabase auth + player_stats + HUD + realtime)
-// Použití: načti supabase-js v HTML, pak načti tento soubor na KAŽDÉ stránce.
+// mise.js - Mission System s Supabase integrací
 
-(() => {
-  "use strict";
+const supabaseClient = () => window.supabaseClient;
 
-  // -------------------------
-  // KONFIG (můžeš přepsat přes window.* nebo sessionStorage)
-  // -------------------------
-  const SUPABASE_URL = "https://wngzgptxrgfrwuyiyueu.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No";
+async function ensureOnline() {
+  if (window.SFReady) await window.SFReady;
+  const sb = supabaseClient();
+  if (!sb) throw new Error('Supabase client není inicializovaný');
+  return sb;
+}
 
-  const LOGIN_PAGE = "login.html";
-
-  // -------------------------
-  // HELPERS
-  // -------------------------
-  function isLoginPage() {
-    return location.pathname.endsWith("/" + LOGIN_PAGE) || location.pathname.endsWith(LOGIN_PAGE);
+// ===== GAME STATE =====
+let gameState = {
+  userId: null,
+  level: 1,
+  money: 3170,
+  cigarettes: 42,
+  energy: 100,
+  maxEnergy: 100,
+  missionData: {
+    completedMissions: 0,
+    totalExpEarned: 0,
+    totalMoneyEarned: 0,
+    totalBattles: 0,
+    totalWins: 0,
+    activeMissions: {
+      slot1: null,
+      slot2: null
+    },
+    assassin: {
+      active: false,
+      startTime: null
+    },
+    lastEnergyUpdate: Date.now()
   }
+};
 
-  function deepMerge(base, patch) {
-    if (!patch || typeof patch !== "object") return base;
-    const out = Array.isArray(base) ? [...base] : { ...(base || {}) };
-    for (const k of Object.keys(patch)) {
-      const pv = patch[k];
-      const bv = out[k];
-      if (pv && typeof pv === "object" && !Array.isArray(pv) && bv && typeof bv === "object" && !Array.isArray(bv)) {
-        out[k] = deepMerge(bv, pv);
-      } else {
-        out[k] = pv;
-      }
+let missionTimers = { slot1: null, slot2: null };
+let assassinTimer = null;
+
+// ===== MISSION TEMPLATES =====
+const missionTemplates = {
+  easy: [
+    {
+      name: "Kvašák u Petra",
+      story: "Tvůj kámoš Petr volá o pomoc! Jeho babička dělá nejlepší kvašák v celém Česku, ale kvůli nehodě nemůže zajít do sklepa. Musíš dojít k nim domů, sebrat ten kvašák a přinést ho Petrovi.",
+      enemies: ["Babička", "Sousedka", "Kocour"],
+      emojis: ["👵", "👩‍🦰", "🐱"]
+    },
+    {
+      name: "Cigarety pro Gopnika",
+      story: "Starší gopnik u zastávky tě požádal, abys mu sehnal cigarety. Musíš dojít k trafice, koupit balíček a vrátit se. Ale pozor - ve frontě může být dlouhá čekací doba!",
+      enemies: ["Trafikant", "Důchodce", "Policajt"],
+      emojis: ["🚬", "👴", "👮"]
+    },
+    {
+      name: "Ztracený adidas dres",
+      story: "Tvůj nejlepší kámoš ztratil svůj limitovaný adidas dres na sídlišti. Musíš ho najít, než ho někdo ukradne! Prohledej všechny možné místa.",
+      enemies: ["Kluk na BMX", "Bezdomovec", "Pes"],
+      emojis: ["🚴", "🧔", "🐕"]
+    },
+    {
+      name: "Semínka na zahrádku",
+      story: "Tvůj děda potřebuje speciální semínka pro svou zahrádku. Musíš jet do zahradnictví, koupit ta správná semínka a vrátit se dřív, než začne pršet!",
+      enemies: ["Prodavačka", "Rival zahradník", "Holubi"],
+      emojis: ["👩‍🌾", "👨‍🌾", "🐦"]
+    },
+    {
+      name: "Oprava kola",
+      story: "Tvoje kolo má prásknutou pneumatiku uprostřed sídliště. Musíš dojít do servisu, koupit záplatu a vrátit se opravit kolo!",
+      enemies: ["Mechanik", "Zlý kluk", "Strážník"],
+      emojis: ["🔧", "😠", "👮‍♂️"]
+    },
+    {
+      name: "Ztracený telefon",
+      story: "Tvoje matka ztratila telefon někde na tržnici. Musíš ho najít dřív, než ho někdo prodá! Procházej stánky a ptej se lidí.",
+      enemies: ["Prodavač", "Kapesní zloděj", "Hlídač"],
+      emojis: ["🛒", "🕵️", "👁️"]
+    },
+    {
+      name: "Pivo pro partu",
+      story: "Tvoje gopnik parta sedí u garáží a došlo jim pivo. Ty jsi nejmladší, tak musíš běžet do obchodu pro bednu! Rychle, než zavřou!",
+      enemies: ["Prodavač u pultu", "Bezdomovec u vchodu", "Babka v řadě"],
+      emojis: ["🍺", "🧔", "👵"]
+    },
+    {
+      name: "Hledání psa",
+      story: "Sousedce utekl pes a nabízí odměnu za jeho návrat. Musíš prohledat celé sídliště a najít toho hafana!",
+      enemies: ["Agresivní kočka", "Hlídač parku", "Jiný pes"],
+      emojis: ["🐱", "👨‍✈️", "🐕‍🦺"]
     }
-    return out;
-  }
-
-  function emitStats() {
-    try {
-      document.dispatchEvent(
-        new CustomEvent("sf:stats", {
-          detail: structuredClone(window.SF.stats),
-        })
-      );
-    } catch {
-      // structuredClone nemusí být všude → fallback
-      document.dispatchEvent(new CustomEvent("sf:stats", { detail: window.SF.stats }));
+  ],
+  medium: [
+    {
+      name: "Souboj o lavičku",
+      story: "Tvoje gopnik parta má tradiční místo u panelákové lavičky, ale dnes tam sedí rivalové z vedlejšího sídliště! Musíš tam jít a ukázat jim, že tahle lavička je VAŠE!",
+      enemies: ["Rival gopnik", "Jeho bratři", "Pitbull"],
+      emojis: ["🥊", "👊", "🐕‍🦺"]
+    },
+    {
+      name: "Nelegální street race",
+      story: "Dostal jsi pozvánku na podzemní závody na sídlišti! Musíš sehnat auto a vyhrát závod proti místním šílencům!",
+      enemies: ["Street racer", "Kopřivová káča", "Policejní honička"],
+      emojis: ["🏎️", "🚔", "💨"]
+    },
+    {
+      name: "Krádež gopnikova kola",
+      story: "Někdo ukradl kolo tvému kámoši! Podle svědků jelo směrem k nádraží. Musíš zloděje najít a dostat kolo zpátky!",
+      enemies: ["Zloděj", "Jeho kumpáni", "Hlídač u nádraží"],
+      emojis: ["🚲", "😈", "🕵️"]
+    },
+    {
+      name: "Obrana tržnice",
+      story: "Na místní tržnici se objevila nová banda co se snaží ovládnout území! Prodavači tě prosí o pomoc. Musíš je vyhnat!",
+      enemies: ["Bandita 1", "Bandita 2", "Boss bandy"],
+      emojis: ["👿", "😡", "🤬"]
+    },
+    {
+      name: "Zásilka od Ivana",
+      story: "Ivan ze sousedního města ti poslal důležitou zásilku, ale kurýr se ztratil. Musíš ho najít a získat zásilku!",
+      enemies: ["Ztracený kurýr", "Podezřelý muž", "Hlídka"],
+      emojis: ["📦", "🕴️", "👮"]
+    },
+    {
+      name: "Výběr dluhů",
+      story: "Tvůj starší brácha ti dal úkol - musíš vybrat dluhy od tří lidí na sídlišti. Ale oni platit nechtějí!",
+      enemies: ["Dlužník 1", "Dlužník 2", "Dlužník 3"],
+      emojis: ["💰", "🤥", "😰"]
+    },
+    {
+      name: "Ochrana baru",
+      story: "Majitel lokálního baru tě najal jako ochranku na dnešní večer. Musíš vyhodit všechny výtržníky!",
+      enemies: ["Opilec", "Výtržník", "Rváč"],
+      emojis: ["🍺", "🤪", "🥊"]
+    },
+    {
+      name: "Sabotáž konkurence",
+      story: "Tvůj boss tě poslal sabotovat konkurenční podnik. Musíš se tam dostat, provést sabotáž a zmizet!",
+      enemies: ["Hlídač", "Kamerový systém", "Majitel"],
+      emojis: ["🎥", "🔒", "👨‍💼"]
     }
-  }
-
-  function fmtInt(n) {
-    const x = Number(n ?? 0);
-    return Number.isFinite(x) ? x.toLocaleString("cs-CZ") : "0";
-  }
-
-  // -------------------------
-  // HUD (volitelné prvky napříč stránkami)
-  // -------------------------
-  function updateHud(stats) {
-    if (!stats) return;
-
-    const moneyEl = document.getElementById("money");
-    const cigEl = document.getElementById("cigarettes");
-    const levelEl = document.getElementById("levelDisplay") || document.querySelector(".level-number");
-    const xpFillEl = document.getElementById("xpFill");
-    const xpTextEl = document.getElementById("xpText");
-
-    if (moneyEl) moneyEl.textContent = fmtInt(stats.money);
-    if (cigEl) cigEl.textContent = fmtInt(stats.cigarettes);
-    if (levelEl) levelEl.textContent = fmtInt(stats.level);
-
-    // XP bar (pokud existuje)
-    const level = Number(stats.level ?? 1);
-    const xp = Number(stats.xp ?? 0);
-    const req = Math.floor(100 * Math.pow(1.5, Math.max(0, level - 1)));
-    const pct = req > 0 ? Math.max(0, Math.min(100, (xp / req) * 100)) : 0;
-    if (xpFillEl) xpFillEl.style.width = pct + "%";
-    if (xpTextEl) xpTextEl.textContent = `${fmtInt(xp)} / ${fmtInt(req)}`;
-  }
-
-  document.addEventListener("sf:stats", (e) => updateHud(e.detail));
-
-  // -------------------------
-  // SUPABASE CLIENT
-  // -------------------------
-  function getSbClient() {
-    // Jedna instance Supabase klienta na stránku (řeší warning "Multiple GoTrueClient instances")
-    if (window.SF?.sb) return window.SF.sb;
-    const lib = window.supabase;
-    if (!lib || typeof lib.createClient !== "function") return null;
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
-
-    const sb = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        // localStorage = stabilnější napříč stránkami; sessionStorage umí dělat divné věci při reloadu
-        storage: window.localStorage,
-      },
-    });
-
-    // cache
-    if (!window.SF) window.SF = {};
-    window.SF.sb = sb;
-    return sb;
-  }
-
-  // -------------------------
-  // GLOBAL SF API
-  // -------------------------
-  if (!window.SF) {
-    window.SF = {
-      sb: null,
-      user: null,
-      stats: null,
-      updateStats: null,
-    };
-  }
-
-  let saveTimer = null;
-
-  // Pozn.: PostgreSQL bez uvozovek převádí identifikátory na lower-case.
-  // V supabase_setup.sql je sloupec napsaný jako missionData, ale v DB se vytvoří jako "missiondata".
-  // Pokud klient pošle JSON klíč "missionData", PostgREST vrátí 400 (neznámé pole).
-  // Tady to normalizujeme, aby se ukládání nerozbilo napříč stránkami.
-  function normalizeRowForDb(row) {
-    if (!row || typeof row !== "object") return row;
-
-    // Vezmeme jen sloupce, které skutečně existují v tabulce.
-    // (cokoliv navíc může dělat 400)
-    const out = {
-      user_id: row.user_id,
-      level: row.level,
-      xp: row.xp,
-      money: row.money,
-      cigarettes: row.cigarettes,
-      energy: row.energy,
-      max_energy: row.max_energy,
-      stats: row.stats,
-      upgrade_costs: row.upgrade_costs,
-      inventory: row.inventory,
-      equipped: row.equipped,
-      flags: row.flags,
-      clicker: row.clicker,
-      // DB sloupec je missiondata (lowercase)
-      missiondata: row.missiondata ?? row.missionData,
-      mail_claimed: row.mail_claimed,
-    };
-
-    // Odstraň undefined (PostgREST to umí poslat jako "null" nebo to může vadit u NOT NULL)
-    for (const k of Object.keys(out)) {
-      if (out[k] === undefined) delete out[k];
+  ],
+  hard: [
+    {
+      name: "Odplata za Borisa",
+      story: "Borisa, tvého nejlepšího kámoše, zbili chuligáni u nádraží! Musíš najít ty bastardy a dát jim pořádnou lekci!",
+      enemies: ["Hlavní chuligán", "Boxer", "Kickboxer"],
+      emojis: ["💀", "🥊", "🦵"]
+    },
+    {
+      name: "Černý trh",
+      story: "Objevil se černý trh s nelegálním zbožím. Musíš tam zajít, najít obchodníka a dohodnout obchod. Policie o trhu taky ví...",
+      enemies: ["Obchodník s nožem", "Bodyguard", "Undercover policajt"],
+      emojis: ["🔪", "🥋", "🚨"]
+    },
+    {
+      name: "Záchrana sestry",
+      story: "Tvoje sestra se zapletla s špatnou partou! Drží ji v opuštěné budově. Musíš tam zajít sám a vyjednat její propuštění!",
+      enemies: ["Bandita s řetězem", "MMA fighter", "Boss s baseballkou"],
+      emojis: ["⛓️", "🥋", "⚾"]
+    },
+    {
+      name: "Territorio válka",
+      story: "Vypukla teritoriální válka mezi gopnik gangami! Musíš reprezentovat svoje sídliště v pěstním souboji!",
+      enemies: ["Gopnik šampion", "Street warrior", "Legendární boss"],
+      emojis: ["👑", "⚔️", "🏆"]
+    },
+    {
+      name: "Zrazený obchod",
+      story: "Domlouval jsi velký obchod, ale ukázalo se, že to byla past! Musíš najít zrádce a dostat zpátky svoje groše!",
+      enemies: ["Dmitrij zrádce", "Bodyguard", "Najatý fighter"],
+      emojis: ["🤥", "💪", "🥷"]
+    },
+    {
+      name: "Loupež skladu",
+      story: "Tvůj boss tě poslal vykrást sklad plný cenného zboží. Musíš se dostat dovnitř, ukrást zboží a uniknout!",
+      enemies: ["Ochranká", "Alarm", "Policejní zásahová jednotka"],
+      emojis: ["👮‍♂️", "🚨", "🚔"]
+    },
+    {
+      name: "Vyřízení účtů",
+      story: "Máš seznam lidí, kteří tvému bossovi dluží. Musíš je navštívit a 'přesvědčit' je, aby zaplatili. Nebude to legrace!",
+      enemies: ["Zadlužený podnikatel", "Jeho ochranká", "Najatý bojovník"],
+      emojis: ["💼", "🛡️", "⚔️"]
     }
-
-    // Základní numerická normalizace:
-    // - když nám UI někde vyrobí číslo jako string ("10" / "10.05"), převedeme na Number
-    // - a pro jistotu pošleme INTEGER-like sloupce vždy jako celé číslo (ať je v DB int nebo numeric)
-    const forceIntKeys = new Set(["level", "xp", "money", "cigarettes", "energy", "max_energy"]);
-    for (const k of Object.keys(out)) {
-      let v = out[k];
-      if (typeof v === "string" && /^-?\d+(?:\.\d+)?$/.test(v.trim())) {
-        const n = Number(v);
-        if (!Number.isNaN(n)) v = n;
-      }
-      if (forceIntKeys.has(k) && typeof v === "number" && Number.isFinite(v)) {
-        v = Math.floor(v);
-      }
-      out[k] = v;
+  ],
+  extreme: [
+    {
+      name: "Boss všech bossů",
+      story: "Konečná výzva! Nejlegendárnější gopnik boss ve městě tě vyzval na souboj. Pokud vyhraješ, staneš se legendou!",
+      enemies: ["Legendární boss", "Mistr bojových umění", "Šampion"],
+      emojis: ["👹", "🐲", "☠️"]
+    },
+    {
+      name: "Mafie vyřizuje účty",
+      story: "Zapletl ses do něčeho velkého. Ruská mafie si myslí, že jsi ukradl jejich peníze. Musíš čelit jejich nejlepším lidem!",
+      enemies: ["Mafiánský enforcer", "Profesionální vrah", "Don mafie"],
+      emojis: ["🔫", "💼", "👔"]
+    },
+    {
+      name: "Turnaj smrti",
+      story: "Dostal ses do nelegálního turnaje plného nejnebezpečnějších fighterů. Jediný způsob ven? Vyhrát všechny zápasy!",
+      enemies: ["Sambo mistr", "Siberian beast", "Neporazitelný šampion"],
+      emojis: ["🥊", "🐻", "💀"]
+    },
+    {
+      name: "Záchrana města",
+      story: "Nebezpečná kriminální organizace chce ovládnout celé město! Policie je bezmocná. Jsi poslední naděje!",
+      enemies: ["Elite soldier", "Cyber fighter", "Boss organizace"],
+      emojis: ["🎯", "🤖", "👿"]
+    },
+    {
+      name: "Pomsta za ztrátu",
+      story: "Našli ti toho, kdo zabil tvého přítele před rokem. Je čas pomstít se. Ale není to žádný obyčejný chuligán - je to profesionální zabijak!",
+      enemies: ["Professional hitman", "Combat veteran", "Death incarnate"],
+      emojis: ["🗡️", "⚰️", "💀"]
     }
-    return out;
-  }
+  ]
+};
 
-  function coerceIntegerishValues(obj) {
-    // Projde jen top-level klíče: typická INTEGER pole jsou právě tam (level/xp/money/energy...)
-    const out = { ...obj };
-    for (const k of Object.keys(out)) {
-      const v = out[k];
-      if (typeof v === "number" && Number.isFinite(v) && !Number.isInteger(v)) {
-        out[k] = Math.floor(v);
-      } else if (typeof v === "string" && /^-?\d+(?:\.\d+)?$/.test(v.trim())) {
-        const n = Number(v);
-        if (!Number.isNaN(n)) out[k] = Number.isInteger(n) ? n : Math.floor(n);
-      }
-    }
-    return out;
-  }
-  async function upsertNow() {
-    const sb = window.SF.sb;
-    const stats = window.SF.stats;
-    if (!sb || !stats?.user_id) return;
-
-    // 1) Standardní payload (bez neznámých klíčů)
-    const payloadBase = normalizeRowForDb(stats);
-
-    // 2) Mission sloupec detekujeme z načteného řádku (abychom neposílali "špatný" klíč a nespamovali 400).
-    // Pokud jsme ho ještě nedetekovali, spadneme na původní "zkus obě" režim.
-    const attempts = [];
-    const m = window.SF?.dbCols?.player_stats || {};
-    const hasMissiondata = !!m.missiondata;
-    const hasMissionData = !!m.missionData;
-
-    if (hasMissiondata) {
-      const a = { ...payloadBase };
-      delete a.missionData;
-      attempts.push(a);
-    } else if (hasMissionData) {
-      const b = { ...payloadBase, missionData: stats.missionData ?? stats.missiondata };
-      delete b.missiondata;
-      attempts.push(b);
-    } else {
-      // Nevíme – zkusíme obě + fallback.
-      const a = { ...payloadBase };
-      delete a.missionData;
-      attempts.push(a);
-
-      const b = { ...payloadBase, missionData: stats.missionData ?? stats.missiondata };
-      delete b.missiondata;
-      attempts.push(b);
-
-      const c = { ...payloadBase };
-      delete c.missiondata;
-      delete c.missionData;
-      attempts.push(c);
-    }
-
-    let lastError = null;
-    for (const payload of attempts) {
-      // Nejprve zkus "jak je".
-      let { error } = await sb.from("player_stats").upsert(payload, { onConflict: "user_id" });
-      if (!error) return;
-
-      // Když narazíme na 22P02 (např. "invalid input syntax for type integer: '10.05'")
-      // zkusíme automaticky oříznout desetinné hodnoty na INTEGER a uložit znovu.
-      if (error?.code === "22P02" && (error?.message || "").toLowerCase().includes("type integer")) {
-        const fixed = coerceIntegerishValues(payload);
-        const retry = await sb.from("player_stats").upsert(fixed, { onConflict: "user_id" });
-        if (!retry.error) return;
-        error = retry.error;
-      }
-      lastError = error;
-
-      // Když jde o "neznámý sloupec", má smysl zkusit další variantu.
-      const msg = (error?.message || "").toLowerCase();
-      if (error?.code === "PGRST204" || msg.includes("could not find") || msg.includes("column")) {
-        continue;
-      }
-
-      // Pro ostatní chyby už další pokusy typicky nepomůžou.
-      break;
+// ===== SUPABASE FUNCTIONS =====
+async function initUser() {
+  try {
+    const sb = await ensureOnline();
+    const userId = window.SF?.user?.id || window.SF?.stats?.user_id;
+    if (!userId) {
+      location.href = "login.html";
+      return;
     }
 
-    if (lastError) console.warn("SF upsert error:", lastError);
-  }
-
-  window.SF.updateStats = function updateStats(patch, opts = {}) {
-    const merge = opts.merge !== false;
-    const prev = window.SF.stats || {};
-    const next = merge ? deepMerge(prev, patch) : { ...prev, ...patch };
-    window.SF.stats = next;
-    emitStats();
-
-    // debounced save (proti spamování / rate limitům)
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(upsertNow, 250);
-  };
-
-  // -------------------------
-  // LOAD or CREATE player_stats
-  // -------------------------
-  function defaultStatsRow(userId) {
-    return {
-      user_id: userId,
-      level: 1,
-      xp: 0,
-      money: 0,
-      cigarettes: 0,
-      energy: 100,
-      max_energy: 100,
-      stats: {
-        strength: 10,
-        defense: 10,
-        dexterity: 10,
-        intelligence: 10,
-        constitution: 10,
-        luck: 10,
-        // Nevyplňovat automaticky – třídu si hráč volí na stránce výběru
-        player_class: null,
-        character_name: null,
-        avatar_url: null,
-        avatar_frame: null,
-        avatar_color: null,
-      },
-      upgrade_costs: {
-        strength: 100,
-        defense: 100,
-        dexterity: 100,
-        intelligence: 100,
-        constitution: 100,
-        luck: 100,
-      },
-      inventory: [],
-      equipped: {
-        weapon: null,
-        shield: null,
-        ring: null,
-        backpack: null,
-        helmet: null,
-        armor: null,
-        boots: null,
-        gloves: null,
-      },
-    };
-  }
-
-  async function loadOrCreateStats(userId) {
-    const sb = window.SF.sb;
-    if (!sb) return null;
+    gameState.userId = userId;
 
     const { data, error } = await sb
       .from("player_stats")
@@ -322,203 +236,572 @@
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (error) console.warn("player_stats load error:", error);
-
-    if (data) return data;
-
-    const defaults = defaultStatsRow(userId);
-    const ins = await sb.from("player_stats").insert(defaults).select().single();
-    if (ins.error) {
-      console.warn("player_stats create error:", ins.error);
-      // fallback: i kdyby insert selhal, vrať aspoň defaults a nepadni
-      return defaults;
-    }
-    return ins.data;
-  }
-
-  // -------------------------
-  // REALTIME
-  // -------------------------
-  function initRealtime(userId) {
-    const sb = window.SF.sb;
-    if (!sb) return;
-
-    // unsubscribe starého kanálu (kdyby reload skriptu)
-    if (window.SF._rt) {
-      try { sb.removeChannel(window.SF._rt); } catch {}
-      window.SF._rt = null;
+    if (error) {
+      console.error("Error loading from Supabase:", error);
+      throw error;
     }
 
-    const ch = sb
-      .channel("sf-player-stats")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "player_stats",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          if (payload?.new) {
-            const next = payload.new;
-            // kompatibilita: DB => missiondata, klient často čte missionData
-            if (next.missiondata !== undefined && next.missionData === undefined) {
-              next.missionData = next.missiondata;
-            }
-            window.SF.stats = next;
-            emitStats();
-          }
-        }
-      )
-      .subscribe();
-
-    window.SF._rt = ch;
-  }
-
-  // -------------------------
-  // BOOT
-  // -------------------------
-  window.SFReady = (async () => {
-    const sb = getSbClient();
-    if (!sb) {
-      console.error("❌ Supabase není načten. Přidej supabase-js před menu.js");
-      return null;
+    if (data) {
+      gameState.level = data.level || 1;
+      gameState.money = data.money ?? gameState.money;
+      gameState.cigarettes = data.cigarettes ?? gameState.cigarettes;
+      gameState.energy = data.energy ?? gameState.energy;
+      gameState.maxEnergy = data.max_energy ?? gameState.maxEnergy;
+      
+      // Načti missionData (kompatibilita s různými názvy)
+      const md = data.missiondata || data.missionData || {};
+      gameState.missionData = {
+        completedMissions: md.completedMissions || 0,
+        totalExpEarned: md.totalExpEarned || 0,
+        totalMoneyEarned: md.totalMoneyEarned || 0,
+        totalBattles: md.totalBattles || 0,
+        totalWins: md.totalWins || 0,
+        activeMissions: md.activeMissions || { slot1: null, slot2: null },
+        assassin: md.assassin || { active: false, startTime: null },
+        lastEnergyUpdate: md.lastEnergyUpdate || Date.now()
+      };
     }
-    window.SF.sb = sb;
-    // kompatibilita se starými skripty (arena.js/guild.js/...) které čekají window.supabaseClient
-    window.supabaseClient = sb;
 
-    // mobil: vynucení portrait (jen overlay, bez hard lock)
-    // Pozor: na GitHub Pages může být menu.js načtený v <head> ještě před <body>.
-    // Proto overlay montujeme až ve chvíli, kdy existuje document.body.
-
+    // Regenerace energie
+    regenerateEnergy();
     
+    updateUI();
+    updateStats();
+    restoreMissions();
+    restoreAssassin();
+    
+  } catch (error) {
+    console.error("Error initializing user:", error);
+    showNotification("Chyba při načítání hry", "error");
+  }
+}
 
-    const sess = await sb.auth.getSession();
-    const user = sess.data?.session?.user || null;
-
-    if (!user) {
-      if (!isLoginPage()) location.href = LOGIN_PAGE;
-      return null;
-    }
-
-    window.SF.user = user;
-
-    const row = await loadOrCreateStats(user.id);
-    // zajisti user_id vždy + kompatibilita: missionData (camelCase) vs missiondata (reálný název sloupce v DB)
-    const baseRow = { ...(row || {}), user_id: user.id };
-    if (baseRow.missiondata !== undefined && baseRow.missionData === undefined) {
-      baseRow.missionData = baseRow.missiondata;
-    }
-
-    // Zapamatuj si, jaké sloupce DB skutečně vrací, aby se upsert nemusel trefovat naslepo
-    // (a tím pádem nespamoval 400 pokusy se špatným názvem sloupce).
-    window.SF.dbCols = window.SF.dbCols || {};
-    window.SF.dbCols.player_stats = {
-      missiondata: Object.prototype.hasOwnProperty.call(baseRow, "missiondata"),
-      missionData: Object.prototype.hasOwnProperty.call(baseRow, "missionData"),
+async function saveToSupabase() {
+  try {
+    const sb = await ensureOnline();
+    
+    const payload = {
+      user_id: gameState.userId,
+      level: gameState.level,
+      money: gameState.money,
+      cigarettes: gameState.cigarettes,
+      energy: gameState.energy,
+      max_energy: gameState.maxEnergy,
+      missiondata: gameState.missionData // lowercase = skutečný název sloupce
     };
 
-    window.SF.stats = baseRow;
-    emitStats();
+    const { error } = await sb
+      .from("player_stats")
+      .upsert(payload, { onConflict: "user_id" });
 
-    initRealtime(user.id);
-
-    return window.SF;
-  })();
-
-})();
-
-  // -------------------------
-  // HARDMODE: server-side autorita (RPC only)
-  // -------------------------
-  async function refreshStats() {
-    const sb = window.supabaseClient;
-    if (!sb) throw new Error("Supabase client není dostupný");
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) throw new Error("Nepřihlášen");
-    const { data, error } = await sb.from("player_stats").select("*").eq("user_id", user.id).maybeSingle();
-    if (error) throw error;
-    if (!data) {
-      // bootstrap řádek (pouze přes server? tady je to první vytvoření – pokud chceš 100% RPC, vytvoř si trigger on signup)
-      const baseRow = { user_id: user.id };
-      const ins = await sb.from("player_stats").insert(baseRow);
-      if (ins.error) throw ins.error;
-      const again = await sb.from("player_stats").select("*").eq("user_id", user.id).maybeSingle();
-      if (again.error) throw again.error;
-      window.SF.stats = again.data || {};
-    } else {
-      window.SF.stats = data;
+    if (error) {
+      console.error("Error saving to Supabase:", error);
+      return false;
     }
-    updateHud(window.SF.stats);
-    return window.SF.stats;
+    
+    return true;
+  } catch (error) {
+    console.error("Error saving to Supabase:", error);
+    return false;
   }
+}
 
-  async function ensureNotBanned() {
-    const sb = window.supabaseClient;
-    if (!sb) return;
-    const { data, error } = await sb.rpc("rpc_check_ban");
-    if (!error && data === true) {
-      location.href = "/banned.html";
+// ===== ENERGY REGENERATION =====
+function regenerateEnergy() {
+  const now = Date.now();
+  const lastUpdate = gameState.missionData.lastEnergyUpdate || now;
+  const timePassed = now - lastUpdate;
+  const energyGained = Math.floor(timePassed / (5 * 60 * 1000)); // 1 energie každých 5 minut
+  
+  if (energyGained > 0) {
+    gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + energyGained);
+    gameState.missionData.lastEnergyUpdate = now;
+  }
+}
+
+// ===== UI FUNCTIONS =====
+function updateUI() {
+  const money = document.getElementById('money');
+  const cigarettes = document.getElementById('cigarettes');
+  const levelDisplay = document.getElementById('levelDisplay');
+  const energy = document.getElementById('energy');
+  
+  if (money) money.textContent = gameState.money.toLocaleString('cs-CZ');
+  if (cigarettes) cigarettes.textContent = gameState.cigarettes;
+  if (levelDisplay) levelDisplay.textContent = gameState.level;
+  if (energy) energy.textContent = gameState.energy;
+  
+  // Update energy bar
+  const energyPercent = (gameState.energy / gameState.maxEnergy) * 100;
+  const energyFill = document.getElementById('energyFill');
+  const energyText = document.getElementById('energyText');
+  if (energyFill) energyFill.style.width = `${energyPercent}%`;
+  if (energyText) energyText.textContent = `${gameState.energy} / ${gameState.maxEnergy}`;
+}
+
+function updateStats() {
+  const completed = document.getElementById('completed-missions');
+  const totalExp = document.getElementById('total-exp-earned');
+  const totalMoney = document.getElementById('total-money-earned');
+  const winRate = document.getElementById('win-rate');
+  
+  if (completed) completed.textContent = gameState.missionData.completedMissions;
+  if (totalExp) totalExp.textContent = gameState.missionData.totalExpEarned.toLocaleString('cs-CZ');
+  if (totalMoney) totalMoney.textContent = `${gameState.missionData.totalMoneyEarned.toLocaleString('cs-CZ')}₽`;
+  
+  const rate = gameState.missionData.totalBattles > 0 
+    ? Math.round((gameState.missionData.totalWins / gameState.missionData.totalBattles) * 100) 
+    : 0;
+  if (winRate) winRate.textContent = `${rate}%`;
+}
+
+// ===== MISSION FUNCTIONS =====
+function getDifficulty() {
+  if (gameState.level <= 3) return 'easy';
+  if (gameState.level <= 7) return 'medium';
+  if (gameState.level <= 12) return 'hard';
+  return 'extreme';
+}
+
+function getRandomDuration() {
+  return Math.floor(Math.random() * (20 - 5 + 1) + 5) * 60;
+}
+
+function calculateRewards(difficulty) {
+  const baseExp = gameState.level * 10;
+  const baseMoney = gameState.level * 50;
+  
+  let multiplier = 1;
+  switch(difficulty) {
+    case 'easy': multiplier = 1; break;
+    case 'medium': multiplier = 1.5; break;
+    case 'hard': multiplier = 2.5; break;
+    case 'extreme': multiplier = 4; break;
+  }
+  
+  const exp = Math.floor(baseExp * multiplier * (0.8 + Math.random() * 0.4));
+  const money = Math.floor(baseMoney * multiplier * (0.8 + Math.random() * 0.4));
+  
+  return { exp, money };
+}
+
+function generateMission(slot) {
+  if (gameState.energy < 15) {
+    showNotification('Nemáš dost energie! (15 energie potřeba)', 'error');
+    return null;
+  }
+  
+  gameState.energy -= 15;
+  
+  const difficulty = getDifficulty();
+  const templates = missionTemplates[difficulty];
+  const template = templates[Math.floor(Math.random() * templates.length)];
+  
+  let duration = getRandomDuration();
+  const otherSlot = slot === 'slot1' ? 'slot2' : 'slot1';
+  if (gameState.missionData.activeMissions[otherSlot] && 
+      Math.abs(gameState.missionData.activeMissions[otherSlot].duration - duration) < 60) {
+    duration += Math.floor(Math.random() * 120) + 60;
+    duration = Math.max(300, duration);
+  }
+  
+  const rewards = calculateRewards(difficulty);
+  
+  const enemyIndex = Math.floor(Math.random() * template.enemies.length);
+  const enemy = {
+    name: template.enemies[enemyIndex],
+    emoji: template.emojis[enemyIndex],
+    hp: Math.floor(gameState.level * 80 + Math.random() * 40),
+    damage: Math.floor(gameState.level * 8 + Math.random() * 5)
+  };
+  
+  const mission = {
+    name: template.name,
+    story: template.story,
+    difficulty: difficulty,
+    duration: duration,
+    remainingTime: duration,
+    rewards: rewards,
+    enemy: enemy,
+    slot: slot,
+    startTime: Date.now() // DŮLEŽITÉ pro správné časování
+  };
+  
+  gameState.missionData.activeMissions[slot] = mission;
+  saveToSupabase();
+  updateUI();
+  
+  return mission;
+}
+
+async function startMission(slot) {
+  const mission = generateMission(slot);
+  if (!mission) return;
+  
+  document.getElementById(`${slot}-empty`).style.display = 'none';
+  document.getElementById(`${slot}-active`).style.display = 'flex';
+  
+  document.getElementById(`${slot}-name`).textContent = mission.name;
+  document.getElementById(`${slot}-difficulty`).textContent = mission.difficulty.toUpperCase();
+  document.getElementById(`${slot}-difficulty`).className = `mission-difficulty ${mission.difficulty}`;
+  document.getElementById(`${slot}-story`).textContent = mission.story;
+  
+  startTimer(slot);
+  
+  showNotification(`Mise spuštěna! -15 energie`, 'success');
+}
+
+async function cancelMission(slot) {
+  if (!confirm('Opravdu chceš zrušit tuto misi? Nedostaneš energii zpět!')) return;
+  
+  if (missionTimers[slot]) {
+    clearInterval(missionTimers[slot]);
+    missionTimers[slot] = null;
+  }
+  
+  gameState.missionData.activeMissions[slot] = null;
+  
+  document.getElementById(`${slot}-active`).style.display = 'none';
+  document.getElementById(`${slot}-empty`).style.display = 'flex';
+  
+  await saveToSupabase();
+  showNotification('Mise zrušena', 'error');
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatTimeHours(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function startTimer(slot) {
+  const mission = gameState.missionData.activeMissions[slot];
+  if (!mission) return;
+  
+  updateTimerDisplay(slot);
+  
+  missionTimers[slot] = setInterval(() => {
+    // Přepočítej remaining time podle elapsed času (přesněji než --remainingTime)
+    const elapsed = Math.floor((Date.now() - mission.startTime) / 1000);
+    mission.remainingTime = Math.max(0, mission.duration - elapsed);
+    
+    updateTimerDisplay(slot);
+    saveToSupabase();
+    
+    if (mission.remainingTime <= 0) {
+      clearInterval(missionTimers[slot]);
+      missionTimers[slot] = null;
+      missionComplete(slot);
     }
+  }, 1000);
+}
+
+function updateTimerDisplay(slot) {
+  const mission = gameState.missionData.activeMissions[slot];
+  if (!mission) return;
+  
+  const timerEl = document.getElementById(`${slot}-timer`);
+  if (timerEl) {
+    timerEl.textContent = formatTime(mission.remainingTime);
   }
+}
 
-  window.SF.refresh = refreshStats;
+function missionComplete(slot) {
+  const mission = gameState.missionData.activeMissions[slot];
+  if (!mission) return;
+  
+  const missionData = {
+    fromMission: true,
+    enemy: mission.enemy,
+    rewards: mission.rewards,
+    missionName: mission.name,
+    difficulty: mission.difficulty,
+    slot: slot
+  };
+  
+  sessionStorage.setItem('arenaFromMission', JSON.stringify(missionData));
+  
+  showNotification('Mise hotová! Přesměrování do areny...', 'success');
+  
+  setTimeout(() => {
+    window.location.href = 'arena.html';
+  }, 1500);
+}
 
-  window.SF.actions = Object.freeze({
-    async claimDaily() {
-      const sb = window.supabaseClient;
-      await ensureNotBanned();
-      const { data, error } = await sb.rpc("rpc_claim_daily");
-      if (error) throw error;
-      await refreshStats();
-      return data;
-    },
-    async arenaWin() {
-      const sb = window.supabaseClient;
-      await ensureNotBanned();
-      const { data, error } = await sb.rpc("rpc_arena_win");
-      if (error) throw error;
-      await refreshStats();
-      return data;
-    },
-    async arenaLose() {
-      const sb = window.supabaseClient;
-      await ensureNotBanned();
-      const { data, error } = await sb.rpc("rpc_arena_lose");
-      if (error) throw error;
-      await refreshStats();
-      return data;
-    },
-    async upgradeStat(statName) {
-      const sb = window.supabaseClient;
-      await ensureNotBanned();
-      const { data, error } = await sb.rpc("rpc_upgrade_stat", { p_stat: statName });
-      if (error) throw error;
-      await refreshStats();
-      return data;
-    },
-    async spendMoney(amount, reason) {
-      const sb = window.supabaseClient;
-      await ensureNotBanned();
-      const { data, error } = await sb.rpc("rpc_spend_money", { p_amount: amount, p_reason: reason || "" });
-      if (error) throw error;
-      await refreshStats();
-      return data;
-    },
-    async logCheat(action, detail) {
-      const sb = window.supabaseClient;
-      await sb.rpc("rpc_log_cheat", { p_action: String(action||""), p_detail: String(detail||"") });
+function restoreMissions() {
+  ['slot1', 'slot2'].forEach(slot => {
+    const mission = gameState.missionData.activeMissions[slot];
+    if (mission) {
+      // Přepočítej remaining time podle uloženého startTime
+      if (mission.startTime) {
+        const elapsed = Math.floor((Date.now() - mission.startTime) / 1000);
+        mission.remainingTime = Math.max(0, mission.duration - elapsed);
+      }
+      
+      document.getElementById(`${slot}-empty`).style.display = 'none';
+      document.getElementById(`${slot}-active`).style.display = 'flex';
+      
+      document.getElementById(`${slot}-name`).textContent = mission.name;
+      document.getElementById(`${slot}-difficulty`).textContent = mission.difficulty.toUpperCase();
+      document.getElementById(`${slot}-difficulty`).className = `mission-difficulty ${mission.difficulty}`;
+      document.getElementById(`${slot}-story`).textContent = mission.story;
+      
+      startTimer(slot);
     }
   });
+}
 
-  // Deprecated helpers (zrušené kvůli anticheatu)
-  window.SF.addMoney = async (amount) => {
-    await window.SF.actions.logCheat("client_addMoney_call", String(amount));
-    throw new Error("Zakázáno: addMoney. Použij serverové akce.");
+// ===== ASSASSIN SYSTEM =====
+function calculateAssassinReward() {
+  return Math.min(20000, Math.floor(gameState.level * 800 + Math.random() * 200));
+}
+
+function updateAssassinRewardDisplay() {
+  const reward = calculateAssassinReward();
+  const rewardText = document.getElementById('assassin-reward-text');
+  if (rewardText) {
+    rewardText.textContent = `${reward.toLocaleString('cs-CZ')}₽`;
+  }
+}
+
+async function hireAssassin() {
+  if (gameState.missionData.assassin.active) {
+    showNotification('Vrah už pracuje!', 'error');
+    return;
+  }
+  
+  if (gameState.energy < 50) {
+    showNotification('Potřebuješ 50 energie!', 'error');
+    return;
+  }
+  
+  gameState.energy -= 50;
+  gameState.missionData.assassin.active = true;
+  gameState.missionData.assassin.startTime = Date.now();
+  
+  document.getElementById('assassin-idle').style.display = 'none';
+  document.getElementById('assassin-active').style.display = 'flex';
+  
+  startAssassinTimer();
+  
+  await saveToSupabase();
+  updateUI();
+  showNotification('Vrah najat! Pracuje 14 hodin...', 'success');
+}
+
+function startAssassinTimer() {
+  const ASSASSIN_DURATION = 14 * 60 * 60; // 14 hodin v sekundách
+  
+  const updateTimer = () => {
+    if (!gameState.missionData.assassin.active || !gameState.missionData.assassin.startTime) return;
+    
+    const elapsed = Math.floor((Date.now() - gameState.missionData.assassin.startTime) / 1000);
+    const remaining = Math.max(0, ASSASSIN_DURATION - elapsed);
+    
+    const timerEl = document.getElementById('assassin-timer');
+    if (timerEl) {
+      timerEl.textContent = formatTimeHours(remaining);
+    }
+    
+    if (remaining <= 0) {
+      clearInterval(assassinTimer);
+      assassinTimer = null;
+      const collectBtn = document.getElementById('collect-assassin-btn');
+      if (collectBtn) {
+        collectBtn.style.display = 'flex';
+      }
+    }
   };
-  window.SF.addExp = async (amount) => {
-    await window.SF.actions.logCheat("client_addExp_call", String(amount));
-    throw new Error("Zakázáno: addExp. Použij serverové akce.");
-  };
+  
+  updateTimer();
+  assassinTimer = setInterval(updateTimer, 1000);
+}
+
+async function collectAssassinReward() {
+  if (!gameState.missionData.assassin.active) return;
+  
+  const reward = calculateAssassinReward();
+  gameState.money += reward;
+  gameState.missionData.totalMoneyEarned += reward;
+  
+  // Reset assassin
+  gameState.missionData.assassin.active = false;
+  gameState.missionData.assassin.startTime = null;
+  
+  // Show idle state
+  document.getElementById('assassin-active').style.display = 'none';
+  document.getElementById('assassin-idle').style.display = 'flex';
+  const collectBtn = document.getElementById('collect-assassin-btn');
+  if (collectBtn) {
+    collectBtn.style.display = 'none';
+  }
+  
+  await saveToSupabase();
+  updateUI();
+  updateStats();
+  
+  showNotification(`Vrah dokončil práci! +${reward.toLocaleString('cs-CZ')}₽`, 'success');
+}
+
+function restoreAssassin() {
+  updateAssassinRewardDisplay();
+  
+  if (gameState.missionData.assassin.active && gameState.missionData.assassin.startTime) {
+    const ASSASSIN_DURATION = 14 * 60 * 60;
+    const elapsed = Math.floor((Date.now() - gameState.missionData.assassin.startTime) / 1000);
+    
+    if (elapsed >= ASSASSIN_DURATION) {
+      // Hotovo
+      document.getElementById('assassin-idle').style.display = 'none';
+      document.getElementById('assassin-active').style.display = 'flex';
+      const collectBtn = document.getElementById('collect-assassin-btn');
+      if (collectBtn) {
+        collectBtn.style.display = 'flex';
+      }
+      const timerEl = document.getElementById('assassin-timer');
+      if (timerEl) {
+        timerEl.textContent = '00:00:00';
+      }
+    } else {
+      // Stále pracuje
+      document.getElementById('assassin-idle').style.display = 'none';
+      document.getElementById('assassin-active').style.display = 'flex';
+      startAssassinTimer();
+    }
+  }
+}
+
+// ===== NOTIFICATIONS =====
+function showNotification(message, type) {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)'};
+    color: white;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 14px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.6);
+    z-index: 10000;
+    animation: slideIn 0.3s ease;
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🎯 Initializing mission system...');
+  
+  await initUser();
+  
+  // Event listeners pro tlačítka
+  const hireBtn = document.getElementById('hire-assassin-btn');
+  const collectBtn = document.getElementById('collect-assassin-btn');
+  
+  if (hireBtn) hireBtn.addEventListener('click', hireAssassin);
+  if (collectBtn) collectBtn.addEventListener('click', collectAssassinReward);
+  
+  // Auto-regenerace energie každou minutu
+  setInterval(() => {
+    regenerateEnergy();
+    saveToSupabase();
+    updateUI();
+  }, 60000);
+  
+  // Auto-save každých 30 sekund
+  setInterval(() => {
+    saveToSupabase();
+  }, 30000);
+  
+  console.log('✅ Mission system loaded!');
+});
+
+// ===== CSS ANIMATIONS =====
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(400px); opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
+
+// ===== EXPOSE FOR HTML =====
+window.startMission = startMission;
+window.cancelMission = cancelMission;
+
+// ===== CHEAT CODES (pro testování) =====
+console.log('%c🎮 GOPNIK CHEAT CODES 🎮', 'font-size: 20px; font-weight: bold; color: #f1d27a; text-shadow: 2px 2px 4px #000;');
+console.log('%cPříkazy:', 'font-size: 14px; color: #10b981;');
+console.log('%cskipTime("slot1")   - Přeskočit čas mise slot1', 'color: #fff;');
+console.log('%cskipTime("slot2")   - Přeskočit čas mise slot2', 'color: #fff;');
+console.log('%caddEnergy(50)       - Přidat energii', 'color: #fff;');
+console.log('%caddMoney(10000)     - Přidat groše', 'color: #fff;');
+console.log('%caddLevel(5)         - Přidat levely', 'color: #fff;');
+console.log('%cskipAssassin()      - Dokončit vraha okamžitě', 'color: #fff;');
+
+window.skipTime = function(slot) {
+  const mission = gameState.missionData.activeMissions[slot];
+  if (!mission) {
+    console.log('%c❌ Není aktivní mise v tomto slotu!', 'color: #ef4444; font-weight: bold;');
+    return;
+  }
+  mission.remainingTime = 0;
+  mission.startTime = Date.now() - (mission.duration * 1000);
+  console.log(`%c✅ Čas přeskočen pro ${slot}!`, 'color: #10b981; font-weight: bold;');
+};
+
+window.addEnergy = async function(amount) {
+  gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + amount);
+  await saveToSupabase();
+  updateUI();
+  console.log(`%c✅ Přidáno ${amount} energie!`, 'color: #10b981; font-weight: bold;');
+};
+
+window.addMoney = async function(amount) {
+  gameState.money += amount;
+  await saveToSupabase();
+  updateUI();
+  console.log(`%c✅ Přidáno ${amount}₽!`, 'color: #10b981; font-weight: bold;');
+};
+
+window.addLevel = async function(amount) {
+  gameState.level += amount;
+  await saveToSupabase();
+  updateUI();
+  console.log(`%c✅ Přidáno ${amount} levelů!`, 'color: #10b981; font-weight: bold;');
+};
+
+window.skipAssassin = function() {
+  if (!gameState.missionData.assassin.active) {
+    console.log('%c❌ Vrah není aktivní!', 'color: #ef4444; font-weight: bold;');
+    return;
+  }
+  gameState.missionData.assassin.startTime = Date.now() - (14 * 60 * 60 * 1000);
+  restoreAssassin();
+  console.log('%c✅ Vrah dokončen!', 'color: #10b981; font-weight: bold;');
+};
+
+console.log('✅ Mission system fully loaded!');
