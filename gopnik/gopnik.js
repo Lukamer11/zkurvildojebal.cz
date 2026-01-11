@@ -342,6 +342,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   img = document.getElementById("gopnikImg");
   clickSnd = document.getElementById("clickSnd");
   
+  // FIX: Ujisti se, že gopnik má správné pointer-events
+  if (img) {
+    img.style.pointerEvents = "auto";
+    img.style.cursor = "pointer";
+  }
+  
   console.log('🖼️ Gopnik image:', img);
   console.log('🔊 Click sound:', clickSnd);
   
