@@ -39,7 +39,10 @@ let gameState = {
   lastClickTime: 0
 };
 
-let anim = false; // A/B animace
+// Globální proměnné pro debugging
+window.gameState = gameState;
+window.animState = false;
+
 let tick = null;
 let saveTimer = null;
 
@@ -188,6 +191,8 @@ function render() {
 
 // ===== GAME ACTIONS =====
 async function onClick() {
+  console.log('🖱️ CLICK! anim before:', window.animState);
+  
   // Sound effect
   if (clickSnd) {
     try { 
@@ -198,9 +203,11 @@ async function onClick() {
   }
 
   // ANIMACE: A -> B -> A -> B ...
-  anim = !anim;
+  window.animState = !window.animState;
   if (img) {
-    img.src = anim ? "./gopnik_B.png" : "./gopnik_A.png";
+    const newSrc = window.animState ? "./gopnik_B.png" : "./gopnik_A.png";
+    console.log('🖼️ Changing image to:', newSrc);
+    img.src = newSrc;
   }
 
   // Combo system
@@ -228,6 +235,8 @@ async function onClick() {
   const finalCpc = isCrit ? cpc * 2 : cpc;
   
   gameState.money += finalCpc;
+  
+  console.log('💰 Money:', gameState.money, '| Combo:', gameState.combo.toFixed(2));
   
   render();
   debouncedSave();
