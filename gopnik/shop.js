@@ -1,3 +1,5 @@
+// shop.js - Part 1: Constants, State, Utilities
+
 const supabaseClient = () => window.supabaseClient;
 async function ensureOnline() {
   if (window.SFReady) await window.SFReady;
@@ -13,6 +15,19 @@ const ITEMS_PER_CATEGORY = 4;
 const ITEM_LEVEL_SCALE = 0.08;
 const ITEM_ROLL_MIN = 0.90;
 const ITEM_ROLL_MAX = 1.15;
+const SELL_MULTIPLIER = 0.35; // 35% z ceny
+
+// ===== CLASS ICONS (jako v postava.html) =====
+const CLASS_ICONS = {
+  warrior: '⚔️',
+  mage: '🔮',
+  rogue: '🗡️',
+  tank: '🛡️',
+  archer: '🏹',
+  paladin: '✨',
+  necromancer: '💀',
+  druid: '🌿'
+};
 
 // ===== GAME STATE =====
 let gameState = {
@@ -27,7 +42,10 @@ let gameState = {
     dexterity: 11,
     intelligence: 11,
     constitution: 16,
-    luck: 9
+    luck: 9,
+    player_class: null,
+    character_name: null,
+    avatar_url: null
   },
   inventory: [],
   equipped: {
@@ -49,8 +67,41 @@ let gameState = {
 };
 
 let currentCategory = 'weapons';
+let draggedItem = null;
+let dragSource = null;
 
-// ===== SAFE STATS (prevence "undefined" řádků) =====
+// ===== SYNC FROM SERVER (jako v mail.js) =====
+async function syncFromServer() {
+  if (window.SFReady) await window.SFReady;
+  const stats = window.SF?.stats;
+  if (!stats) return;
+
+  // Synchronizuj všechny relevantní hodnoty
+  gameState.level = stats.level ?? gameState.level;
+  gameState.xp = stats.xp ?? gameState.xp;
+  gameState.money = stats.money ?? gameState.money;
+  gameState.cigarettes = stats.cigarettes ?? gameState.cigarettes;
+  
+  // Stats obsahující třídu, jméno, avatar
+  if (stats.stats) {
+    gameState.stats = { ...gameState.stats, ...stats.stats };
+  }
+  
+  gameState.inventory = stats.inventory || gameState.inventory;
+  gameState.equipped = stats.equipped || gameState.equipped;
+  gameState.lastShopRotation = stats.last_shop_rotation || stats.lastShopRotation || gameState.lastShopRotation;
+  gameState.currentShopItems = stats.current_shop_items || stats.currentShopItems || gameState.currentShopItems;
+
+  updateUI();
+  updateClassBadge();
+}
+
+// Poslouchej změny ze serveru (jako v mail.js)
+document.addEventListener('sf:stats', async (e) => {
+  await syncFromServer();
+});
+
+// ===== SAFE STATS =====
 const ALLOWED_STATS = ['strength','defense','dexterity','intelligence','constitution','luck'];
 
 function sanitizeStats(input) {
@@ -60,13 +111,18 @@ function sanitizeStats(input) {
     const v = Number(src[k]);
     out[k] = Number.isFinite(v) ? v : 0;
   }
+  // Zachovat ostatní stats (player_class, character_name, avatar_url)
+  if (src.player_class) out.player_class = src.player_class;
+  if (src.character_name) out.character_name = src.character_name;
+  if (src.avatar_url) out.avatar_url = src.avatar_url;
+  if (src.avatar_frame) out.avatar_frame = src.avatar_frame;
+  if (src.avatar_color) out.avatar_color = src.avatar_color;
   return out;
 }
 
 function formatStatValue(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return '0';
-  // hezky: 25.119999 -> 25.12, 10.00 -> 10
   const rounded = Math.round(n * 100) / 100;
   const s = String(rounded);
   return s.includes('.') ? rounded.toFixed(2).replace(/\.00$/, '').replace(/(\.[0-9])0$/, '$1') : s;
@@ -85,7 +141,6 @@ function getAllItems() {
   ];
 }
 
-// Ikona itemu může být emoji/text nebo obrázek (soubor/URL/dataURL).
 function renderItemIconHTML(icon, alt) {
   const safeAlt = String(alt || 'item').replace(/"/g, '&quot;');
   const ic = icon == null ? '' : String(icon);
@@ -99,22 +154,19 @@ function renderItemIconHTML(icon, alt) {
   return ic ? ic : '❓';
 }
 
-function getItemById(itemId) {
-  // Pokud je itemId objekt (instance), vrať ho
-  if (typeof itemId === 'object' && itemId !== null) {
-    return itemId;
+function getItemById(itemRef) {
+  if (typeof itemRef === 'object' && itemRef !== null) {
+    return itemRef;
   }
 
-  // Legacy aliasy (pro starší uložená data)
   const ALIASES = {
     knife: 'nuz',
     tactical_knife: 'nuz',
     takticky_nuz: 'nuz',
     'takticky-nuz': 'nuz',
   };
-  const normId = ALIASES[String(itemId)] || itemId;
+  const normId = ALIASES[String(itemRef)] || itemRef;
   
-  // 1) Hledej v current shopu
   const allShop = [
     ...(gameState.currentShopItems?.weapons || []),
     ...(gameState.currentShopItems?.armor || []),
@@ -123,7 +175,6 @@ function getItemById(itemId) {
   const foundInst = allShop.find(i => i.instance_id === normId || i.id === normId);
   if (foundInst) return foundInst;
 
-  // 2) Hledej v inventáři
   const foundInv = (gameState.inventory || []).find(i => {
     if (!i) return false;
     if (typeof i === 'object') return i.instance_id === normId || i.id === normId;
@@ -131,7 +182,6 @@ function getItemById(itemId) {
   });
   if (foundInv) return foundInv;
 
-  // 3) Fallback: base item
   return getAllItems().find(item => item.id === normId);
 }
 
@@ -175,6 +225,32 @@ function calculateStatBonus(stat, value) {
       return `${luckPercent}% / 100%`;
     default:
       return '';
+  }
+}
+
+// ===== CLASS BADGE UPDATE (jako v postava.html) =====
+function updateClassBadge() {
+  const classBadge = document.getElementById('classBadge');
+  const playerClass = gameState.stats?.player_class;
+  
+  if (classBadge) {
+    if (playerClass && CLASS_ICONS[playerClass]) {
+      classBadge.textContent = CLASS_ICONS[playerClass];
+    } else {
+      classBadge.textContent = '❓';
+    }
+  }
+  
+  // Update character name
+  const characterName = document.getElementById('characterName');
+  if (characterName && gameState.stats?.character_name) {
+    characterName.textContent = gameState.stats.character_name;
+  }
+  
+  // Update avatar image
+  const avatarImg = document.getElementById('avatarImg');
+  if (avatarImg && gameState.stats?.avatar_url) {
+    avatarImg.src = gameState.stats.avatar_url;
   }
 }
 
@@ -251,7 +327,6 @@ async function initUser() {
       gameState.xp = data.xp || 0;
       gameState.money = data.money ?? gameState.money;
       gameState.cigarettes = data.cigarettes ?? gameState.cigarettes;
-      // některé staré savy měly do stats omylem zapsané věci jako url/barvy/jméno → čistíme
       gameState.stats = sanitizeStats(data.stats ?? gameState.stats);
       gameState.inventory = data.inventory || [];
       gameState.equipped = data.equipped || gameState.equipped;
@@ -259,26 +334,21 @@ async function initUser() {
       gameState.currentShopItems = data.current_shop_items || data.currentShopItems || gameState.currentShopItems;
 
       // ===== MIGRACE STARÝCH SAVŮ =====
-      // Když je v DB uložený inventář/equipped jen jako string id,
-      // převedeme to na objekt (aby se to vždy vykreslilo a nepadalo na ❓).
       const allBase = getAllItems();
       const toInstance = (ref) => {
         if (!ref) return null;
         if (typeof ref === 'object') return ref;
         const id = String(ref);
-        // najdi base item
         const base = allBase.find(it => it.id === id);
         if (!base) return null;
         const inst = JSON.parse(JSON.stringify(base));
-        inst.instance_id = id; // zachovej string jako instance_id (kvůli kompatibilitě)
+        inst.instance_id = id;
         inst.base_id = base.id;
         inst.level_roll = gameState.level;
         return inst;
       };
 
-      // inventory: vyhoď neznámé stringy (nebo je necháme jako null a odfiltrujeme)
       gameState.inventory = (gameState.inventory || []).map(x => toInstance(x) || x).filter(Boolean);
-      // equipped: převést stringy
       const eq = gameState.equipped || {};
       Object.keys(eq).forEach(k => {
         if (typeof eq[k] === 'string') {
@@ -387,6 +457,8 @@ function showTooltip(item, x, y) {
     bonusesHTML += '</div>';
   }
   
+  const sellPrice = Math.floor((item.price || 0) * SELL_MULTIPLIER);
+  
   tooltip.innerHTML = `
     <div style="font-size: 18px; font-weight: 900; color: #f1d27a; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
       ${item.icon} ${item.name}
@@ -396,6 +468,9 @@ function showTooltip(item, x, y) {
     </div>
     <div style="font-size: 16px; font-weight: 900; color: #f1d27a; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
       💰 ${item.price}₽
+    </div>
+    <div style="font-size: 12px; font-weight: 900; color: #ff6b6b; margin-top: 4px;">
+      Prodej: ${sellPrice}₽ (35%)
     </div>
     ${bonusesHTML}
   `;
@@ -408,6 +483,33 @@ function showTooltip(item, x, y) {
 function hideTooltip() {
   if (tooltip) {
     tooltip.style.display = 'none';
+  }
+}
+
+// ===== PAID REROLL (NAHRADIT) =====
+async function paidRerollShop() {
+  try {
+    if (gameState.cigarettes < 10) {
+      showNotification('Nemáš 10 cigaret!', 'error');
+      return;
+    }
+
+    gameState.cigarettes -= 10;
+    rotateShopItems();
+    gameState.lastShopRotation = new Date().toISOString();
+
+    const saved = await saveToSupabase();
+    if (!saved) {
+      gameState.cigarettes += 10;
+      showNotification('Chyba při ukládání (reroll zrušen).', 'error');
+      return;
+    }
+
+    updateUI();
+    showNotification('🎲 Itemy nahrazeny! (-10 cig)', 'success');
+  } catch (e) {
+    console.error(e);
+    showNotification('Chyba při nahrazení itemů', 'error');
   }
 }
 
@@ -462,35 +564,6 @@ function renderShopItems() {
       hideTooltip();
     });
   });
-}
-
-// ===== PAID REROLL (NAHRADIT) =====
-async function paidRerollShop() {
-  try {
-    if (gameState.cigarettes < 10) {
-      showNotification('Nemáš 10 cigaret!', 'error');
-      return;
-    }
-
-    gameState.cigarettes -= 10;
-    rotateShopItems();
-    // aby se to neotočilo hned znovu přes timer
-    gameState.lastShopRotation = new Date().toISOString();
-
-    const saved = await saveToSupabase();
-    if (!saved) {
-      // rollback
-      gameState.cigarettes += 10;
-      showNotification('Chyba při ukládání (reroll zrušen).', 'error');
-      return;
-    }
-
-    updateUI();
-    showNotification('🔁 Itemy nahrazeny! (-10 cig)', 'success');
-  } catch (e) {
-    console.error(e);
-    showNotification('Chyba při nahrazení itemů', 'error');
-  }
 }
 
 function renderInventory() {
@@ -579,7 +652,6 @@ function renderEquippedItems() {
       
       const iconHTML = renderItemIconHTML(item.icon, item.name);
       if (iconHTML.startsWith('<img')) {
-        // img musí mít draggable a data atributy
         slotElement.innerHTML = iconHTML.replace(
           '<img',
           `<img class="slot-item" draggable="true" data-item-id="${itemId}" data-from-slot="${slotName}"`
@@ -633,7 +705,6 @@ function renderCharacterStats() {
   
   let statsHTML = '<div class="section-header"><h2>📊 STATISTIKY</h2></div>';
   
-  // pevné pořadí + pouze povolené staty
   ALLOWED_STATS.forEach(stat => {
     const baseValue = Number(gameState.stats[stat] ?? 0);
     const bonus = bonuses[stat] || 0;
@@ -687,6 +758,7 @@ function updateUI() {
   renderEquippedItems();
   renderCharacterStats();
   updateRotationTimer();
+  updateClassBadge();
 }
 
 function updateRotationTimer() {
@@ -719,6 +791,8 @@ function calculateTotalBonuses() {
   return bonuses;
 }
 
+// shop.js - Part 4: Shop Functions, Drag & Drop, Sell System, Init
+
 // ===== SHOP FUNCTIONS =====
 async function buyItem(itemId) {
   console.log('💰 Kupuji item:', itemId);
@@ -743,7 +817,7 @@ async function buyItem(itemId) {
     return;
   }
   
-  // Purchase - ULOŽÍME CELÝ OBJEKT (instance)
+  // Purchase - UKLÁDÁME CELÝ OBJEKT (instance)
   gameState.money -= item.price;
   gameState.inventory.push(item);
   
@@ -764,10 +838,27 @@ async function buyItem(itemId) {
   }
 }
 
-// ===== DRAG & DROP =====
-let draggedItem = null;
-let dragSource = null;
+// ===== SELL SYSTEM (35% z ceny) =====
+async function sellItem(itemRef) {
+  const item = getItemById(itemRef);
+  if (!item) return;
+  
+  const sellPrice = Math.floor((item.price || 0) * SELL_MULTIPLIER);
+  
+  gameState.money += sellPrice;
+  
+  const saved = await saveToSupabase();
+  
+  if (saved) {
+    updateUI();
+    showNotification(`${item.name} prodán za ${sellPrice}₽! (35%)`, 'success');
+  } else {
+    gameState.money -= sellPrice;
+    showNotification('Chyba při prodeji!', 'error');
+  }
+}
 
+// ===== DRAG & DROP =====
 function handleDragStart(e) {
   draggedItem = {
     itemId: e.target.dataset.itemId,
@@ -782,8 +873,6 @@ function handleEquippedDragStart(e) {
   const fromSlot = e.target.dataset.fromSlot;
   draggedItem = {
     fromSlot,
-    // Ukládáme přímo referenci (objekt / id) tak, jak je ve state,
-    // ať při prohození nepřepíšeme výbavu stringem a neztratíme instance.
     itemRef: gameState.equipped[fromSlot]
   };
   dragSource = 'equipped';
@@ -843,6 +932,60 @@ async function handleDrop(e) {
   
   await saveToSupabase();
   updateUI();
+  
+  draggedItem = null;
+  dragSource = null;
+}
+
+// ===== SELL ZONE DROP HANDLER =====
+async function handleSellDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  
+  if (!draggedItem) return;
+  
+  let itemRef = null;
+  let itemIndex = null;
+  
+  if (dragSource === 'inventory') {
+    itemRef = gameState.inventory[draggedItem.invIndex];
+    itemIndex = draggedItem.invIndex;
+  } else if (dragSource === 'equipped') {
+    itemRef = draggedItem.itemRef;
+  }
+  
+  if (!itemRef) return;
+  
+  const item = getItemById(itemRef);
+  if (!item) return;
+  
+  const sellPrice = Math.floor((item.price || 0) * SELL_MULTIPLIER);
+  
+  // Remove from inventory or equipped
+  if (dragSource === 'inventory') {
+    gameState.inventory.splice(itemIndex, 1);
+  } else if (dragSource === 'equipped') {
+    gameState.equipped[draggedItem.fromSlot] = null;
+  }
+  
+  // Add money
+  gameState.money += sellPrice;
+  
+  const saved = await saveToSupabase();
+  
+  if (saved) {
+    updateUI();
+    showNotification(`💰 ${item.name} prodán za ${sellPrice}₽! (35%)`, 'success');
+  } else {
+    // Rollback
+    if (dragSource === 'inventory') {
+      gameState.inventory.splice(itemIndex, 0, itemRef);
+    } else if (dragSource === 'equipped') {
+      gameState.equipped[draggedItem.fromSlot] = itemRef;
+    }
+    gameState.money -= sellPrice;
+    showNotification('Chyba při prodeji!', 'error');
+  }
   
   draggedItem = null;
   dragSource = null;
@@ -941,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     rerollBtn.addEventListener('click', paidRerollShop);
   }
   
-  // Setup drop zones
+  // Setup drop zones for equipment
   document.querySelectorAll('[data-dropzone="true"]').forEach(slot => {
     slot.addEventListener('dragover', handleDragOver);
     slot.addEventListener('dragleave', handleDragLeave);
@@ -953,6 +1096,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       unequipItem(slotName);
     });
   });
+  
+  // Setup SELL ZONE drop
+  const sellZone = document.getElementById('sellZone');
+  if (sellZone) {
+    sellZone.addEventListener('dragover', handleDragOver);
+    sellZone.addEventListener('dragleave', handleDragLeave);
+    sellZone.addEventListener('drop', handleSellDrop);
+  }
   
   // Update rotation timer every second
   setInterval(() => {
