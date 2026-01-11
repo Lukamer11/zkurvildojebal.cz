@@ -875,12 +875,5 @@
     }
   }
 
-  // ===== LISTEN TO SF STATS CHANGES =====
-  document.addEventListener("sf:stats", async (e) => {
-    console.log('🔄 Stats changed, resyncing...');
-    await hydratePlayerFromPostava();
-    syncCurrencyUI();
-  });
-
   document.addEventListener("DOMContentLoaded", boot);
 })();
