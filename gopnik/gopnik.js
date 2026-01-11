@@ -57,10 +57,10 @@ function fmt(n) {
 function compute(state) {
   const prestigeBonus = 1 + (state.sp * 0.1); // +10% za každý SP
   
-  const baseCpc = 1 + state.clickLevel * 1;
+  const baseCpc = 0.0000010 + state.clickLevel * 0.0000010;
   const cpc = baseCpc * prestigeBonus * state.combo;
   
-  const baseCps = state.cursor * 0.2 + state.granny * 2;
+  const baseCps = state.cursor * 0.0000002 + state.granny * 0.000002;
   const cps = baseCps * prestigeBonus;
   
   return { cpc, cps, prestigeBonus };
@@ -171,9 +171,9 @@ function render() {
   if (critEl) critEl.textContent = "10%";
 
   // Shop buttons
-  const cursorCost = 25 * Math.pow(1.15, gameState.cursor);
-  const grannyCost = 150 * Math.pow(1.15, gameState.granny);
-  const clickCost = 80 * Math.pow(1.15, gameState.clickLevel);
+  const cursorCost = 125 * Math.pow(1.15, gameState.cursor);
+  const grannyCost = 750 * Math.pow(1.15, gameState.granny);
+  const clickCost = 400 * Math.pow(1.15, gameState.clickLevel);
 
   if (buyCursorBtn) {
     buyCursorBtn.textContent = `Koupit (${fmt(cursorCost)})`;
@@ -259,9 +259,9 @@ async function onClick() {
 }
 
 async function buy(kind) {
-  const cursorCost = 25 * Math.pow(1.15, gameState.cursor);
-  const grannyCost = 150 * Math.pow(1.15, gameState.granny);
-  const clickCost = 80 * Math.pow(1.15, gameState.clickLevel);
+  const cursorCost = 125 * Math.pow(1.15, gameState.cursor);
+  const grannyCost = 750 * Math.pow(1.15, gameState.granny);
+  const clickCost = 400 * Math.pow(1.15, gameState.clickLevel);
 
   let cost = 0;
   if (kind === "cursor") cost = cursorCost;
