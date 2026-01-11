@@ -522,3 +522,31 @@
     await window.SF.actions.logCheat("client_addExp_call", String(amount));
     throw new Error("Zakázáno: addExp. Použij serverové akce.");
   };
+
+  // -------------------------
+  // SHARED BACKGROUND MUSIC - Prostě jedno audio pro celou hru
+  // -------------------------
+  if (!window.bgMusic) {
+    // Vytvoř audio element (JEN JEDNOU pro celou aplikaci)
+    window.bgMusic = document.createElement('audio');
+    window.bgMusic.loop = true;
+    window.bgMusic.volume = 0.3;
+    window.bgMusic.id = 'bgMusic';
+    
+    // Funkce pro start hudby (volá se z jakékoliv stránky)
+    window.playBgMusic = function(src) {
+      if (!window.bgMusic.src || window.bgMusic.src !== src) {
+        window.bgMusic.src = src;
+      }
+      if (window.bgMusic.paused) {
+        window.bgMusic.play().catch(e => console.log('🎵 Autoplay blocked, čekám na klik...'));
+      }
+    };
+    
+    // Funkce pro zastavení
+    window.stopBgMusic = function() {
+      window.bgMusic.pause();
+    };
+    
+    console.log('✅ Background music ready (sdílené audio element)');
+  }
