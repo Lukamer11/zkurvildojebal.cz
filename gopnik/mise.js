@@ -1,35 +1,44 @@
-// Mission System - Gopnik Style v2.0
-let playerLevel = 1;
-let playerMoney = 3170;
-let playerCigarettes = 42;
-let playerEnergy = 100;
-let playerMaxEnergy = 100;
+// mise.js - Mission System s Supabase integrací
 
-// Stats
-let completedMissions = 0;
-let totalExpEarned = 0;
-let totalMoneyEarned = 0;
-let totalBattles = 0;
-let totalWins = 0;
+const supabaseClient = () => window.supabaseClient;
 
-// Active missions data (2 slots)
-let activeMissions = {
-  slot1: null,
-  slot2: null
+async function ensureOnline() {
+  if (window.SFReady) await window.SFReady;
+  const sb = supabaseClient();
+  if (!sb) throw new Error('Supabase client není inicializovaný');
+  return sb;
+}
+
+// ===== GAME STATE =====
+let gameState = {
+  userId: null,
+  level: 1,
+  money: 3170,
+  cigarettes: 42,
+  energy: 100,
+  maxEnergy: 100,
+  missionData: {
+    completedMissions: 0,
+    totalExpEarned: 0,
+    totalMoneyEarned: 0,
+    totalBattles: 0,
+    totalWins: 0,
+    activeMissions: {
+      slot1: null,
+      slot2: null
+    },
+    assassin: {
+      active: false,
+      startTime: null
+    },
+    lastEnergyUpdate: Date.now()
+  }
 };
 
-// Mission timers
-let missionTimers = {
-  slot1: null,
-  slot2: null
-};
-
-// Hired assassin
-let assassinActive = false;
+let missionTimers = { slot1: null, slot2: null };
 let assassinTimer = null;
-let assassinStartTime = null;
 
-// Random mission templates by difficulty (EXPANDED - MORE MISSIONS!)
+// ===== MISSION TEMPLATES =====
 const missionTemplates = {
   easy: [
     {
@@ -209,113 +218,158 @@ const missionTemplates = {
   ]
 };
 
-// Load saved data
-function loadGameData() {
-  const saved = sessionStorage.getItem('missionData');
-  if (saved) {
-    const data = JSON.parse(saved);
-    playerLevel = data.level || 1;
-    playerMoney = data.money || 3170;
-    playerCigarettes = data.cigarettes || 42;
-    playerEnergy = data.energy !== undefined ? data.energy : 100;
-    completedMissions = data.completed || 0;
-    totalExpEarned = data.totalExp || 0;
-    totalMoneyEarned = data.totalMoney || 0;
-    totalBattles = data.battles || 0;
-    totalWins = data.wins || 0;
+// ===== SUPABASE FUNCTIONS =====
+async function initUser() {
+  try {
+    const sb = await ensureOnline();
+    const userId = window.SF?.user?.id || window.SF?.stats?.user_id;
+    if (!userId) {
+      location.href = "login.html";
+      return;
+    }
+
+    gameState.userId = userId;
+
+    const { data, error } = await sb
+      .from("player_stats")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error loading from Supabase:", error);
+      throw error;
+    }
+
+    if (data) {
+      gameState.level = data.level || 1;
+      gameState.money = data.money ?? gameState.money;
+      gameState.cigarettes = data.cigarettes ?? gameState.cigarettes;
+      gameState.energy = data.energy ?? gameState.energy;
+      gameState.maxEnergy = data.max_energy ?? gameState.maxEnergy;
+      
+      // Načti missionData (kompatibilita s různými názvy)
+      const md = data.missiondata || data.missionData || {};
+      gameState.missionData = {
+        completedMissions: md.completedMissions || 0,
+        totalExpEarned: md.totalExpEarned || 0,
+        totalMoneyEarned: md.totalMoneyEarned || 0,
+        totalBattles: md.totalBattles || 0,
+        totalWins: md.totalWins || 0,
+        activeMissions: md.activeMissions || { slot1: null, slot2: null },
+        assassin: md.assassin || { active: false, startTime: null },
+        lastEnergyUpdate: md.lastEnergyUpdate || Date.now()
+      };
+    }
+
+    // Regenerace energie
+    regenerateEnergy();
     
-    // Load active missions
-    if (data.missions) {
-      activeMissions = data.missions;
-    }
+    updateUI();
+    updateStats();
+    restoreMissions();
+    restoreAssassin();
     
-    // Load assassin
-    if (data.assassin) {
-      assassinActive = data.assassin.active || false;
-      assassinStartTime = data.assassin.startTime || null;
-    }
+  } catch (error) {
+    console.error("Error initializing user:", error);
+    showNotification("Chyba při načítání hry", "error");
   }
-  
-  // Regenerate energy (1 per 5 minutes)
-  const lastEnergyUpdate = sessionStorage.getItem('lastEnergyUpdate');
-  if (lastEnergyUpdate) {
-    const timePassed = Date.now() - parseInt(lastEnergyUpdate);
-    const energyGained = Math.floor(timePassed / (5 * 60 * 1000));
-    if (energyGained > 0) {
-      playerEnergy = Math.min(playerMaxEnergy, playerEnergy + energyGained);
-      sessionStorage.setItem('lastEnergyUpdate', Date.now().toString());
-    }
-  } else {
-    sessionStorage.setItem('lastEnergyUpdate', Date.now().toString());
-  }
-  
-  updateUI();
-  updateStats();
-  restoreMissions();
-  restoreAssassin();
 }
 
-// Save game data
-function saveGameData() {
-  const data = {
-    level: playerLevel,
-    money: playerMoney,
-    cigarettes: playerCigarettes,
-    energy: playerEnergy,
-    completed: completedMissions,
-    totalExp: totalExpEarned,
-    totalMoney: totalMoneyEarned,
-    battles: totalBattles,
-    wins: totalWins,
-    missions: activeMissions,
-    assassin: {
-      active: assassinActive,
-      startTime: assassinStartTime
+async function saveToSupabase() {
+  try {
+    const sb = await ensureOnline();
+    
+    const payload = {
+      user_id: gameState.userId,
+      level: gameState.level,
+      money: gameState.money,
+      cigarettes: gameState.cigarettes,
+      energy: gameState.energy,
+      max_energy: gameState.maxEnergy,
+      missiondata: gameState.missionData // lowercase = skutečný název sloupce
+    };
+
+    const { error } = await sb
+      .from("player_stats")
+      .upsert(payload, { onConflict: "user_id" });
+
+    if (error) {
+      console.error("Error saving to Supabase:", error);
+      return false;
     }
-  };
-  sessionStorage.setItem('missionData', JSON.stringify(data));
+    
+    return true;
+  } catch (error) {
+    console.error("Error saving to Supabase:", error);
+    return false;
+  }
 }
 
-// Update UI
+// ===== ENERGY REGENERATION =====
+function regenerateEnergy() {
+  const now = Date.now();
+  const lastUpdate = gameState.missionData.lastEnergyUpdate || now;
+  const timePassed = now - lastUpdate;
+  const energyGained = Math.floor(timePassed / (5 * 60 * 1000)); // 1 energie každých 5 minut
+  
+  if (energyGained > 0) {
+    gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + energyGained);
+    gameState.missionData.lastEnergyUpdate = now;
+  }
+}
+
+// ===== UI FUNCTIONS =====
 function updateUI() {
-  document.getElementById('money').textContent = playerMoney.toLocaleString();
-  document.getElementById('cigarettes').textContent = playerCigarettes;
-  document.getElementById('levelDisplay').textContent = playerLevel;
-  document.getElementById('energy').textContent = playerEnergy;
+  const money = document.getElementById('money');
+  const cigarettes = document.getElementById('cigarettes');
+  const levelDisplay = document.getElementById('levelDisplay');
+  const energy = document.getElementById('energy');
+  
+  if (money) money.textContent = gameState.money.toLocaleString('cs-CZ');
+  if (cigarettes) cigarettes.textContent = gameState.cigarettes;
+  if (levelDisplay) levelDisplay.textContent = gameState.level;
+  if (energy) energy.textContent = gameState.energy;
   
   // Update energy bar
-  const energyPercent = (playerEnergy / playerMaxEnergy) * 100;
-  document.getElementById('energyFill').style.width = `${energyPercent}%`;
-  document.getElementById('energyText').textContent = `${playerEnergy} / ${playerMaxEnergy}`;
+  const energyPercent = (gameState.energy / gameState.maxEnergy) * 100;
+  const energyFill = document.getElementById('energyFill');
+  const energyText = document.getElementById('energyText');
+  if (energyFill) energyFill.style.width = `${energyPercent}%`;
+  if (energyText) energyText.textContent = `${gameState.energy} / ${gameState.maxEnergy}`;
 }
 
-// Update stats
 function updateStats() {
-  document.getElementById('completed-missions').textContent = completedMissions;
-  document.getElementById('total-exp-earned').textContent = totalExpEarned.toLocaleString();
-  document.getElementById('total-money-earned').textContent = `${totalMoneyEarned.toLocaleString()}₽`;
+  const completed = document.getElementById('completed-missions');
+  const totalExp = document.getElementById('total-exp-earned');
+  const totalMoney = document.getElementById('total-money-earned');
+  const winRate = document.getElementById('win-rate');
   
-  const winRate = totalBattles > 0 ? Math.round((totalWins / totalBattles) * 100) : 0;
-  document.getElementById('win-rate').textContent = `${winRate}%`;
+  if (completed) completed.textContent = gameState.missionData.completedMissions;
+  if (totalExp) totalExp.textContent = gameState.missionData.totalExpEarned.toLocaleString('cs-CZ');
+  if (totalMoney) totalMoney.textContent = `${gameState.missionData.totalMoneyEarned.toLocaleString('cs-CZ')}₽`;
+  
+  const rate = gameState.missionData.totalBattles > 0 
+    ? Math.round((gameState.missionData.totalWins / gameState.missionData.totalBattles) * 100) 
+    : 0;
+  if (winRate) winRate.textContent = `${rate}%`;
 }
 
-// Get difficulty based on player level
+// ===== MISSION FUNCTIONS =====
 function getDifficulty() {
-  if (playerLevel <= 3) return 'easy';
-  if (playerLevel <= 7) return 'medium';
-  if (playerLevel <= 12) return 'hard';
+  if (gameState.level <= 3) return 'easy';
+  if (gameState.level <= 7) return 'medium';
+  if (gameState.level <= 12) return 'hard';
   return 'extreme';
 }
 
-// Get random mission duration (5-20 minutes in seconds)
 function getRandomDuration() {
   return Math.floor(Math.random() * (20 - 5 + 1) + 5) * 60;
 }
 
-// Calculate rewards based on level and difficulty
 function calculateRewards(difficulty) {
-  const baseExp = playerLevel * 10;
-  const baseMoney = playerLevel * 50;
+  const baseExp = gameState.level * 10;
+  const baseMoney = gameState.level * 50;
   
   let multiplier = 1;
   switch(difficulty) {
@@ -331,38 +385,34 @@ function calculateRewards(difficulty) {
   return { exp, money };
 }
 
-// Generate random mission
 function generateMission(slot) {
-  // Check energy
-  if (playerEnergy < 15) {
+  if (gameState.energy < 15) {
     showNotification('Nemáš dost energie! (15 energie potřeba)', 'error');
     return null;
   }
   
-  // Deduct energy
-  playerEnergy -= 15;
+  gameState.energy -= 15;
   
   const difficulty = getDifficulty();
   const templates = missionTemplates[difficulty];
   const template = templates[Math.floor(Math.random() * templates.length)];
   
-  // Get duration, make sure it's different from other slot
   let duration = getRandomDuration();
   const otherSlot = slot === 'slot1' ? 'slot2' : 'slot1';
-  if (activeMissions[otherSlot] && Math.abs(activeMissions[otherSlot].duration - duration) < 60) {
-    duration += Math.floor(Math.random() * 120) + 60; // Add 1-3 minutes
+  if (gameState.missionData.activeMissions[otherSlot] && 
+      Math.abs(gameState.missionData.activeMissions[otherSlot].duration - duration) < 60) {
+    duration += Math.floor(Math.random() * 120) + 60;
     duration = Math.max(300, duration);
   }
   
   const rewards = calculateRewards(difficulty);
   
-  // Pick random enemy
   const enemyIndex = Math.floor(Math.random() * template.enemies.length);
   const enemy = {
     name: template.enemies[enemyIndex],
     emoji: template.emojis[enemyIndex],
-    hp: Math.floor(playerLevel * 80 + Math.random() * 40),
-    damage: Math.floor(playerLevel * 8 + Math.random() * 5)
+    hp: Math.floor(gameState.level * 80 + Math.random() * 40),
+    damage: Math.floor(gameState.level * 8 + Math.random() * 5)
   };
   
   const mission = {
@@ -373,66 +423,57 @@ function generateMission(slot) {
     remainingTime: duration,
     rewards: rewards,
     enemy: enemy,
-    slot: slot
+    slot: slot,
+    startTime: Date.now() // DŮLEŽITÉ pro správné časování
   };
   
-  activeMissions[slot] = mission;
-  saveGameData();
+  gameState.missionData.activeMissions[slot] = mission;
+  saveToSupabase();
   updateUI();
   
   return mission;
 }
 
-// Start mission in specific slot
-function startMission(slot) {
+async function startMission(slot) {
   const mission = generateMission(slot);
   if (!mission) return;
   
-  // Hide empty, show active
   document.getElementById(`${slot}-empty`).style.display = 'none';
   document.getElementById(`${slot}-active`).style.display = 'flex';
   
-  // Fill mission details
   document.getElementById(`${slot}-name`).textContent = mission.name;
   document.getElementById(`${slot}-difficulty`).textContent = mission.difficulty.toUpperCase();
   document.getElementById(`${slot}-difficulty`).className = `mission-difficulty ${mission.difficulty}`;
   document.getElementById(`${slot}-story`).textContent = mission.story;
   
-  // Start timer
   startTimer(slot);
   
   showNotification(`Mise spuštěna! -15 energie`, 'success');
 }
 
-// Cancel mission
-function cancelMission(slot) {
+async function cancelMission(slot) {
   if (!confirm('Opravdu chceš zrušit tuto misi? Nedostaneš energii zpět!')) return;
   
-  // Clear timer
   if (missionTimers[slot]) {
     clearInterval(missionTimers[slot]);
     missionTimers[slot] = null;
   }
   
-  // Clear mission data
-  activeMissions[slot] = null;
+  gameState.missionData.activeMissions[slot] = null;
   
-  // Show empty, hide active
   document.getElementById(`${slot}-active`).style.display = 'none';
   document.getElementById(`${slot}-empty`).style.display = 'flex';
   
-  saveGameData();
+  await saveToSupabase();
   showNotification('Mise zrušena', 'error');
 }
 
-// Format time
 function formatTime(seconds) {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Format time for assassin (hours:minutes:seconds)
 function formatTimeHours(seconds) {
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
@@ -440,17 +481,19 @@ function formatTimeHours(seconds) {
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Start timer for slot
 function startTimer(slot) {
-  const mission = activeMissions[slot];
+  const mission = gameState.missionData.activeMissions[slot];
   if (!mission) return;
   
   updateTimerDisplay(slot);
   
   missionTimers[slot] = setInterval(() => {
-    mission.remainingTime--;
+    // Přepočítej remaining time podle elapsed času (přesněji než --remainingTime)
+    const elapsed = Math.floor((Date.now() - mission.startTime) / 1000);
+    mission.remainingTime = Math.max(0, mission.duration - elapsed);
+    
     updateTimerDisplay(slot);
-    saveGameData();
+    saveToSupabase();
     
     if (mission.remainingTime <= 0) {
       clearInterval(missionTimers[slot]);
@@ -460,20 +503,20 @@ function startTimer(slot) {
   }, 1000);
 }
 
-// Update timer display
 function updateTimerDisplay(slot) {
-  const mission = activeMissions[slot];
+  const mission = gameState.missionData.activeMissions[slot];
   if (!mission) return;
   
-  document.getElementById(`${slot}-timer`).textContent = formatTime(mission.remainingTime);
+  const timerEl = document.getElementById(`${slot}-timer`);
+  if (timerEl) {
+    timerEl.textContent = formatTime(mission.remainingTime);
+  }
 }
 
-// Mission complete - redirect to arena
 function missionComplete(slot) {
-  const mission = activeMissions[slot];
+  const mission = gameState.missionData.activeMissions[slot];
   if (!mission) return;
   
-  // Save mission enemy data for arena
   const missionData = {
     fromMission: true,
     enemy: mission.enemy,
@@ -485,7 +528,6 @@ function missionComplete(slot) {
   
   sessionStorage.setItem('arenaFromMission', JSON.stringify(missionData));
   
-  // Show notification and redirect
   showNotification('Mise hotová! Přesměrování do areny...', 'success');
   
   setTimeout(() => {
@@ -493,84 +535,88 @@ function missionComplete(slot) {
   }, 1500);
 }
 
-// Restore missions from saved data
 function restoreMissions() {
   ['slot1', 'slot2'].forEach(slot => {
-    const mission = activeMissions[slot];
+    const mission = gameState.missionData.activeMissions[slot];
     if (mission) {
-      // Show mission card
+      // Přepočítej remaining time podle uloženého startTime
+      if (mission.startTime) {
+        const elapsed = Math.floor((Date.now() - mission.startTime) / 1000);
+        mission.remainingTime = Math.max(0, mission.duration - elapsed);
+      }
+      
       document.getElementById(`${slot}-empty`).style.display = 'none';
       document.getElementById(`${slot}-active`).style.display = 'flex';
       
-      // Fill details
       document.getElementById(`${slot}-name`).textContent = mission.name;
       document.getElementById(`${slot}-difficulty`).textContent = mission.difficulty.toUpperCase();
       document.getElementById(`${slot}-difficulty`).className = `mission-difficulty ${mission.difficulty}`;
       document.getElementById(`${slot}-story`).textContent = mission.story;
       
-      // Start timer
       startTimer(slot);
     }
   });
 }
 
 // ===== ASSASSIN SYSTEM =====
-
 function calculateAssassinReward() {
-  return Math.min(20000, Math.floor(playerLevel * 800 + Math.random() * 200));
+  return Math.min(20000, Math.floor(gameState.level * 800 + Math.random() * 200));
 }
 
 function updateAssassinRewardDisplay() {
   const reward = calculateAssassinReward();
-  document.getElementById('assassin-reward-text').textContent = `${reward.toLocaleString()}₽`;
+  const rewardText = document.getElementById('assassin-reward-text');
+  if (rewardText) {
+    rewardText.textContent = `${reward.toLocaleString('cs-CZ')}₽`;
+  }
 }
 
-function hireAssassin() {
-  if (assassinActive) {
+async function hireAssassin() {
+  if (gameState.missionData.assassin.active) {
     showNotification('Vrah už pracuje!', 'error');
     return;
   }
   
-  if (playerEnergy < 50) {
+  if (gameState.energy < 50) {
     showNotification('Potřebuješ 50 energie!', 'error');
     return;
   }
   
-  // Deduct energy
-  playerEnergy -= 50;
+  gameState.energy -= 50;
+  gameState.missionData.assassin.active = true;
+  gameState.missionData.assassin.startTime = Date.now();
   
-  // Start assassin
-  assassinActive = true;
-  assassinStartTime = Date.now();
-  
-  // Show active state
   document.getElementById('assassin-idle').style.display = 'none';
   document.getElementById('assassin-active').style.display = 'flex';
   
-  // Start timer
   startAssassinTimer();
   
-  saveGameData();
+  await saveToSupabase();
   updateUI();
   showNotification('Vrah najat! Pracuje 14 hodin...', 'success');
 }
 
 function startAssassinTimer() {
-  const ASSASSIN_DURATION = 14 * 60 * 60; // 14 hours in seconds
+  const ASSASSIN_DURATION = 14 * 60 * 60; // 14 hodin v sekundách
   
   const updateTimer = () => {
-    if (!assassinActive || !assassinStartTime) return;
+    if (!gameState.missionData.assassin.active || !gameState.missionData.assassin.startTime) return;
     
-    const elapsed = Math.floor((Date.now() - assassinStartTime) / 1000);
+    const elapsed = Math.floor((Date.now() - gameState.missionData.assassin.startTime) / 1000);
     const remaining = Math.max(0, ASSASSIN_DURATION - elapsed);
     
-    document.getElementById('assassin-timer').textContent = formatTimeHours(remaining);
+    const timerEl = document.getElementById('assassin-timer');
+    if (timerEl) {
+      timerEl.textContent = formatTimeHours(remaining);
+    }
     
     if (remaining <= 0) {
-      // Assassin done
       clearInterval(assassinTimer);
       assassinTimer = null;
-      document.getElementById('collect-assassin-btn').style.display = 'flex';
+      const collectBtn = document.getElementById('collect-assassin-btn');
+      if (collectBtn) {
+        collectBtn.style.display = 'flex';
+      }
     }
   };
   
@@ -578,44 +624,53 @@ function startAssassinTimer() {
   assassinTimer = setInterval(updateTimer, 1000);
 }
 
-function collectAssassinReward() {
-  if (!assassinActive) return;
+async function collectAssassinReward() {
+  if (!gameState.missionData.assassin.active) return;
   
   const reward = calculateAssassinReward();
-  playerMoney += reward;
-  totalMoneyEarned += reward;
+  gameState.money += reward;
+  gameState.missionData.totalMoneyEarned += reward;
   
   // Reset assassin
-  assassinActive = false;
-  assassinStartTime = null;
+  gameState.missionData.assassin.active = false;
+  gameState.missionData.assassin.startTime = null;
   
   // Show idle state
   document.getElementById('assassin-active').style.display = 'none';
   document.getElementById('assassin-idle').style.display = 'flex';
-  document.getElementById('collect-assassin-btn').style.display = 'none';
+  const collectBtn = document.getElementById('collect-assassin-btn');
+  if (collectBtn) {
+    collectBtn.style.display = 'none';
+  }
   
-  saveGameData();
+  await saveToSupabase();
   updateUI();
   updateStats();
   
-  showNotification(`Vrah dokončil práci! +${reward.toLocaleString()}₽`, 'success');
+  showNotification(`Vrah dokončil práci! +${reward.toLocaleString('cs-CZ')}₽`, 'success');
 }
 
 function restoreAssassin() {
   updateAssassinRewardDisplay();
   
-  if (assassinActive && assassinStartTime) {
+  if (gameState.missionData.assassin.active && gameState.missionData.assassin.startTime) {
     const ASSASSIN_DURATION = 14 * 60 * 60;
-    const elapsed = Math.floor((Date.now() - assassinStartTime) / 1000);
+    const elapsed = Math.floor((Date.now() - gameState.missionData.assassin.startTime) / 1000);
     
     if (elapsed >= ASSASSIN_DURATION) {
-      // Done
+      // Hotovo
       document.getElementById('assassin-idle').style.display = 'none';
       document.getElementById('assassin-active').style.display = 'flex';
-      document.getElementById('collect-assassin-btn').style.display = 'flex';
-      document.getElementById('assassin-timer').textContent = '00:00:00';
+      const collectBtn = document.getElementById('collect-assassin-btn');
+      if (collectBtn) {
+        collectBtn.style.display = 'flex';
+      }
+      const timerEl = document.getElementById('assassin-timer');
+      if (timerEl) {
+        timerEl.textContent = '00:00:00';
+      }
     } else {
-      // Still working
+      // Stále pracuje
       document.getElementById('assassin-idle').style.display = 'none';
       document.getElementById('assassin-active').style.display = 'flex';
       startAssassinTimer();
@@ -623,7 +678,7 @@ function restoreAssassin() {
   }
 }
 
-// Show notification
+// ===== NOTIFICATIONS =====
 function showNotification(message, type) {
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
@@ -651,33 +706,35 @@ function showNotification(message, type) {
   }, 3000);
 }
 
-// Event listeners
-document.addEventListener('DOMContentLoaded', () => {
-  loadGameData();
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🎯 Initializing mission system...');
   
-  // Assassin buttons
+  await initUser();
+  
+  // Event listeners pro tlačítka
   const hireBtn = document.getElementById('hire-assassin-btn');
   const collectBtn = document.getElementById('collect-assassin-btn');
   
   if (hireBtn) hireBtn.addEventListener('click', hireAssassin);
   if (collectBtn) collectBtn.addEventListener('click', collectAssassinReward);
   
-  // Energy regeneration
+  // Auto-regenerace energie každou minutu
   setInterval(() => {
-    const lastUpdate = parseInt(sessionStorage.getItem('lastEnergyUpdate') || Date.now());
-    const timePassed = Date.now() - lastUpdate;
-    const energyGained = Math.floor(timePassed / (5 * 60 * 1000));
-    
-    if (energyGained > 0) {
-      playerEnergy = Math.min(playerMaxEnergy, playerEnergy + energyGained);
-      sessionStorage.setItem('lastEnergyUpdate', Date.now().toString());
-      saveGameData();
-      updateUI();
-    }
+    regenerateEnergy();
+    saveToSupabase();
+    updateUI();
   }, 60000);
+  
+  // Auto-save každých 30 sekund
+  setInterval(() => {
+    saveToSupabase();
+  }, 30000);
+  
+  console.log('✅ Mission system loaded!');
 });
 
-// Add CSS animation
+// ===== CSS ANIMATIONS =====
 const style = document.createElement('style');
 style.textContent = `
   @keyframes slideIn {
@@ -691,7 +748,11 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// CHEAT CODES
+// ===== EXPOSE FOR HTML =====
+window.startMission = startMission;
+window.cancelMission = cancelMission;
+
+// ===== CHEAT CODES (pro testování) =====
 console.log('%c🎮 GOPNIK CHEAT CODES 🎮', 'font-size: 20px; font-weight: bold; color: #f1d27a; text-shadow: 2px 2px 4px #000;');
 console.log('%cPříkazy:', 'font-size: 14px; color: #10b981;');
 console.log('%cskipTime("slot1")   - Přeskočit čas mise slot1', 'color: #fff;');
@@ -702,44 +763,45 @@ console.log('%caddLevel(5)         - Přidat levely', 'color: #fff;');
 console.log('%cskipAssassin()      - Dokončit vraha okamžitě', 'color: #fff;');
 
 window.skipTime = function(slot) {
-  const mission = activeMissions[slot];
+  const mission = gameState.missionData.activeMissions[slot];
   if (!mission) {
     console.log('%c❌ Není aktivní mise v tomto slotu!', 'color: #ef4444; font-weight: bold;');
     return;
   }
   mission.remainingTime = 0;
+  mission.startTime = Date.now() - (mission.duration * 1000);
   console.log(`%c✅ Čas přeskočen pro ${slot}!`, 'color: #10b981; font-weight: bold;');
 };
 
-window.addEnergy = function(amount) {
-  playerEnergy = Math.min(playerMaxEnergy, playerEnergy + amount);
-  saveGameData();
+window.addEnergy = async function(amount) {
+  gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + amount);
+  await saveToSupabase();
   updateUI();
   console.log(`%c✅ Přidáno ${amount} energie!`, 'color: #10b981; font-weight: bold;');
 };
 
-window.addMoney = function(amount) {
-  playerMoney += amount;
-  saveGameData();
+window.addMoney = async function(amount) {
+  gameState.money += amount;
+  await saveToSupabase();
   updateUI();
   console.log(`%c✅ Přidáno ${amount}₽!`, 'color: #10b981; font-weight: bold;');
 };
 
-window.addLevel = function(amount) {
-  playerLevel += amount;
-  saveGameData();
+window.addLevel = async function(amount) {
+  gameState.level += amount;
+  await saveToSupabase();
   updateUI();
   console.log(`%c✅ Přidáno ${amount} levelů!`, 'color: #10b981; font-weight: bold;');
 };
 
 window.skipAssassin = function() {
-  if (!assassinActive) {
+  if (!gameState.missionData.assassin.active) {
     console.log('%c❌ Vrah není aktivní!', 'color: #ef4444; font-weight: bold;');
     return;
   }
-  assassinStartTime = Date.now() - (14 * 60 * 60 * 1000);
+  gameState.missionData.assassin.startTime = Date.now() - (14 * 60 * 60 * 1000);
   restoreAssassin();
   console.log('%c✅ Vrah dokončen!', 'color: #10b981; font-weight: bold;');
 };
 
-console.log('Mission system loaded! 🎯');
+console.log('✅ Mission system fully loaded!');
