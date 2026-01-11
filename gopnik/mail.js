@@ -15,6 +15,11 @@
   const composeSubject = document.getElementById("composeSubject");
   const composeBody = document.getElementById("composeBody");
   const tabBtns = Array.from(document.querySelectorAll(".tab-btn"));
+  
+  // Bulk action buttons
+  const markAllReadBtn = document.getElementById("markAllReadBtn");
+  const deleteAllReadBtn = document.getElementById("deleteAllReadBtn");
+  const refreshBtn = document.getElementById("refreshMailBtn");
 
   // ===== CONFIG =====
   const TABLE = "player_mail";
@@ -592,6 +597,32 @@
     });
   }
 
+  function wireBulkActions(stats) {
+    // Mark all as read
+    if (markAllReadBtn) {
+      markAllReadBtn.addEventListener("click", async () => {
+        await markAllRead();
+      });
+    }
+    
+    // Delete all read
+    if (deleteAllReadBtn) {
+      deleteAllReadBtn.addEventListener("click", async () => {
+        await deleteAllReadMails();
+      });
+    }
+    
+    // Manual refresh
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", async () => {
+        refreshBtn.classList.add("spin");
+        await refresh(stats);
+        showNotification("📬 Pošta obnovena", "success");
+        setTimeout(() => refreshBtn.classList.remove("spin"), 500);
+      });
+    }
+  }
+
   // ===== BUILD & REFRESH =====
   function buildMergedThreads(stats) {
     const threads = [];
@@ -684,6 +715,7 @@
     wireListClicks(stats);
     wireCompose(stats);
     wireTabs(stats);
+    wireBulkActions(stats);
     
     // Setup realtime
     setupRealtime(userId, stats);
@@ -757,6 +789,13 @@ style.textContent = `
   @keyframes slideOut {
     from { transform: translateX(0); opacity: 1; }
     to { transform: translateX(400px); opacity: 0; }
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .spin {
+    animation: spin 0.5s ease-in-out;
   }
 `;
 document.head.appendChild(style);
