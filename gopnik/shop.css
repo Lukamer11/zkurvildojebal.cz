@@ -337,29 +337,6 @@
   min-width: 80px;
 }
 
-.class-badge-shop {
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  font-size: 24px;
-  background: 
-    radial-gradient(circle at center, rgba(80,85,92,0.95), rgba(40,45,50,0.98)),
-    url('tlacitko.jpg');
-  background-size: cover;
-  background-position: center;
-  background-blend-mode: overlay;
-  border: 3px solid #c9a44a;
-  border-radius: 50%;
-  box-shadow: 
-    0 4px 12px rgba(0,0,0,.6),
-    inset 0 0 15px rgba(0,0,0,.4);
-}
-
 .slots-shop {
   display: flex;
   flex-direction: column;
@@ -433,15 +410,6 @@
   padding-right: 8px;
 }
 
-.inventory-grid::-webkit-scrollbar {
-  width: 8px;
-}
-
-.inventory-grid::-webkit-scrollbar-track {
-  background: rgba(0,0,0,.2);
-  border-radius: 10px;
-}
-
 .inventory-grid::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,.3);
   border-radius: 10px;
@@ -500,15 +468,6 @@
   margin-bottom: 4px;
 }
 
-/* ===== RIGHT COLUMN ===== */
-.right-column {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  height: 100%;
-  overflow: hidden;
-}
-
 .character-stats-section {
   background: 
     linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
@@ -526,22 +485,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.character-stats-section::-webkit-scrollbar {
-  width: 8px;
-}
-
-.character-stats-section::-webkit-scrollbar-track {
-  background: rgba(0,0,0,.2);
-  border-radius: 10px;
-}
-
-.character-stats-section::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,.3);
-  border-radius: 10px;
+  height: 100%;
+  overflow: hidden;
 }
 
 .character-name-shop {
@@ -623,97 +568,6 @@
   box-shadow: 0 0 30px rgba(74, 170, 255, 0.6) !important;
 }
 
-/* ===== TRASH ZONE (KOŠE) ===== */
-.trash-zone {
-  background: 
-    linear-gradient(135deg, rgba(139, 0, 0, 0.3), rgba(80, 0, 0, 0.4)),
-    url('tlacitko.jpg');
-  background-size: cover;
-  background-position: center;
-  background-blend-mode: overlay;
-  border: 4px dashed #c9a44a;
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 
-    0 8px 25px rgba(0,0,0,.6),
-    inset 0 2px 10px rgba(0,0,0,0.4);
-  min-height: 100px;
-  position: relative;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.trash-zone::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at center, rgba(139, 0, 0, 0.2), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.trash-zone.drag-over {
-  border-color: #ef4444 !important;
-  background: 
-    linear-gradient(135deg, rgba(220, 38, 38, 0.5), rgba(153, 27, 27, 0.6)),
-    url('tlacitko.jpg');
-  background-size: cover;
-  background-position: center;
-  background-blend-mode: overlay;
-  box-shadow: 
-    0 0 40px rgba(239, 68, 68, 0.8),
-    0 12px 35px rgba(0,0,0,.8) !important;
-  transform: scale(1.02);
-}
-
-.trash-zone.drag-over::before {
-  opacity: 1;
-}
-
-.trash-icon {
-  font-size: 36px;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,.8));
-  transition: transform 0.3s ease;
-}
-
-.trash-zone.drag-over .trash-icon {
-  transform: scale(1.3) rotate(10deg);
-  animation: shake 0.3s infinite;
-}
-
-.trash-text {
-  font-size: 13px;
-  font-weight: 900;
-  color: #f1d27a;
-  text-shadow: 
-    0 2px 6px rgba(0,0,0,.9),
-    0 0 10px rgba(241, 210, 122, 0.3);
-  text-align: center;
-  line-height: 1.4;
-}
-
-.trash-subtext {
-  font-size: 10px;
-  color: #c9a44a;
-  font-weight: 700;
-}
-
-@keyframes shake {
-  0%, 100% { transform: scale(1.3) rotate(10deg); }
-  25% { transform: scale(1.3) rotate(-5deg); }
-  75% { transform: scale(1.3) rotate(15deg); }
-}
-
 @keyframes slideIn {
   from {
     transform: translateX(400px);
@@ -734,4 +588,13 @@
     transform: translateX(400px);
     opacity: 0;
   }
+}-scrollbar {
+  width: 8px;
 }
+
+.inventory-grid::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
+.inventory-grid::-webkit
