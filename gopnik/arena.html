@@ -8,88 +8,6 @@
   <script src="items.js"></script>
   <link rel="stylesheet" href="menu.css">
   <script src="menu.js"></script>
-  <style>
-    /* Better button layout */
-    .arena-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 10px 32px;
-      background: linear-gradient(135deg, 
-        rgba(139, 69, 19, 0.95) 0%,
-        rgba(101, 67, 33, 0.98) 50%,
-        rgba(139, 69, 19, 0.95) 100%);
-      border: 4px solid;
-      border-image: linear-gradient(135deg, #f1d27a, #c9a44a, #f1d27a) 1;
-      border-radius: 16px;
-      box-shadow: 
-        0 12px 40px rgba(0,0,0,.8),
-        inset 0 -4px 20px rgba(0,0,0,0.5),
-        inset 0 4px 20px rgba(255,215,100,0.2);
-    }
-    
-    .arena-title {
-      font-size: 32px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 4px;
-      color: #fff;
-      text-shadow: 
-        0 0 20px rgba(255, 215, 100, 0.8),
-        0 0 40px rgba(255, 215, 100, 0.5),
-        0 4px 15px rgba(0,0,0,1),
-        0 8px 25px rgba(0,0,0,0.8);
-      margin: 0 !important;
-      padding: 0 !important;
-      border: none !important;
-      background: none !important;
-      box-shadow: none !important;
-      flex: 1;
-    }
-    
-    .arena-buttons {
-      display: flex;
-      gap: 12px;
-    }
-    
-    .arena-swap-btn {
-      white-space: nowrap;
-      min-width: 160px;
-      padding: 12px 24px !important;
-      background-image: url('tlacitko_shopik.jpg') !important;
-      background-size: cover !important;
-      background-position: center !important;
-      background-repeat: no-repeat !important;
-      border: 3px solid rgba(255, 215, 100, 0.6) !important;
-      border-radius: 12px !important;
-      color: #f1d27a !important;
-      font-weight: 900 !important;
-      font-size: 14px !important;
-      cursor: pointer !important;
-      transition: all 0.2s ease !important;
-      text-transform: uppercase !important;
-      box-shadow: 
-        0 4px 10px rgba(0,0,0,.5),
-        inset 0 2px 5px rgba(255,215,100,0.15) !important;
-      image-rendering: -webkit-optimize-contrast !important;
-      image-rendering: crisp-edges !important;
-    }
-    
-    .arena-swap-btn:hover {
-      filter: brightness(1.2) !important;
-      transform: translateY(-3px) !important;
-      border-color: #f1d27a !important;
-      box-shadow: 
-        0 6px 15px rgba(0,0,0,.6),
-        0 0 20px rgba(241, 210, 122, 0.4) !important;
-    }
-    
-    .arena-swap-btn:active {
-      transform: translateY(0) !important;
-      filter: brightness(0.9) !important;
-    }
-  </style>
 </head>
 <body>
 <audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
@@ -139,7 +57,7 @@
 
     <!-- NAV BUTTONS -->
     <div class="menu-frame">
-      <a href="postava.html" class="sf-btn" data-icon="🍺">POSTAVA</a>
+      <a href="postava.html" class="sf-btn" data-icon="🥺">POSTAVA</a>
       <a href="arena.html" class="sf-btn active" data-icon="⚔️">ARENA</a>
       <a href="shop.html" class="sf-btn" data-icon="🗡️">SHOP</a>
       <a href="auto.html" class="sf-btn" data-icon="🚗">CRYPTA</a>
@@ -164,8 +82,7 @@
     <div class="arena-title-row">
       <div class="arena-title">⚔️ ARENA ⚔️</div>
       <div class="arena-buttons">
-        <button id="nextEnemyBtn" class="arena-swap-btn" type="button">🔄 NAHRADIT</button>
-        <button id="attackBtn" class="arena-swap-btn" type="button">⚔️ ZAÚTOČIT</button>
+        <button id="nextEnemyBtn" class="arena-swap-btn" type="button">🔄 DALŠÍ SOUPEŘ</button>
       </div>
     </div>
 
@@ -173,7 +90,7 @@
 
       <!-- LEVÝ HRÁČ -->
       <div class="player-section">
-        <div class="character-name-arena">BORIS GOPNIKOV</div>
+        <div class="character-name-arena" id="playerName">BORIS GOPNIKOV</div>
 
         <div class="character-frame-arena">
           <div class="character-arena">
