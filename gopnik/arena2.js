@@ -1,4 +1,4 @@
-// arena2.js - Arena pro MISI/CRYPTA (autostart fight, bez arena cooldown RPC)
+// arena.js - Arena s reálnými hráči, cooldown sync a mail notifikacemi
 
 (() => {
   "use strict";
@@ -18,73 +18,6 @@
     battleInProgress: false,
     roundNumber: 0
   };
-
-// ===== ARENA2 CONTEXT (MISSION / CRYPTA) =====
-function readArena2Context() {
-  const unified = sessionStorage.getItem('arena2_context');
-  if (unified) {
-    try { return JSON.parse(unified); } catch {}
-  }
-  const m = sessionStorage.getItem('arenaFromMission');
-  if (m) {
-    try {
-      const j = JSON.parse(m);
-      return { type: 'mission', autoStart: true, ...j, enemy: j.enemy };
-    } catch {}
-  }
-  const c = sessionStorage.getItem('arenaFromCrypta');
-  if (c) {
-    try {
-      const j = JSON.parse(c);
-      return { type: 'crypta', autoStart: true, ...j, boss: j.boss };
-    } catch {}
-  }
-  const qs = new URLSearchParams(location.search);
-  if (qs.get('fromCrypta') === '1') return { type: 'crypta', autoStart: true, _fromQuery: true };
-  return null;
-}
-
-function normalizeEnemyFromMission(enemy, playerLevel) {
-  const lvl = Math.max(1, Number(playerLevel || 1));
-  const hp = Math.max(50, Number(enemy?.hp || (lvl * 100)));
-  const dmg = Math.max(5, Number(enemy?.damage || (lvl * 10)));
-  const str = Math.max(5, Math.round(dmg / 2));
-  const def = Math.max(5, Math.round(lvl * 2));
-  const dex = Math.max(5, Math.round(lvl * 1.5));
-  const baseStats = { strength: str, defense: def, dexterity: dex, intelligence: 10, constitution: 10, luck: 10 };
-  return {
-    userId: 'mission_enemy',
-    name: enemy?.name || 'Nepřítel z mise',
-    level: lvl,
-    maxHP: hp,
-    currentHP: hp,
-    stats: baseStats,
-    baseStats,
-    bonuses: {},
-    critChance: getCritChanceFromDexAndLevel(baseStats.dexterity, lvl),
-  };
-}
-
-function normalizeEnemyFromBoss(boss) {
-  const lvl = Math.max(1, Number(boss?.level || 1));
-  const hp = Math.max(200, Number(boss?.hp || (lvl * 600)));
-  const str = 10 + lvl * 6;
-  const def = 10 + lvl * 4;
-  const dex = 10 + lvl * 3;
-  const baseStats = { strength: str, defense: def, dexterity: dex, intelligence: 10, constitution: 10 + lvl * 2, luck: 10 };
-  return {
-    userId: 'crypta_boss',
-    name: boss?.name || 'Boss',
-    level: lvl,
-    maxHP: hp,
-    currentHP: hp,
-    stats: baseStats,
-    baseStats,
-    bonuses: {},
-    critChance: getCritChanceFromDexAndLevel(baseStats.dexterity, lvl),
-  };
-}
-
 
   // ===== SUPABASE HELPERS =====
   const supabaseClient = () => window.supabaseClient || window.SF?.sb;
@@ -680,7 +613,10 @@ function normalizeEnemyFromBoss(boss) {
 
     console.log('🏁 Battle ended!');
     gameState.battleInProgress = false;
-    // Arena2: bez arena cooldownu
+
+    // Update cooldown na serveru
+    await updateCooldown(window.SF?.user?.id);
+    startCooldownTimer();
 
     await sleep(1000);
     
@@ -691,98 +627,84 @@ function normalizeEnemyFromBoss(boss) {
     }
   }
 
-  
   async function handleVictory() {
-    console.log('🏆 Victory (Arena2)!');
-    const ctx = readArena2Context() || {};
+    console.log('🏆 Victory!');
+    
+    const reward = calculateReward();
+    
     await window.SFReady;
-
-    if (ctx.type === 'mission' && ctx.rewards) {
-      const addMoney = Number(ctx.rewards.money || 0);
-      const addXp = Number(ctx.rewards.exp || 0);
-
-      const md = (window.SF?.stats?.missiondata || window.SF?.stats?.missionData || {});
-      const slot = ctx.slot;
-      const active = md.activeMissions ? { ...md.activeMissions } : { slot1: null, slot2: null };
-      if (slot && active[slot]) active[slot] = null;
-
-      const nextMd = {
-        ...md,
-        completedMissions: (md.completedMissions || 0) + 1,
-        totalExpEarned: (md.totalExpEarned || 0) + addXp,
-        totalMoneyEarned: (md.totalMoneyEarned || 0) + addMoney,
-        totalBattles: (md.totalBattles || 0) + 1,
-        totalWins: (md.totalWins || 0) + 1,
-        activeMissions: active
-      };
-
-      window.SF.updateStats({
-        money: Number(window.SF.stats.money || 0) + addMoney,
-        xp: Number(window.SF.stats.xp || 0) + addXp,
-        missiondata: nextMd
-      });
-
-      showResultModal('🏆 VÍTĚZSTVÍ! 🏆', `Mise splněna: ${ctx.missionName || ''}
-
-Odměna:
-💰 +${addMoney.toLocaleString('cs-CZ')}₽
-⭐ +${addXp} XP`);
-      sessionStorage.removeItem('arenaFromMission');
-      sessionStorage.removeItem('arena2_context');
-      return;
+    const sb = await ensureOnline();
+    
+    // Update stats přes RPC
+    try {
+      const { data, error } = await sb.rpc('rpc_arena_win');
+      if (error) throw error;
+      
+      // Refresh stats
+      await window.SF.refresh();
+      
+      // Send mail notifications
+      await sendBattleNotification(
+        gameState.player.userId,
+        gameState.enemy.userId,
+        gameState.player.name,
+        gameState.enemy.name,
+        reward.money
+      );
+      
+    } catch (e) {
+      console.error('Victory update error:', e);
     }
 
-    if (ctx.type === 'crypta' && ctx.reward) {
-      const inv = Array.isArray(window.SF?.stats?.inventory) ? [...window.SF.stats.inventory] : [];
-      const ref = ctx.reward.id || ctx.reward;
-      if (ref) inv.push(ref);
-      window.SF.updateStats({ inventory: inv });
-
-      showResultModal('🏆 VÍTĚZSTVÍ! 🏆', `Porazil jsi bosse: ${gameState.enemy.name}
-
-Získáváš:
-${ctx.reward.icon || '🎁'} ${ctx.reward.name || ref}`);
-      sessionStorage.removeItem('arenaFromCrypta');
-      sessionStorage.removeItem('arena2_context');
-      return;
-    }
-
-    showResultModal('🏆 VÍTĚZSTVÍ! 🏆', `Porazil jsi ${gameState.enemy.name}!`);
+    showResultModal('🏆 VÍTĚZSTVÍ! 🏆', `
+      Porazil jsi ${gameState.enemy.name}!
+      
+      Odměna:
+      💰 +${reward.money.toLocaleString('cs-CZ')}₽
+      ⭐ +${reward.xp} XP
+    `);
   }
 
-  
   async function handleDefeat() {
-    console.log('💀 Defeat (Arena2)!');
-    const ctx = readArena2Context() || {};
+    console.log('💀 Defeat!');
+    
+    const reward = calculateReward();
+    
     await window.SFReady;
-
-    if (ctx.type === 'mission') {
-      const md = (window.SF?.stats?.missiondata || window.SF?.stats?.missionData || {});
-      const nextMd = { ...md, totalBattles: (md.totalBattles || 0) + 1 };
-      window.SF.updateStats({ missiondata: nextMd });
-
-      showResultModal('💀 PROHRA 💀', `Prohrál jsi misi proti: ${gameState.enemy.name}
-
-Zkus to znovu!`);
-      sessionStorage.removeItem('arenaFromMission');
-      sessionStorage.removeItem('arena2_context');
-      return;
+    const sb = await ensureOnline();
+    
+    // Update stats přes RPC
+    try {
+      const { data, error } = await sb.rpc('rpc_arena_lose');
+      if (error) throw error;
+      
+      // Refresh stats
+      await window.SF.refresh();
+      
+      // Send mail notifications
+      await sendBattleNotification(
+        gameState.enemy.userId,
+        gameState.player.userId,
+        gameState.enemy.name,
+        gameState.player.name,
+        Math.floor(reward.money * 0.5)
+      );
+      
+    } catch (e) {
+      console.error('Defeat update error:', e);
     }
-
-    if (ctx.type === 'crypta') {
-      showResultModal('💀 PROHRA 💀', `Boss tě porazil: ${gameState.enemy.name}
-
-Zkus to znovu!`);
-      sessionStorage.removeItem('arenaFromCrypta');
-      sessionStorage.removeItem('arena2_context');
-      return;
-    }
-
-    showResultModal('💀 PROHRA 💀', `Byl jsi poražen!`);
+    
+    showResultModal('💀 PROHRA 💀', `
+      Byl jsi poražen hráčem ${gameState.enemy.name}!
+      
+      Ztráta:
+      💰 -${Math.floor(reward.money * 0.5).toLocaleString('cs-CZ')}₽
+      
+      Zkus to znovu!
+    `);
   }
 
-  function calculateReward(
- {
+  function calculateReward() {
     const enemyLevel = gameState.enemy.level;
     const baseMoney = 100;
     const baseXP = 50;
@@ -937,7 +859,25 @@ Zkus to znovu!`);
   }
 
   async function onNextEnemy() {
-    showNotification('V Arena2 nelze měnit soupeře.', 'info');
+    if (gameState.battleInProgress) {
+      showNotification('Boj právě probíhá!', 'error');
+      return;
+    }
+    
+    const userId = window.SF?.user?.id;
+    if (!userId) {
+      showNotification('Uživatel není přihlášen!', 'error');
+      return;
+    }
+    
+    const remaining = await getCooldownRemaining(userId);
+    if (remaining > 0) {
+      showNotification('Musíš počkat na cooldown!', 'error');
+      return;
+    }
+    
+    hideResultModal();
+    await loadNewOpponent();
   }
 
   function onResultContinue() {
@@ -958,54 +898,19 @@ Zkus to znovu!`);
 
     renderPlayer(gameState.player);
 
-    
-// Arena2: načti soupeře z mise/crypty a začni automaticky
-let ctx = readArena2Context();
-
-// Fallback: pokud přišel jen query fromCrypta=1, zkus vytáhnout payload z DB (crypta_fights)
-if (ctx && ctx.type === 'crypta' && ctx._fromQuery) {
-  try {
-    if (window.SFReady) await window.SFReady;
-    const sb = supabaseClient();
-    const uid = window.SF?.user?.id || window.SF?.stats?.user_id;
-    if (sb && uid) {
-      const { data } = await sb.from('crypta_fights').select('payload').eq('user_id', uid).maybeSingle();
-      if (data?.payload) {
-        sessionStorage.setItem('arenaFromCrypta', JSON.stringify(data.payload));
-        ctx = { type: 'crypta', autoStart: true, ...data.payload };
+    // Check cooldown and load first opponent if ready
+    const userId = window.SF?.user?.id;
+    if (userId) {
+      const remaining = await getCooldownRemaining(userId);
+      if (remaining <= 0) {
+        await loadNewOpponent();
+      } else {
+        startCooldownTimer();
+        showNotification('Arena je na cooldownu, počkej na konec odpočítávání', 'info');
       }
     }
-  } catch (e) {
-    console.warn('crypta payload load failed', e);
-  }
-}
 
-if (!ctx) {
-  showNotification('Arena2: chybí data z mise/crypty. Vrácení do arény.', 'error');
-  setTimeout(() => location.href = 'arena.html', 800);
-  return;
-}
-
-if (ctx.type === 'mission') {
-  gameState.enemy = normalizeEnemyFromMission(ctx.enemy, gameState.player?.level || 1);
-} else {
-  gameState.enemy = normalizeEnemyFromBoss(ctx.boss || ctx.enemy || ctx);
-}
-
-renderEnemy(gameState.enemy);
-
-gameState.player.currentHP = gameState.player.maxHP;
-renderPlayer(gameState.player);
-
-if ($('nextEnemyBtn')) {
-  $('nextEnemyBtn').disabled = true;
-  $('nextEnemyBtn').style.display = 'none';
-}
-
-if (ctx.autoStart) {
-  setTimeout(() => { onAttack(); }, 300);
-}
-// Wire buttons
+    // Wire buttons
     $('attackBtn').addEventListener('click', onAttack);
     $('nextEnemyBtn').addEventListener('click', onNextEnemy);
     $('resultContinue').addEventListener('click', onResultContinue);
