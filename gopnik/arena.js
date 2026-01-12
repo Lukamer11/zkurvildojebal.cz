@@ -1,12 +1,14 @@
-// arena.js - Arena s reálnými hráči, cooldown sync a mail notifikacemi
+// arena.js - Arena s reálnými hráči, auto-fight a kritickými údery
 
 (() => {
   "use strict";
 
-  // ===== CONFIG =====
-  const ATTACK_COOLDOWN = 5 * 60 * 1000; // 5 minut
-  const COOLDOWN_TABLE = "arena_cooldowns";
-  const BATTLE_LOG_TABLE = "arena_battles";
+  // ===== CLASS METADATA =====
+  const CLASS_META = {
+    padouch: { icon: "👻", label: "Padouch" },
+    rvac: { icon: "✊", label: "Rváč" },
+    mozek: { icon: "💡", label: "Mozek" }
+  };
 
   // ===== DOM HELPERS =====
   const $ = (id) => document.getElementById(id);
@@ -29,7 +31,7 @@
     return sb;
   }
 
-  // ===== ITEM HELPERS =====
+  // ===== ITEM HELPERS (stejně jako v postava) =====
   const ALLOWED_STATS = ['strength','defense','dexterity','intelligence','constitution','luck'];
 
   function getAllItems() {
@@ -98,9 +100,11 @@
     return bonuses;
   }
 
+  // ===== PLAYER CLASS CALCULATION =====
   function getPlayerClass(stats) {
     const str = Number(stats.strength || 0);
     const def = Number(stats.defense || 0);
+    const dex = Number(stats.dexterity || 0);
     const int = Number(stats.intelligence || 0);
 
     if (str > def && str > int) return 'rvac';
@@ -108,12 +112,14 @@
     return 'padouch';
   }
 
+  // ===== CRIT CALCULATION (stejně jako v postava) =====
   function getCritChanceFromDexAndLevel(totalDex, level) {
     const base = Math.floor(totalDex * 0.5);
     const penalty = Math.floor((level - 1) * 0.35);
     return Math.max(1, base - penalty);
   }
 
+  // ===== CALCULATE TOTAL STATS WITH BONUSES =====
   function calculateTotalStats(row) {
     const stats = row.stats || {};
     const bonuses = calculateTotalBonuses(row);
@@ -128,97 +134,12 @@
     return total;
   }
 
+  // ===== HP CALCULATION =====
   function calculateMaxHP(constitution) {
     return Math.round(500 + constitution * 25);
   }
 
-  // ===== COOLDOWN MANAGEMENT (SERVER-SIDE) =====
-  async function getCooldownRemaining(userId) {
-    try {
-      const sb = await ensureOnline();
-      const { data, error } = await sb
-        .from(COOLDOWN_TABLE)
-        .select('last_attack_at')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') {
-        console.warn('Cooldown check error:', error);
-        return 0;
-      }
-
-      if (!data || !data.last_attack_at) return 0;
-
-      const lastAttack = new Date(data.last_attack_at).getTime();
-      const elapsed = Date.now() - lastAttack;
-      return Math.max(0, ATTACK_COOLDOWN - elapsed);
-    } catch (e) {
-      console.error('Cooldown error:', e);
-      return 0;
-    }
-  }
-
-  async function updateCooldown(userId) {
-    try {
-      const sb = await ensureOnline();
-      await sb
-        .from(COOLDOWN_TABLE)
-        .upsert({
-          user_id: userId,
-          last_attack_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
-    } catch (e) {
-      console.error('Update cooldown error:', e);
-    }
-  }
-
-  async function updateCooldownDisplay() {
-    const userId = window.SF?.user?.id;
-    if (!userId) return;
-
-    const remaining = await getCooldownRemaining(userId);
-    
-    if (remaining > 0) {
-      const minutes = Math.floor(remaining / 60000);
-      const seconds = Math.floor((remaining % 60000) / 1000);
-      const timeText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-      
-      $('attackBtn').disabled = true;
-      $('nextEnemyBtn').disabled = true;
-      $('attackBtn').textContent = `⏰ ${timeText}`;
-      $('nextEnemyBtn').textContent = `⏰ ${timeText}`;
-      $('attackBtn').style.opacity = '0.5';
-      $('nextEnemyBtn').style.opacity = '0.5';
-    } else {
-      $('attackBtn').disabled = false;
-      $('nextEnemyBtn').disabled = false;
-      $('attackBtn').textContent = '⚔️ ZAÚTOČIT';
-      $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
-      $('attackBtn').style.opacity = '1';
-      $('nextEnemyBtn').style.opacity = '1';
-    }
-  }
-
-  function startCooldownTimer() {
-    updateCooldownDisplay();
-    
-    const interval = setInterval(async () => {
-      await updateCooldownDisplay();
-      
-      const userId = window.SF?.user?.id;
-      if (!userId) {
-        clearInterval(interval);
-        return;
-      }
-      
-      const remaining = await getCooldownRemaining(userId);
-      if (remaining <= 0) {
-        clearInterval(interval);
-      }
-    }, 1000);
-  }
-
-  // ===== FETCH RANDOM OPPONENT (JEN REÁLNÍ HRÁČI) =====
+  // ===== FETCH RANDOM OPPONENT =====
   async function fetchRandomOpponent() {
     const sb = await ensureOnline();
     const currentUserId = window.SF?.user?.id;
@@ -263,11 +184,10 @@
     const totalStats = calculateTotalStats(stats);
     const level = Number(stats.level || 1);
     const maxHP = calculateMaxHP(totalStats.constitution);
-    const characterName = stats.stats?.character_name || 'HRÁČ #' + stats.user_id.slice(0, 8).toUpperCase();
 
     return {
       userId: stats.user_id,
-      name: characterName,
+      name: 'BORIS GOPNIKOV', // TODO: Load from profile
       level: level,
       stats: totalStats,
       maxHP: maxHP,
@@ -286,11 +206,10 @@
     const totalStats = calculateTotalStats(enemyRow);
     const level = Number(enemyRow.level || 1);
     const maxHP = calculateMaxHP(totalStats.constitution);
-    const characterName = baseStats.character_name || 'HRÁČ #' + enemyRow.user_id.slice(0, 8).toUpperCase();
 
     return {
       userId: enemyRow.user_id,
-      name: characterName,
+      name: 'HRÁČ #' + enemyRow.user_id.slice(0, 8).toUpperCase(),
       level: level,
       baseStats: baseStats,
       bonuses: bonuses,
@@ -347,9 +266,11 @@
     $('playerName').textContent = player.name;
     $('playerLevelText').textContent = `Level ${player.level}`;
     
+    // Get base stats and bonuses from SF
     const baseStats = window.SF?.stats?.stats || {};
     const bonuses = calculateTotalBonuses(window.SF?.stats || {});
     
+    // Stats - show BASE + BONUS format
     const statElements = {
       strength: { value: 'pStr', extra: 'pStrExtra' },
       defense: { value: 'pDef', extra: 'pDefExtra' },
@@ -368,12 +289,14 @@
       const bonus = bonuses[stat] || 0;
       const total = base + bonus;
       
+      // Show value with bonus
       if (bonus !== 0) {
         valueEl.innerHTML = `${formatStatValue(base)} <span style="color: #4af; font-size: 14px;">+${bonus}</span>`;
       } else {
         valueEl.textContent = formatStatValue(base);
       }
       
+      // Show extra info
       if (els.extra) {
         const extraEl = $(els.extra);
         if (extraEl) {
@@ -382,6 +305,7 @@
       }
     });
 
+    // HP
     updateHP('player', player.currentHP, player.maxHP);
   }
 
@@ -391,9 +315,11 @@
     $('enemyName').textContent = enemy.name;
     $('enemyLevel').textContent = `Level ${enemy.level}`;
     
+    // Get base stats and bonuses
     const baseStats = enemy.baseStats || {};
     const bonuses = enemy.bonuses || {};
     
+    // Stats - show BASE + BONUS format
     const statElements = {
       strength: { value: 'eStr', extra: 'eStrExtra' },
       defense: { value: 'eDef', extra: 'eDefExtra' },
@@ -412,12 +338,14 @@
       const bonus = bonuses[stat] || 0;
       const total = base + bonus;
       
+      // Show value with bonus
       if (bonus !== 0) {
         valueEl.innerHTML = `${formatStatValue(base)} <span style="color: #4af; font-size: 14px;">+${bonus}</span>`;
       } else {
         valueEl.textContent = formatStatValue(base);
       }
       
+      // Show extra info
       if (els.extra) {
         const extraEl = $(els.extra);
         if (extraEl) {
@@ -426,6 +354,7 @@
       }
     });
 
+    // HP
     updateHP('enemy', enemy.currentHP, enemy.maxHP);
   }
 
@@ -445,7 +374,7 @@
     const defenseReduction = Math.min(0.75, defense * 0.01);
     
     const baseDamage = Math.max(1, attackPower * (1 - defenseReduction));
-    const variance = 0.9 + Math.random() * 0.2;
+    const variance = 0.9 + Math.random() * 0.2; // 90-110%
     
     return Math.round(baseDamage * variance);
   }
@@ -465,12 +394,15 @@
 
     defender.currentHP = Math.max(0, defender.currentHP - damage);
 
+    // Show damage animation
     showDamage(attackerSide === 'player' ? 'enemy' : 'player', damage, isCrit);
     playHitAnimation(attackerSide === 'player' ? 'enemy' : 'player');
     showWeapon(attackerSide);
 
+    // Update HP
     updateHP(attackerSide === 'player' ? 'enemy' : 'player', defender.currentHP, defender.maxHP);
 
+    // Wait for animation
     await sleep(1000);
   }
 
@@ -504,6 +436,7 @@
 
     container.classList.add('hit-shake');
     
+    // Show hit overlays
     const overlays = container.querySelectorAll('.hit-overlay');
     overlays.forEach((overlay, i) => {
       setTimeout(() => {
@@ -534,46 +467,6 @@
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  // ===== SEND MAIL NOTIFICATION =====
-  async function sendBattleNotification(winnerId, loserId, winnerName, loserName, moneyChange) {
-    try {
-      const sb = await ensureOnline();
-      
-      // Mail pro poraženého
-      const loserMail = {
-        id: `battle_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        user_id: loserId,
-        from_name: 'ARENA',
-        to_name: loserName,
-        subject: '⚔️ Byl jsi napaden!',
-        body: `**${winnerName}** na tebe zaútočil v aréně!\n\n**PROHRA** 💀\n\n**-${Math.abs(moneyChange)}₽**\n\nZkus to příště lépe!`,
-        created_at: new Date().toISOString(),
-        unread: true,
-        important: true,
-        kind: 'arena'
-      };
-
-      // Mail pro vítěze
-      const winnerMail = {
-        id: `battle_${Date.now()}_${Math.random().toString(36).slice(2)}_win`,
-        user_id: winnerId,
-        from_name: 'ARENA',
-        to_name: winnerName,
-        subject: '⚔️ Vítězství v aréně!',
-        body: `Porazil jsi **${loserName}** v aréně!\n\n**VÍTĚZSTVÍ** 🏆\n\n**+${moneyChange}₽**\n\nSkvělý boj!`,
-        created_at: new Date().toISOString(),
-        unread: true,
-        important: true,
-        kind: 'arena'
-      };
-
-      await sb.from('player_mail').insert([loserMail, winnerMail]);
-      console.log('✅ Battle notifications sent');
-    } catch (e) {
-      console.error('❌ Failed to send battle notifications:', e);
-    }
-  }
-
   // ===== BATTLE FLOW =====
   async function startBattle() {
     if (gameState.battleInProgress) {
@@ -587,35 +480,47 @@
     }
     
     console.log('⚔️ Battle started!');
+    console.log('Player HP:', gameState.player.currentHP, '/', gameState.player.maxHP);
+    console.log('Enemy HP:', gameState.enemy.currentHP, '/', gameState.enemy.maxHP);
     
     gameState.battleInProgress = true;
     gameState.roundNumber = 0;
 
+    // Show battle in progress
     $('attackBtn').disabled = true;
     $('attackBtn').textContent = '⚔️ BOJ PROBÍHÁ...';
     $('attackBtn').style.opacity = '0.5';
 
     while (gameState.player.currentHP > 0 && gameState.enemy.currentHP > 0) {
       gameState.roundNumber++;
+      console.log(`⚔️ Round ${gameState.roundNumber}`);
 
+      // Player attacks
       await performAttack(gameState.player, gameState.enemy, 'player');
       
-      if (gameState.enemy.currentHP <= 0) break;
+      if (gameState.enemy.currentHP <= 0) {
+        console.log('Enemy defeated!');
+        break;
+      }
 
       await sleep(500);
 
+      // Enemy attacks
       await performAttack(gameState.enemy, gameState.player, 'enemy');
       
-      if (gameState.player.currentHP <= 0) break;
+      if (gameState.player.currentHP <= 0) {
+        console.log('Player defeated!');
+        break;
+      }
       
       await sleep(500);
     }
 
+    // Battle ended
     console.log('🏁 Battle ended!');
     gameState.battleInProgress = false;
 
-    // Update cooldown na serveru
-    await updateCooldown(window.SF?.user?.id);
+    // Start cooldown
     startCooldownTimer();
 
     await sleep(1000);
@@ -632,28 +537,18 @@
     
     const reward = calculateReward();
     
+    // Update stats
     await window.SFReady;
-    const sb = await ensureOnline();
+    const currentStats = window.SF?.stats;
     
-    // Update stats přes RPC
-    try {
-      const { data, error } = await sb.rpc('rpc_arena_win');
-      if (error) throw error;
+    if (currentStats) {
+      const newMoney = (currentStats.money || 0) + reward.money;
+      const newXP = (currentStats.xp || 0) + reward.xp;
       
-      // Refresh stats
-      await window.SF.refresh();
-      
-      // Send mail notifications
-      await sendBattleNotification(
-        gameState.player.userId,
-        gameState.enemy.userId,
-        gameState.player.name,
-        gameState.enemy.name,
-        reward.money
-      );
-      
-    } catch (e) {
-      console.error('Victory update error:', e);
+      window.SF.updateStats({
+        money: newMoney,
+        xp: newXP
+      });
     }
 
     showResultModal('🏆 VÍTĚZSTVÍ! 🏆', `
@@ -668,37 +563,8 @@
   async function handleDefeat() {
     console.log('💀 Defeat!');
     
-    const reward = calculateReward();
-    
-    await window.SFReady;
-    const sb = await ensureOnline();
-    
-    // Update stats přes RPC
-    try {
-      const { data, error } = await sb.rpc('rpc_arena_lose');
-      if (error) throw error;
-      
-      // Refresh stats
-      await window.SF.refresh();
-      
-      // Send mail notifications
-      await sendBattleNotification(
-        gameState.enemy.userId,
-        gameState.player.userId,
-        gameState.enemy.name,
-        gameState.player.name,
-        Math.floor(reward.money * 0.5)
-      );
-      
-    } catch (e) {
-      console.error('Defeat update error:', e);
-    }
-    
     showResultModal('💀 PROHRA 💀', `
       Byl jsi poražen hráčem ${gameState.enemy.name}!
-      
-      Ztráta:
-      💰 -${Math.floor(reward.money * 0.5).toLocaleString('cs-CZ')}₽
       
       Zkus to znovu!
     `);
@@ -737,10 +603,71 @@
     }
   }
 
+  // ===== COOLDOWN MANAGEMENT =====
+  let lastAttackTime = 0;
+  const ATTACK_COOLDOWN = 5 * 60 * 1000; // 5 minut v ms
+
+  function getCooldownRemaining() {
+    const elapsed = Date.now() - lastAttackTime;
+    return Math.max(0, ATTACK_COOLDOWN - elapsed);
+  }
+
+  function updateCooldownDisplay() {
+    const remaining = getCooldownRemaining();
+    
+    if (remaining > 0) {
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      const timeText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      
+      $('attackBtn').disabled = true;
+      $('nextEnemyBtn').disabled = true;
+      $('attackBtn').textContent = `⏰ ${timeText}`;
+      $('nextEnemyBtn').textContent = `⏰ ${timeText}`;
+      $('attackBtn').style.opacity = '0.5';
+      $('nextEnemyBtn').style.opacity = '0.5';
+    } else {
+      $('attackBtn').disabled = false;
+      $('nextEnemyBtn').disabled = false;
+      $('attackBtn').textContent = '⚔️ ZAÚTOČIT';
+      $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
+      $('attackBtn').style.opacity = '1';
+      $('nextEnemyBtn').style.opacity = '1';
+    }
+  }
+
+  function startCooldownTimer() {
+    lastAttackTime = Date.now();
+    
+    // Save to localStorage
+    localStorage.setItem('arenaLastAttack', lastAttackTime.toString());
+    
+    updateCooldownDisplay();
+    
+    const interval = setInterval(() => {
+      updateCooldownDisplay();
+      
+      if (getCooldownRemaining() <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+  }
+
+  function loadCooldownFromStorage() {
+    const saved = localStorage.getItem('arenaLastAttack');
+    if (saved) {
+      lastAttackTime = parseInt(saved, 10);
+      if (getCooldownRemaining() > 0) {
+        startCooldownTimer();
+      }
+    }
+  }
+
   // ===== LOAD NEW OPPONENT =====
   async function loadNewOpponent() {
     console.log('🔄 Loading new opponent...');
     
+    // Show loading state
     $('nextEnemyBtn').disabled = true;
     $('nextEnemyBtn').textContent = '⏳ NAČÍTÁNÍ...';
     
@@ -756,11 +683,13 @@
     gameState.enemy = loadEnemyData(enemyRow);
     renderEnemy(gameState.enemy);
     
+    // Reset player HP
     gameState.player.currentHP = gameState.player.maxHP;
     renderPlayer(gameState.player);
 
     showNotification(`Nový soupeř: ${gameState.enemy.name} (Level ${gameState.enemy.level})`, 'success');
 
+    // Start cooldown
     startCooldownTimer();
   }
 
@@ -792,7 +721,7 @@
     }, 3000);
   }
 
-  // ===== SYNC CURRENCY UI =====
+  // ===== SYNC CURRENCY UI (stejně jako v postava) =====
   function syncCurrencyUI() {
     if (!window.SF) return;
     
@@ -803,6 +732,7 @@
     if ($('cigarettes')) $('cigarettes').textContent = String(stats.cigarettes || 0);
     if ($('energy')) $('energy').textContent = String(stats.energy || 0);
     
+    // Update XP bar
     const xpFill = $('xpFill');
     const xpText = $('xpText');
     
@@ -816,6 +746,7 @@
       xpText.textContent = `${xp} / ${requiredXP}`;
     }
     
+    // Update energy bar
     const energyFill = $('energyFill');
     const energyText = $('energyText');
     
@@ -843,13 +774,7 @@
       return;
     }
     
-    const userId = window.SF?.user?.id;
-    if (!userId) {
-      showNotification('Uživatel není přihlášen!', 'error');
-      return;
-    }
-    
-    const remaining = await getCooldownRemaining(userId);
+    const remaining = getCooldownRemaining();
     if (remaining > 0) {
       showNotification('Musíš počkat na cooldown!', 'error');
       return;
@@ -864,13 +789,7 @@
       return;
     }
     
-    const userId = window.SF?.user?.id;
-    if (!userId) {
-      showNotification('Uživatel není přihlášen!', 'error');
-      return;
-    }
-    
-    const remaining = await getCooldownRemaining(userId);
+    const remaining = getCooldownRemaining();
     if (remaining > 0) {
       showNotification('Musíš počkat na cooldown!', 'error');
       return;
@@ -888,6 +807,9 @@
   async function init() {
     console.log('🎮 Initializing arena...');
 
+    // Load cooldown from storage
+    loadCooldownFromStorage();
+
     // Load player
     gameState.player = await loadPlayerData();
     
@@ -898,16 +820,12 @@
 
     renderPlayer(gameState.player);
 
-    // Check cooldown and load first opponent if ready
-    const userId = window.SF?.user?.id;
-    if (userId) {
-      const remaining = await getCooldownRemaining(userId);
-      if (remaining <= 0) {
-        await loadNewOpponent();
-      } else {
-        startCooldownTimer();
-        showNotification('Arena je na cooldownu, počkej na konec odpočítávání', 'info');
-      }
+    // Load first opponent automatically
+    const remaining = getCooldownRemaining();
+    if (remaining <= 0) {
+      await loadNewOpponent();
+    } else {
+      showNotification('Arena je na cooldownu, počkej nebo načti soupeře', 'info');
     }
 
     // Wire buttons
