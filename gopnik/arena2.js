@@ -19,6 +19,110 @@
     roundNumber: 0
   };
 
+
+  // ===== ARENA2 CONTEXT (MISE / CRYPTA) =====
+  // arena2 podporuje automatický fight z misí i z crypty.
+  // Očekává payload v sessionStorage pod klíči:
+  //  - arena2_context: { type:'mission'|'crypta', autoStart:true, enemy|boss:{...} }
+  //  - arenaFromMission / arenaFromCrypta (zpětná kompatibilita)
+  // A/nebo query param: ?fromCrypta=1
+  let arena2Mode = 'pvp'; // 'pvp' | 'mission' | 'crypta'
+  let arena2Ctx = null;
+
+  function readArena2Context() {
+    // 1) nový jednotný klíč
+    const raw = sessionStorage.getItem('arena2_context');
+    if (raw) {
+      try { return JSON.parse(raw); } catch (_) {}
+    }
+    // 2) staré klíče (kompat)
+    const rawM = sessionStorage.getItem('arenaFromMission');
+    if (rawM) {
+      try {
+        const m = JSON.parse(rawM);
+        return { type: 'mission', autoStart: m.autoStart !== false, enemy: m.enemy || m.target || m };
+      } catch (_) {}
+    }
+    const rawC = sessionStorage.getItem('arenaFromCrypta');
+    if (rawC) {
+      try {
+        const c = JSON.parse(rawC);
+        return { type: 'crypta', autoStart: c.autoStart !== false, boss: c.boss || c.enemy || c };
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function getQueryFlag(name) {
+    try {
+      const u = new URL(window.location.href);
+      return u.searchParams.get(name);
+    } catch (_) { return null; }
+  }
+
+  function normalizeNpcStats(src) {
+    const s = src || {};
+    const level = Number(s.level || s.lvl || 1);
+
+    // Podpora různých tvarů: buď s.stats.*, nebo přímo strength/defense/...
+    const rawStats = s.stats || s.baseStats || s.attributes || s.attr || {};
+    const strength = Number(rawStats.strength ?? s.strength ?? s.str ?? (s.attack != null ? Math.max(1, Math.round(Number(s.attack) / 2)) : 10));
+    const defense  = Number(rawStats.defense  ?? s.defense  ?? s.def ?? 5);
+    const dexterity= Number(rawStats.dexterity?? s.dexterity?? s.dex ?? 10);
+    const intelligence=Number(rawStats.intelligence?? s.intelligence?? s.int ?? 10);
+    const constitution=Number(rawStats.constitution?? s.constitution?? s.con ?? (s.hp != null ? Math.max(1, Math.round((Number(s.hp) - 500) / 25)) : 10));
+    const luck=Number(rawStats.luck?? s.luck ?? 5);
+
+    const stats = { strength, defense, dexterity, intelligence, constitution, luck };
+
+    const maxHP = (s.maxHP != null) ? Number(s.maxHP) : (s.hp != null ? Number(s.hp) : calculateMaxHP(constitution));
+    const currentHP = maxHP;
+
+    return {
+      userId: s.userId || s.user_id || s.id || 'npc_' + Math.random().toString(36).slice(2),
+      name: s.name || s.title || s.enemyName || s.bossName || 'NEPŘÍTEL',
+      level,
+      baseStats: stats,
+      bonuses: { strength:0, defense:0, dexterity:0, intelligence:0, constitution:0, luck:0 },
+      stats,
+      maxHP,
+      currentHP,
+      critChance: getCritChanceFromDexAndLevel(stats.dexterity, level),
+      classType: getPlayerClass(stats),
+      avatar: s.avatar || s.avatarUrl || s.avatar_url || s.img || s.image || null,
+      bossNumber: s.bossNumber || s.boss_id || s.bossId || s.number || null,
+    };
+  }
+
+  function setEnemyAvatar(enemy) {
+    const img = $('enemyAvatar');
+    if (!img) return;
+
+    // fallback
+    img.onerror = () => { img.src = 'avatar.jpg'; };
+
+    if (enemy?.avatar) {
+      img.src = enemy.avatar;
+      return;
+    }
+
+    // pokus: boss číslo (1,2,3...) → boss1.jpg / boss1.png
+    let n = enemy?.bossNumber;
+    if (!n) {
+      const idStr = String(enemy?.userId || enemy?.id || enemy?.name || '');
+      const m = idStr.match(/(\d+)/);
+      if (m) n = m[1];
+    }
+    if (n) {
+      // zkusíme jpg, když se nenačte, onerror spadne na avatar.jpg
+      img.src = `boss${n}.jpg`;
+      return;
+    }
+
+    // default pvp
+    img.src = 'avatar.jpg';
+  }
+
   // ===== SUPABASE HELPERS =====
   const supabaseClient = () => window.supabaseClient || window.SF?.sb;
 
@@ -390,6 +494,8 @@
 
     $('enemyName').textContent = enemy.name;
     $('enemyLevel').textContent = `Level ${enemy.level}`;
+    setEnemyAvatar(enemy);
+
     
     const baseStats = enemy.baseStats || {};
     const bonuses = enemy.bonuses || {};
@@ -614,9 +720,11 @@
     console.log('🏁 Battle ended!');
     gameState.battleInProgress = false;
 
-    // Update cooldown na serveru
-    await updateCooldown(window.SF?.user?.id);
-    startCooldownTimer();
+    // Update cooldown jen pro PVP arénu
+    if (arena2Mode === 'pvp') {
+      await updateCooldown(window.SF?.user?.id);
+      startCooldownTimer();
+    }
 
     await sleep(1000);
     
@@ -630,13 +738,17 @@
   async function handleVictory() {
     console.log('🏆 Victory!');
     
+
+    // arena2: pro mise/cryptu nepoužívej PVP RPC ani mail
+    const isPvp = (arena2Mode === 'pvp');
     const reward = calculateReward();
     
     await window.SFReady;
     const sb = await ensureOnline();
     
-    // Update stats přes RPC
-    try {
+    // Update stats přes RPC (jen PVP)
+    if (isPvp) {
+      try {
       const { data, error } = await sb.rpc('rpc_arena_win');
       if (error) throw error;
       
@@ -652,8 +764,12 @@
         reward.money
       );
       
-    } catch (e) {
-      console.error('Victory update error:', e);
+      } catch (e) {
+        console.error('Victory update error:', e);
+      }
+    } else {
+      // NPC fight: jen refresh UI/staty pokud existuje
+      try { await window.SF?.refresh?.(); } catch (_) {}
     }
 
     showResultModal('🏆 VÍTĚZSTVÍ! 🏆', `
@@ -668,13 +784,16 @@
   async function handleDefeat() {
     console.log('💀 Defeat!');
     
+
+    const isPvp = (arena2Mode === 'pvp');
     const reward = calculateReward();
     
     await window.SFReady;
     const sb = await ensureOnline();
     
-    // Update stats přes RPC
-    try {
+    // Update stats přes RPC (jen PVP)
+    if (isPvp) {
+      try {
       const { data, error } = await sb.rpc('rpc_arena_lose');
       if (error) throw error;
       
@@ -690,8 +809,11 @@
         Math.floor(reward.money * 0.5)
       );
       
-    } catch (e) {
-      console.error('Defeat update error:', e);
+      } catch (e) {
+        console.error('Defeat update error:', e);
+      }
+    } else {
+      try { await window.SF?.refresh?.(); } catch (_) {}
     }
     
     showResultModal('💀 PROHRA 💀', `
@@ -849,12 +971,14 @@
       return;
     }
     
-    const remaining = await getCooldownRemaining(userId);
-    if (remaining > 0) {
-      showNotification('Musíš počkat na cooldown!', 'error');
-      return;
+    if (arena2Mode === 'pvp') {
+      const remaining = await getCooldownRemaining(userId);
+      if (remaining > 0) {
+        showNotification('Musíš počkat na cooldown!', 'error');
+        return;
+      }
     }
-    
+
     await startBattle();
   }
 
@@ -870,12 +994,17 @@
       return;
     }
     
+    if (arena2Mode !== 'pvp') {
+      showNotification('V misích/cryptě se soupeř nemění', 'error');
+      return;
+    }
+
     const remaining = await getCooldownRemaining(userId);
     if (remaining > 0) {
       showNotification('Musíš počkat na cooldown!', 'error');
       return;
     }
-    
+
     hideResultModal();
     await loadNewOpponent();
   }
@@ -888,6 +1017,18 @@
   async function init() {
     console.log('🎮 Initializing arena...');
 
+    // arena2: načti context z misí/crypty
+    arena2Ctx = readArena2Context();
+    const fromCryptaParam = getQueryFlag('fromCrypta');
+    if (arena2Ctx || fromCryptaParam) {
+      if (!arena2Ctx && fromCryptaParam) {
+        // když přišel jen param, zkus starý klíč
+        arena2Ctx = readArena2Context();
+      }
+      if (arena2Ctx?.type === 'mission') arena2Mode = 'mission';
+      else if (arena2Ctx?.type === 'crypta' || fromCryptaParam) arena2Mode = 'crypta';
+    }
+
     // Load player
     gameState.player = await loadPlayerData();
     
@@ -897,6 +1038,31 @@
     }
 
     renderPlayer(gameState.player);
+
+    // arena2: pokud jsme přišli z mise/crypty, načti NPC soupeře a (volitelně) auto-start
+    if (arena2Mode !== 'pvp') {
+      const rawEnemy = arena2Mode === 'mission' ? (arena2Ctx?.enemy) : (arena2Ctx?.boss || arena2Ctx?.enemy);
+      if (!rawEnemy) {
+        showNotification('Chybí data soupeře (mise/crypta)', 'error');
+      } else {
+        gameState.enemy = normalizeNpcStats(rawEnemy);
+        renderEnemy(gameState.enemy);
+        // v arena2 (mise/crypta) nechceme random soupeře ani cooldown tlačítka
+        const nextBtn = $('nextEnemyBtn');
+        if (nextBtn) { nextBtn.disabled = true; nextBtn.style.display = 'none'; }
+        const attackBtn = $('attackBtn');
+        if (attackBtn) { attackBtn.textContent = '⚔️ BOJOVAT'; }
+        // auto start
+        if (arena2Ctx?.autoStart !== false) {
+          // malý delay aby se DOM překreslil
+          setTimeout(() => { startBattle(); }, 150);
+        }
+      }
+      // sync currency a konec init
+      syncCurrencyUI();
+      console.log('✅ Arena2 initialized (NPC)!');
+      return;
+    }
 
     // Check cooldown and load first opponent if ready
     const userId = window.SF?.user?.id;
