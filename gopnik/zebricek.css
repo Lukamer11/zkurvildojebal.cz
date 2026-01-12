@@ -397,6 +397,29 @@
   white-space: nowrap;
 }
 
+.player-meta {
+  display: flex;
+  gap: 14px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(60,40,25,0.65), rgba(35,22,14,0.8));
+  border: 2px solid rgba(255, 215, 100, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.45);
+  color: #f1d27a;
+  font-weight: 900;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.player-meta b {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+}
+
 .character-frame {
   display: grid;
   grid-template-columns: auto 280px auto;

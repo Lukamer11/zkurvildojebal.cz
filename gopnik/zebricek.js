@@ -20,10 +20,35 @@
     return Number(n ?? 0).toLocaleString("cs-CZ");
   }
 
+  function formatStatValue(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '0';
+    const rounded = Math.round(n * 100) / 100;
+    const s = String(rounded);
+    return s.includes('.') ? rounded.toFixed(2).replace(/\.00$/, '').replace(/(\.[0-9])0$/, '$1') : s;
+  }
+
   function clampVal(v, min = 0, max = 999999999) {
     const num = Number(v ?? 0);
     if (isNaN(num)) return min;
     return Math.max(min, Math.min(max, Math.floor(num)));
+  }
+
+  function clampStatVal(v, min = 0, max = 9999) {
+    const n = Number(v ?? 0);
+    if (!Number.isFinite(n)) return min;
+    const clamped = Math.max(min, Math.min(max, n));
+    return Math.round(clamped * 100) / 100;
+  }
+
+  // Stejná logika jako v postava.js / arena.js
+  function getCritChanceFromDexAndLevel(totalDex, level) {
+    const dex = Number(totalDex);
+    const lvl = clampVal(level, 1, 9999);
+    const safeDex = Number.isFinite(dex) ? dex : 0;
+    const base = Math.floor(safeDex * 0.5);
+    const penalty = Math.floor((lvl - 1) * 0.35);
+    return Math.max(1, base - penalty);
   }
 
   function getSlotEmoji(slotName) {
@@ -34,22 +59,25 @@
     return emojis[slotName] || '❓';
   }
 
-  function calculateStatBonus(stat, value) {
-    const val = clampVal(value, 0, 9999);
+  // stejný výpočty jako v postava.js / arena.js
+  function calculateStatBonus(stat, value, level = 1) {
+    const val = Number(value);
+    const safe = Number.isFinite(val) ? val : 0;
+    const lvl = clampVal(level, 1, 9999);
     
     switch(stat) {
       case 'strength':
-        return `+${val * 2} DMG`;
+        return `+${Math.round(safe * 2)} DMG`;
       case 'defense':
-        return `${Math.min(Math.floor((val / 28) * 100), 100)}% Redukce`;
+        return `${Math.min(Math.floor((safe / 28) * 100), 100)}% Redukce`;
       case 'dexterity':
-        return `+${Math.floor(val * 0.5)}% Crit`;
+        return `+${getCritChanceFromDexAndLevel(safe, lvl)}% Crit`;
       case 'intelligence':
-        return `+${Math.floor(val * 1.5)}% Magie`;
+        return `+${Math.floor(safe * 1.5)}% Magie`;
       case 'constitution':
-        return `${500 + (val * 25)} HP`;
+        return `${Math.round(500 + (safe * 25))} HP`;
       case 'luck':
-        return `${Math.min(val, 100)}% / 100%`;
+        return `${Math.min(Math.floor(safe), 100)}% / 100%`;
       default:
         return '';
     }
@@ -61,7 +89,7 @@
     const src = (input && typeof input === 'object') ? input : {};
     const out = {};
     for (const k of ALLOWED_STATS) {
-      out[k] = clampVal(src[k], 0, 9999);
+      out[k] = clampStatVal(src[k], 0, 9999);
     }
     return out;
   }
@@ -89,8 +117,135 @@
     ];
   }
 
-  function getItemById(id) {
-    return getAllItems().find(it => String(it.id) === String(id));
+  // ===== TOOLTIP SYSTEM (stejně jako postava/shop) =====
+  let tooltip = null;
+
+  function createTooltip() {
+    tooltip = document.createElement('div');
+    tooltip.className = 'item-tooltip';
+    tooltip.style.cssText = `
+      position: fixed;
+      background: linear-gradient(135deg, rgba(40,30,20,0.98), rgba(25,18,12,0.99));
+      border: 3px solid #c9a44a;
+      border-radius: 12px;
+      padding: 14px;
+      pointer-events: none;
+      z-index: 10000;
+      display: none;
+      min-width: 250px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    `;
+    document.body.appendChild(tooltip);
+  }
+
+  function showTooltip(item, x, y) {
+    if (!item) return;
+    if (!tooltip) createTooltip();
+
+    let bonusesHTML = '';
+    if (item.bonuses && typeof item.bonuses === 'object') {
+      bonusesHTML = '<div style="margin-top: 10px; padding-top: 10px; border-top: 2px solid rgba(201,164,74,0.3);">';
+      Object.keys(item.bonuses).forEach(stat => {
+        const value = Number(item.bonuses[stat] || 0);
+        if (!Number.isFinite(value) || value === 0) return;
+        const color = value > 0 ? '#4af' : '#f44';
+        const sign = value > 0 ? '+' : '';
+        const statNames = {
+          strength: '⚔️ Síla',
+          defense: '🛡️ Obrana',
+          dexterity: '🎯 Obratnost',
+          intelligence: '🧠 Inteligence',
+          constitution: '💪 Výdrž',
+          luck: '🍀 Štěstí'
+        };
+        bonusesHTML += `<div style="color: ${color}; font-weight: 900; font-size: 13px; margin: 3px 0;">${statNames[stat] || stat}: ${sign}${value}</div>`;
+      });
+      bonusesHTML += '</div>';
+    }
+
+    const icon = item.icon ?? item.emoji ?? '📦';
+    const name = item.name || 'ITEM';
+    const description = item.description || '';
+    const price = Number(item.price || 0);
+    const sellPrice = Math.floor(price * 0.35);
+
+    tooltip.innerHTML = `
+      <div style="font-size: 18px; font-weight: 900; color: #f1d27a; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
+        ${icon} ${name}
+      </div>
+      <div style="font-size: 12px; color: #c9a44a; margin-bottom: 8px; line-height: 1.4;">${description}</div>
+      ${price ? `
+        <div style="font-size: 16px; font-weight: 900; color: #f1d27a; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">💰 ${price}₽</div>
+        <div style="font-size: 12px; font-weight: 900; color: #ff6b6b; margin-top: 4px;">Prodej: ${sellPrice}₽ (35%)</div>
+      ` : ''}
+      ${bonusesHTML}
+    `;
+
+    tooltip.style.display = 'block';
+    tooltip.style.left = (x + 20) + 'px';
+    tooltip.style.top = (y - tooltip.offsetHeight / 2) + 'px';
+  }
+
+  function hideTooltip() {
+    if (tooltip) tooltip.style.display = 'none';
+  }
+
+  function renderItemIconHTML(icon, alt) {
+    const safeAlt = String(alt || 'item').replace(/"/g, '&quot;');
+    const ic = icon == null ? '' : String(icon);
+    const isImage =
+      /^data:image\//i.test(ic) ||
+      /^https?:\/\//i.test(ic) ||
+      /\.(png|jpe?g|webp|gif|svg)$/i.test(ic);
+    if (isImage) return `<img src="${ic}" alt="${safeAlt}">`;
+    return ic ? ic : '❓';
+  }
+
+  function getItemById(itemRef, row) {
+    // když už je to objekt (např. uložená instance), vrať rovnou
+    if (itemRef && typeof itemRef === 'object') return itemRef;
+
+    const ALIASES = {
+      knife: 'nuz',
+      tactical_knife: 'nuz',
+      takticky_nuz: 'nuz',
+      'takticky-nuz': 'nuz',
+    };
+
+    const rawId = String(itemRef || '');
+    const id = ALIASES[rawId] || rawId;
+    if (!id) return null;
+
+    // zkus nejdřív inventář/equipped objekt, pokud je k dispozici
+    const inv = (row?.inventory || []);
+    const foundInv = inv.find(x => {
+      if (!x) return false;
+      if (typeof x === 'object') return x.instance_id === id || x.id === id;
+      return String(x) === id;
+    });
+    if (foundInv && typeof foundInv === 'object') return foundInv;
+
+    const eq = (row?.equipped || {});
+    const eqObj = Object.values(eq).find(x => x && typeof x === 'object' && (x.instance_id === id || x.id === id));
+    if (eqObj && typeof eqObj === 'object') return eqObj;
+
+    return getAllItems().find(it => String(it.id) === String(id)) || null;
+  }
+
+  function calculateTotalBonuses(row) {
+    const bonuses = { strength: 0, defense: 0, dexterity: 0, intelligence: 0, constitution: 0, luck: 0 };
+    const equipped = (row?.equipped || {});
+    Object.values(equipped).forEach(itemRef => {
+      if (!itemRef) return;
+      const item = getItemById(itemRef, row);
+      if (!item || !item.bonuses) return;
+      Object.keys(item.bonuses).forEach(stat => {
+        if (bonuses[stat] === undefined) return;
+        const v = Number(item.bonuses[stat] || 0);
+        if (Number.isFinite(v)) bonuses[stat] += v;
+      });
+    });
+    return bonuses;
   }
 
   // ===== LOAD MY STATS =====
@@ -354,26 +509,39 @@
     
     // Update level
     const levelEl = document.getElementById('playerLevel');
-    if (levelEl) {
-      levelEl.textContent = `Level ${clampVal(data.level, 1, 9999)}`;
-    }
+    const lvl = clampVal(data.level, 1, 9999);
+    if (levelEl) levelEl.textContent = `Level ${lvl}`;
+
+    // XP + money (pokud je v UI)
+    const xpEl = document.getElementById('playerXP');
+    const moneyEl = document.getElementById('playerMoney');
+    if (xpEl) xpEl.textContent = fmtInt(data.xp);
+    if (moneyEl) moneyEl.textContent = fmtInt(data.money);
     
     // Update stats
-    const stats = sanitizeStats(data.stats || {});
+    const baseStats = sanitizeStats(data.stats || {});
+    const bonuses = calculateTotalBonuses(data);
     
     ALLOWED_STATS.forEach(stat => {
-      const value = clampVal(stats[stat], 0, 9999);
+      const baseValue = Number(baseStats[stat] ?? 0);
+      const bonus = Number(bonuses[stat] ?? 0);
+      const totalValue = baseValue + bonus;
       const statEl = document.getElementById(`stat${stat.charAt(0).toUpperCase() + stat.slice(1)}`);
       const extraEl = document.getElementById(`stat${stat.charAt(0).toUpperCase() + stat.slice(1)}Extra`);
       
-      if (statEl) statEl.textContent = value;
-      if (extraEl) extraEl.textContent = calculateStatBonus(stat, value);
+      if (statEl) {
+        if (bonus !== 0) {
+          const sign = bonus > 0 ? '+' : '';
+          statEl.innerHTML = `${formatStatValue(baseValue)} <span style="color:#4af; font-weight:900;">${sign}${formatStatValue(bonus)}</span>`;
+        } else {
+          statEl.textContent = formatStatValue(baseValue);
+        }
+      }
+      if (extraEl) extraEl.textContent = calculateStatBonus(stat, totalValue, lvl);
     });
     
-    // Update equipped items
-    if (data.equipped) {
-      renderEquippedItems(data.equipped);
-    }
+    // Update equipped items + tooltips
+    renderEquippedItems(data);
   }
 
   // ===== SHOW PLAYER VIEW =====
@@ -435,19 +603,36 @@
   }
 
   // ===== RENDER EQUIPPED ITEMS =====
-  function renderEquippedItems(equipped) {
+  function renderEquippedItems(row) {
+    const equipped = (row?.equipped || {});
     const slots = document.querySelectorAll('.slot');
     
     slots.forEach(slot => {
       const slotName = slot.dataset.slot;
       const itemId = equipped[slotName];
       
+      // zruš starý handlery (aby se neduplikovaly při realtime update)
+      slot.onmouseenter = null;
+      slot.onmousemove = null;
+      slot.onmouseleave = null;
+
       if (itemId) {
-        const item = getItemById(itemId);
+        const item = getItemById(itemId, row);
         slot.classList.add('has-item');
-        
-        if (item && item.emoji) {
-          slot.innerHTML = `<span class="slot-item">${item.emoji}</span>`;
+
+        if (item) {
+          const iconHTML = renderItemIconHTML(item.icon ?? item.emoji, item.name);
+          slot.innerHTML = `<span class="slot-item">${iconHTML}</span>`;
+
+          // tooltip
+          slot.onmouseenter = (e) => showTooltip(item, e.clientX, e.clientY);
+          slot.onmousemove = (e) => {
+            if (tooltip && tooltip.style.display === 'block') {
+              tooltip.style.left = (e.clientX + 20) + 'px';
+              tooltip.style.top = (e.clientY - tooltip.offsetHeight / 2) + 'px';
+            }
+          };
+          slot.onmouseleave = hideTooltip;
         } else {
           slot.innerHTML = `<span class="slot-item">📦</span>`;
         }
