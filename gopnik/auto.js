@@ -331,6 +331,9 @@ async function startBossFight(bossIndex) {
     reward: boss.reward,
     story: boss.story
   };
+
+  // Fallback pro arena2: i kdyby DB upsert nestihl doběhnout, máme payload lokálně
+  try { sessionStorage.setItem('arenaFromCrypta', JSON.stringify(bossData)); } catch {}
   
   if (window.SFReady) await window.SFReady;
   const sb = window.SF?.sb;
@@ -338,8 +341,6 @@ async function startBossFight(bossIndex) {
   if (sb && uid) {
     await sb.from('crypta_fights').upsert({ user_id: uid, payload: bossData }, { onConflict: 'user_id' });
   }
-  // Fallback i bez realtime/Supabase (nebo když se to nestihne):
-  try { sessionStorage.setItem('arenaFromCrypta', JSON.stringify(bossData)); } catch(_) {}
   const qs = new URLSearchParams();
   qs.set('fromCrypta', '1');
   window.location.href = 'arena2.html?' + qs.toString();

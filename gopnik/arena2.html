@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Arena 2</title>
-  <link rel="stylesheet" href="arena2.css">
+  <link rel="stylesheet" href="arena.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="items.js"></script>
   <link rel="stylesheet" href="menu.css">
@@ -58,7 +58,7 @@
     <!-- NAV BUTTONS -->
     <div class="menu-frame">
       <a href="postava.html" class="sf-btn" data-icon="🥺">POSTAVA</a>
-      <a href="arena.html" class="sf-btn" data-icon="⚔️">ARENA</a>
+      <a href="arena.html" class="sf-btn active" data-icon="⚔️">ARENA</a>
       <a href="shop.html" class="sf-btn" data-icon="🗡️">SHOP</a>
       <a href="auto.html" class="sf-btn" data-icon="🚗">CRYPTA</a>
       <a href="guild.html" class="sf-btn" data-icon="👥">GUILD</a>
@@ -80,7 +80,7 @@
 
     <!-- NÁZEV + TLAČÍTKA -->
     <div class="arena-title-row">
-      <div class="arena-title">⚔️ ARENA (MISE/CRYPTA) ⚔️</div>
+      <div class="arena-title">⚔️ ARENA 2 ⚔️</div>
       <div class="arena-buttons">
         <button id="attackBtn" class="arena-swap-btn" type="button">⚔️ ZAÚTOČIT</button>
         <button id="nextEnemyBtn" class="arena-swap-btn" type="button">🔄 DALŠÍ SOUPEŘ</button>
@@ -207,6 +207,7 @@
   </main>
 </div>
 
+<link rel="stylesheet" href="arena2.css">
 <script src="arena2.js"></script>
 <script>
 const music = document.getElementById("bgMusic");

@@ -528,7 +528,7 @@ function missionComplete(slot) {
   
   sessionStorage.setItem('arenaFromMission', JSON.stringify(missionData));
   
-  showNotification('Mise hotová! Přesměrování do areny...', 'success');
+  showNotification('Mise hotová! Přesměrování do areny2...', 'success');
   
   setTimeout(() => {
     window.location.href = 'arena2.html';

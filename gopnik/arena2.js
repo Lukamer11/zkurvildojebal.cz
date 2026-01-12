@@ -1,24 +1,372 @@
-// arena2.js — PvE aréna pro MISE + CRYPTA (boss).
-// - Mise: po dokončení mise se přesměruje sem a fight začne automaticky.
-// - Crypta: auto.html po kliknutí na boss fight přesměruje sem a fight začne automaticky.
-// - UI je stejné jako arena.html, jen se používá jiný zdroj soupeře (NPC/boss).
+// arena2.js - Arena pro MISI/CRYPTA (autostart fight, bez arena cooldown RPC)
 
 (() => {
   "use strict";
 
+  // ===== CONFIG =====
+  const ATTACK_COOLDOWN = 5 * 60 * 1000; // 5 minut
+  const COOLDOWN_TABLE = "arena_cooldowns";
+  const BATTLE_LOG_TABLE = "arena_battles";
+
+  // ===== DOM HELPERS =====
   const $ = (id) => document.getElementById(id);
 
+  // ===== GAME STATE =====
+  let gameState = {
+    player: null,
+    enemy: null,
+    battleInProgress: false,
+    roundNumber: 0
+  };
+
+// ===== ARENA2 CONTEXT (MISSION / CRYPTA) =====
+function readArena2Context() {
+  const unified = sessionStorage.getItem('arena2_context');
+  if (unified) {
+    try { return JSON.parse(unified); } catch {}
+  }
+  const m = sessionStorage.getItem('arenaFromMission');
+  if (m) {
+    try {
+      const j = JSON.parse(m);
+      return { type: 'mission', autoStart: true, ...j, enemy: j.enemy };
+    } catch {}
+  }
+  const c = sessionStorage.getItem('arenaFromCrypta');
+  if (c) {
+    try {
+      const j = JSON.parse(c);
+      return { type: 'crypta', autoStart: true, ...j, boss: j.boss };
+    } catch {}
+  }
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('fromCrypta') === '1') return { type: 'crypta', autoStart: true, _fromQuery: true };
+  return null;
+}
+
+function normalizeEnemyFromMission(enemy, playerLevel) {
+  const lvl = Math.max(1, Number(playerLevel || 1));
+  const hp = Math.max(50, Number(enemy?.hp || (lvl * 100)));
+  const dmg = Math.max(5, Number(enemy?.damage || (lvl * 10)));
+  const str = Math.max(5, Math.round(dmg / 2));
+  const def = Math.max(5, Math.round(lvl * 2));
+  const dex = Math.max(5, Math.round(lvl * 1.5));
+  const baseStats = { strength: str, defense: def, dexterity: dex, intelligence: 10, constitution: 10, luck: 10 };
+  return {
+    userId: 'mission_enemy',
+    name: enemy?.name || 'Nepřítel z mise',
+    level: lvl,
+    maxHP: hp,
+    currentHP: hp,
+    stats: baseStats,
+    baseStats,
+    bonuses: {},
+    critChance: getCritChanceFromDexAndLevel(baseStats.dexterity, lvl),
+  };
+}
+
+function normalizeEnemyFromBoss(boss) {
+  const lvl = Math.max(1, Number(boss?.level || 1));
+  const hp = Math.max(200, Number(boss?.hp || (lvl * 600)));
+  const str = 10 + lvl * 6;
+  const def = 10 + lvl * 4;
+  const dex = 10 + lvl * 3;
+  const baseStats = { strength: str, defense: def, dexterity: dex, intelligence: 10, constitution: 10 + lvl * 2, luck: 10 };
+  return {
+    userId: 'crypta_boss',
+    name: boss?.name || 'Boss',
+    level: lvl,
+    maxHP: hp,
+    currentHP: hp,
+    stats: baseStats,
+    baseStats,
+    bonuses: {},
+    critChance: getCritChanceFromDexAndLevel(baseStats.dexterity, lvl),
+  };
+}
+
+
+  // ===== SUPABASE HELPERS =====
+  const supabaseClient = () => window.supabaseClient || window.SF?.sb;
+
+  async function ensureOnline() {
+    if (window.SFReady) await window.SFReady;
+    const sb = supabaseClient();
+    if (!sb) throw new Error('Supabase client není inicializovaný');
+    return sb;
+  }
+
+  // ===== ITEM HELPERS =====
   const ALLOWED_STATS = ['strength','defense','dexterity','intelligence','constitution','luck'];
 
-  // ===== Helpers (stejně jako arena/postava) =====
+  function getAllItems() {
+    const db = window.SHOP_ITEMS;
+    if (!db) return [];
+    return [
+      ...(db.weapons || []),
+      ...(db.armor || []),
+      ...(db.special || []),
+    ];
+  }
+
+  function getItemById(itemRef, row) {
+    if (itemRef && typeof itemRef === "object") return itemRef;
+
+    const ALIASES = {
+      knife: "nuz",
+      tactical_knife: "nuz",
+      takticky_nuz: "nuz",
+      "takticky-nuz": "nuz",
+    };
+
+    const rawId = String(itemRef || "");
+    const id = ALIASES[rawId] || rawId;
+    if (!id) return null;
+
+    const inv = (row?.inventory || window.SF?.stats?.inventory || []);
+    const foundInv = inv.find((x) => {
+      if (!x) return false;
+      if (typeof x === "object") return x.instance_id === id || x.id === id;
+      return String(x) === id;
+    });
+    if (foundInv && typeof foundInv === "object") return foundInv;
+
+    const eq = (row?.equipped || window.SF?.stats?.equipped || {});
+    const eqObj = Object.values(eq).find((x) => x && typeof x === "object" && (x.instance_id === id || x.id === id));
+    if (eqObj && typeof eqObj === "object") return eqObj;
+
+    return getAllItems().find((it) => it.id === id) || null;
+  }
+
+  function calculateTotalBonuses(row) {
+    const bonuses = {
+      strength: 0,
+      defense: 0,
+      dexterity: 0,
+      intelligence: 0,
+      constitution: 0,
+      luck: 0
+    };
+    
+    const equipped = (row?.equipped || {});
+    
+    Object.values(equipped).forEach(itemRef => {
+      if (!itemRef) return;
+      const item = getItemById(itemRef, row);
+      if (!item || !item.bonuses) return;
+      
+      Object.keys(item.bonuses).forEach(stat => {
+        if (bonuses[stat] !== undefined) {
+          bonuses[stat] += item.bonuses[stat];
+        }
+      });
+    });
+    
+    return bonuses;
+  }
+
+  function getPlayerClass(stats) {
+    const str = Number(stats.strength || 0);
+    const def = Number(stats.defense || 0);
+    const int = Number(stats.intelligence || 0);
+
+    if (str > def && str > int) return 'rvac';
+    if (int > str && int > def) return 'mozek';
+    return 'padouch';
+  }
+
   function getCritChanceFromDexAndLevel(totalDex, level) {
-    const base = Math.floor(Number(totalDex || 0) * 0.5);
-    const penalty = Math.floor((Math.max(1, Number(level || 1)) - 1) * 0.35);
+    const base = Math.floor(totalDex * 0.5);
+    const penalty = Math.floor((level - 1) * 0.35);
     return Math.max(1, base - penalty);
   }
 
+  function calculateTotalStats(row) {
+    const stats = row.stats || {};
+    const bonuses = calculateTotalBonuses(row);
+    
+    const total = {};
+    ALLOWED_STATS.forEach(stat => {
+      const base = Number(stats[stat] || 10);
+      const bonus = bonuses[stat] || 0;
+      total[stat] = base + bonus;
+    });
+    
+    return total;
+  }
+
   function calculateMaxHP(constitution) {
-    return Math.round(500 + Number(constitution || 0) * 25);
+    return Math.round(500 + constitution * 25);
+  }
+
+  // ===== COOLDOWN MANAGEMENT (SERVER-SIDE) =====
+  async function getCooldownRemaining(userId) {
+    try {
+      const sb = await ensureOnline();
+      const { data, error } = await sb
+        .from(COOLDOWN_TABLE)
+        .select('last_attack_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.warn('Cooldown check error:', error);
+        return 0;
+      }
+
+      if (!data || !data.last_attack_at) return 0;
+
+      const lastAttack = new Date(data.last_attack_at).getTime();
+      const elapsed = Date.now() - lastAttack;
+      return Math.max(0, ATTACK_COOLDOWN - elapsed);
+    } catch (e) {
+      console.error('Cooldown error:', e);
+      return 0;
+    }
+  }
+
+  async function updateCooldown(userId) {
+    try {
+      const sb = await ensureOnline();
+      await sb
+        .from(COOLDOWN_TABLE)
+        .upsert({
+          user_id: userId,
+          last_attack_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+    } catch (e) {
+      console.error('Update cooldown error:', e);
+    }
+  }
+
+  async function updateCooldownDisplay() {
+    const userId = window.SF?.user?.id;
+    if (!userId) return;
+
+    const remaining = await getCooldownRemaining(userId);
+    
+    if (remaining > 0) {
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      const timeText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      
+      $('attackBtn').disabled = true;
+      $('nextEnemyBtn').disabled = true;
+      $('attackBtn').textContent = `⏰ ${timeText}`;
+      $('nextEnemyBtn').textContent = `⏰ ${timeText}`;
+      $('attackBtn').style.opacity = '0.5';
+      $('nextEnemyBtn').style.opacity = '0.5';
+    } else {
+      $('attackBtn').disabled = false;
+      $('nextEnemyBtn').disabled = false;
+      $('attackBtn').textContent = '⚔️ ZAÚTOČIT';
+      $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
+      $('attackBtn').style.opacity = '1';
+      $('nextEnemyBtn').style.opacity = '1';
+    }
+  }
+
+  function startCooldownTimer() {
+    updateCooldownDisplay();
+    
+    const interval = setInterval(async () => {
+      await updateCooldownDisplay();
+      
+      const userId = window.SF?.user?.id;
+      if (!userId) {
+        clearInterval(interval);
+        return;
+      }
+      
+      const remaining = await getCooldownRemaining(userId);
+      if (remaining <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+  }
+
+  // ===== FETCH RANDOM OPPONENT (JEN REÁLNÍ HRÁČI) =====
+  async function fetchRandomOpponent() {
+    const sb = await ensureOnline();
+    const currentUserId = window.SF?.user?.id;
+    
+    if (!currentUserId) {
+      console.error('Current user not found');
+      return null;
+    }
+
+    // Získat všechny ostatní hráče (ne sebe)
+    const { data: allPlayers, error } = await sb
+      .from('player_stats')
+      .select('*')
+      .neq('user_id', currentUserId)
+      .limit(100);
+
+    if (error) {
+      console.error('Error fetching players:', error);
+      return null;
+    }
+
+    if (!allPlayers || allPlayers.length === 0) {
+      console.warn('No other players found');
+      return null;
+    }
+
+    // Vybrat náhodného soupeře
+    const randomIndex = Math.floor(Math.random() * allPlayers.length);
+    return allPlayers[randomIndex];
+  }
+
+  // ===== LOAD PLAYER DATA =====
+  async function loadPlayerData() {
+    await window.SFReady;
+    const stats = window.SF?.stats;
+    
+    if (!stats) {
+      console.error('Player stats not available');
+      return null;
+    }
+
+    const totalStats = calculateTotalStats(stats);
+    const level = Number(stats.level || 1);
+    const maxHP = calculateMaxHP(totalStats.constitution);
+    const characterName = stats.stats?.character_name || 'HRÁČ #' + stats.user_id.slice(0, 8).toUpperCase();
+
+    return {
+      userId: stats.user_id,
+      name: characterName,
+      level: level,
+      stats: totalStats,
+      maxHP: maxHP,
+      currentHP: maxHP,
+      critChance: getCritChanceFromDexAndLevel(totalStats.dexterity, level),
+      classType: getPlayerClass(stats.stats || {})
+    };
+  }
+
+  // ===== LOAD ENEMY DATA =====
+  function loadEnemyData(enemyRow) {
+    if (!enemyRow) return null;
+
+    const baseStats = enemyRow.stats || {};
+    const bonuses = calculateTotalBonuses(enemyRow);
+    const totalStats = calculateTotalStats(enemyRow);
+    const level = Number(enemyRow.level || 1);
+    const maxHP = calculateMaxHP(totalStats.constitution);
+    const characterName = baseStats.character_name || 'HRÁČ #' + enemyRow.user_id.slice(0, 8).toUpperCase();
+
+    return {
+      userId: enemyRow.user_id,
+      name: characterName,
+      level: level,
+      baseStats: baseStats,
+      bonuses: bonuses,
+      stats: totalStats,
+      maxHP: maxHP,
+      currentHP: maxHP,
+      critChance: getCritChanceFromDexAndLevel(totalStats.dexterity, level),
+      classType: getPlayerClass(baseStats)
+    };
   }
 
   function formatStatValue(v) {
@@ -30,28 +378,28 @@
   }
 
   function calculateStatBonus(stat, value, level) {
-    const val = Number(value);
-    const safe = Number.isFinite(val) ? val : 0;
-    const lvl = Math.max(1, Number(level || 1));
+    const v = Number(value);
+    const val = Number.isFinite(v) ? v : 0;
+    
     switch (stat) {
       case "strength":
-        return `+${Math.round(safe * 2)} DMG`;
+        return `+${Math.round(val * 2)} DMG`;
       case "defense": {
-        const red = Math.min(100, Math.floor((safe / 28) * 100));
+        const red = Math.min(100, Math.floor((val / 28) * 100));
         return `${red}% Redukce`;
       }
       case "dexterity": {
-        const crit = getCritChanceFromDexAndLevel(safe, lvl);
+        const crit = getCritChanceFromDexAndLevel(val, level);
         return `+${crit}% Crit`;
       }
       case "intelligence":
-        return `+${Math.floor(safe * 1.5)}% Magie`;
+        return `+${Math.floor(val * 1.5)}% Magie`;
       case "constitution": {
-        const hp = Math.round(500 + safe * 25);
+        const hp = Math.round(500 + val * 25);
         return `${hp} HP`;
       }
       case "luck": {
-        const luckPercent = Math.min(100, Math.floor(safe));
+        const luckPercent = Math.min(100, Math.floor(val));
         return `${luckPercent}% / 100%`;
       }
       default:
@@ -59,14 +407,138 @@
     }
   }
 
+  // ===== UI RENDERING =====
+  function renderPlayer(player) {
+    if (!player) return;
+
+    $('playerName').textContent = player.name;
+    $('playerLevelText').textContent = `Level ${player.level}`;
+    
+    const baseStats = window.SF?.stats?.stats || {};
+    const bonuses = calculateTotalBonuses(window.SF?.stats || {});
+    
+    const statElements = {
+      strength: { value: 'pStr', extra: 'pStrExtra' },
+      defense: { value: 'pDef', extra: 'pDefExtra' },
+      dexterity: { value: 'pDex', extra: 'pDexExtra' },
+      intelligence: { value: 'pInt', extra: null },
+      constitution: { value: 'pCon', extra: null },
+      luck: { value: 'pLuck', extra: null }
+    };
+    
+    Object.keys(statElements).forEach(stat => {
+      const els = statElements[stat];
+      const valueEl = $(els.value);
+      if (!valueEl) return;
+      
+      const base = Number(baseStats[stat] || 10);
+      const bonus = bonuses[stat] || 0;
+      const total = base + bonus;
+      
+      if (bonus !== 0) {
+        valueEl.innerHTML = `${formatStatValue(base)} <span style="color: #4af; font-size: 14px;">+${bonus}</span>`;
+      } else {
+        valueEl.textContent = formatStatValue(base);
+      }
+      
+      if (els.extra) {
+        const extraEl = $(els.extra);
+        if (extraEl) {
+          extraEl.textContent = calculateStatBonus(stat, total, player.level);
+        }
+      }
+    });
+
+    updateHP('player', player.currentHP, player.maxHP);
+  }
+
+  function renderEnemy(enemy) {
+    if (!enemy) return;
+
+    $('enemyName').textContent = enemy.name;
+    $('enemyLevel').textContent = `Level ${enemy.level}`;
+    
+    const baseStats = enemy.baseStats || {};
+    const bonuses = enemy.bonuses || {};
+    
+    const statElements = {
+      strength: { value: 'eStr', extra: 'eStrExtra' },
+      defense: { value: 'eDef', extra: 'eDefExtra' },
+      dexterity: { value: 'eDex', extra: 'eDexExtra' },
+      intelligence: { value: 'eInt', extra: null },
+      constitution: { value: 'eCon', extra: null },
+      luck: { value: 'eLuck', extra: null }
+    };
+    
+    Object.keys(statElements).forEach(stat => {
+      const els = statElements[stat];
+      const valueEl = $(els.value);
+      if (!valueEl) return;
+      
+      const base = Number(baseStats[stat] || 10);
+      const bonus = bonuses[stat] || 0;
+      const total = base + bonus;
+      
+      if (bonus !== 0) {
+        valueEl.innerHTML = `${formatStatValue(base)} <span style="color: #4af; font-size: 14px;">+${bonus}</span>`;
+      } else {
+        valueEl.textContent = formatStatValue(base);
+      }
+      
+      if (els.extra) {
+        const extraEl = $(els.extra);
+        if (extraEl) {
+          extraEl.textContent = calculateStatBonus(stat, total, enemy.level);
+        }
+      }
+    });
+
+    updateHP('enemy', enemy.currentHP, enemy.maxHP);
+  }
+
   function updateHP(side, current, max) {
     const fillId = side === 'player' ? 'playerHealthFill' : 'enemyHealthFill';
     const textId = side === 'player' ? 'playerHealthText' : 'enemyHealthText';
+    
     const percent = Math.max(0, Math.min(100, (current / max) * 100));
-    const fill = $(fillId);
-    const text = $(textId);
-    if (fill) fill.style.width = percent + '%';
-    if (text) text.textContent = `${Math.max(0, Math.round(current))} / ${Math.round(max)}`;
+    $(fillId).style.width = percent + '%';
+    $(textId).textContent = `${Math.max(0, Math.round(current))} / ${Math.round(max)}`;
+  }
+
+  // ===== COMBAT LOGIC =====
+  function calculateDamage(attacker, defender) {
+    const attackPower = attacker.stats.strength * 2;
+    const defense = defender.stats.defense;
+    const defenseReduction = Math.min(0.75, defense * 0.01);
+    
+    const baseDamage = Math.max(1, attackPower * (1 - defenseReduction));
+    const variance = 0.9 + Math.random() * 0.2;
+    
+    return Math.round(baseDamage * variance);
+  }
+
+  function checkCrit(attacker) {
+    const roll = Math.random() * 100;
+    return roll < attacker.critChance;
+  }
+
+  async function performAttack(attacker, defender, attackerSide) {
+    const isCrit = checkCrit(attacker);
+    let damage = calculateDamage(attacker, defender);
+    
+    if (isCrit) {
+      damage = Math.round(damage * 2);
+    }
+
+    defender.currentHP = Math.max(0, defender.currentHP - damage);
+
+    showDamage(attackerSide === 'player' ? 'enemy' : 'player', damage, isCrit);
+    playHitAnimation(attackerSide === 'player' ? 'enemy' : 'player');
+    showWeapon(attackerSide);
+
+    updateHP(attackerSide === 'player' ? 'enemy' : 'player', defender.currentHP, defender.maxHP);
+
+    await sleep(1000);
   }
 
   function showDamage(side, amount, isCrit) {
@@ -75,7 +547,7 @@
 
     dmgEl.textContent = isCrit ? `CRIT! ${amount}` : `-${amount}`;
     dmgEl.classList.remove('show');
-
+    
     if (isCrit) {
       dmgEl.style.color = '#ff4444';
       dmgEl.style.fontSize = '36px';
@@ -91,12 +563,14 @@
   }
 
   function playHitAnimation(side) {
-    const container = side === 'player'
+    const container = side === 'player' 
       ? document.querySelector('.player-section .character-arena')
       : document.querySelector('.enemy-section .character-arena');
+    
     if (!container) return;
 
     container.classList.add('hit-shake');
+    
     const overlays = container.querySelectorAll('.hit-overlay');
     overlays.forEach((overlay, i) => {
       setTimeout(() => {
@@ -105,417 +579,467 @@
       }, i * 80);
     });
 
-    setTimeout(() => container.classList.remove('hit-shake'), 350);
+    setTimeout(() => {
+      container.classList.remove('hit-shake');
+    }, 350);
+  }
+
+  function showWeapon(side) {
+    const weapon = side === 'player'
+      ? document.querySelector('.weapon-player')
+      : document.querySelector('.weapon-enemy');
+    
+    if (!weapon) return;
+
+    weapon.classList.add('show-weapon');
+    setTimeout(() => {
+      weapon.classList.remove('show-weapon');
+    }, 400);
   }
 
   function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  function calculateDamage(attacker, defender) {
-    const attackPower = Number(attacker.stats.strength || 0) * 2;
-    const defense = Number(defender.stats.defense || 0);
-    const defenseReduction = Math.min(0.75, defense * 0.01);
-    const baseDamage = Math.max(1, attackPower * (1 - defenseReduction));
-    const variance = 0.9 + Math.random() * 0.2;
-    return Math.round(baseDamage * variance);
-  }
-
-  function checkCrit(attacker) {
-    const roll = Math.random() * 100;
-    return roll < Number(attacker.critChance || 1);
-  }
-
-  async function performAttack(attacker, defender, attackerSide) {
-    const isCrit = checkCrit(attacker);
-    let damage = calculateDamage(attacker, defender);
-    if (isCrit) damage = Math.round(damage * 2);
-
-    defender.currentHP = Math.max(0, defender.currentHP - damage);
-
-    // dmg na druhé straně
-    showDamage(attackerSide === 'player' ? 'enemy' : 'player', damage, isCrit);
-    playHitAnimation(attackerSide === 'player' ? 'enemy' : 'player');
-    updateHP(attackerSide === 'player' ? 'enemy' : 'player', defender.currentHP, defender.maxHP);
-
-    await sleep(900);
-  }
-
-  // ===== Výpočet total stats hráče (bezpečně) =====
-  function calculateTotalBonuses(row) {
-    const bonuses = { strength: 0, defense: 0, dexterity: 0, intelligence: 0, constitution: 0, luck: 0 };
-    const equipped = (row?.equipped || {});
-    // Uložené itemy můžou být objekty → vezmeme rovnou bonuses
-    Object.values(equipped).forEach((itemRef) => {
-      if (!itemRef) return;
-      const it = (typeof itemRef === 'object') ? itemRef : null;
-      if (!it?.bonuses) return;
-      for (const k of Object.keys(it.bonuses)) {
-        if (bonuses[k] === undefined) continue;
-        const v = Number(it.bonuses[k] || 0);
-        if (Number.isFinite(v)) bonuses[k] += v;
-      }
-    });
-    return bonuses;
-  }
-
-  function calculateTotalStats(row) {
-    const base = (row?.stats || row?.stats?.stats) ? (row.stats || {}) : (row?.stats || {});
-    const baseStats = (row?.stats && typeof row.stats === 'object' && row.stats.strength === undefined && row.stats.stats) ? row.stats.stats : (row?.stats || {});
-    const stats = (row?.stats?.stats && typeof row.stats.stats === 'object') ? row.stats.stats : (row?.stats || baseStats || {});
-    const bonuses = calculateTotalBonuses(row);
-    const total = {};
-    for (const s of ALLOWED_STATS) {
-      const b = Number(stats?.[s] ?? 10);
-      const bon = Number(bonuses[s] ?? 0);
-      total[s] = (Number.isFinite(b) ? b : 10) + (Number.isFinite(bon) ? bon : 0);
-    }
-    return total;
-  }
-
-  function renderSide(side, data, baseStatsForView) {
-    if (!data) return;
-    if (side === 'player') {
-      $('playerName').textContent = data.name;
-      $('playerLevelText').textContent = `Level ${data.level}`;
-    } else {
-      $('enemyName').textContent = data.name;
-      $('enemyLevel').textContent = `Level ${data.level}`;
-      const av = $('enemyAvatar');
-      if (av && data.avatar) av.src = data.avatar;
-    }
-
-    const statMap = {
-      strength: { value: side === 'player' ? 'pStr' : 'eStr', extra: side === 'player' ? 'pStrExtra' : 'eStrExtra' },
-      defense: { value: side === 'player' ? 'pDef' : 'eDef', extra: side === 'player' ? 'pDefExtra' : 'eDefExtra' },
-      dexterity: { value: side === 'player' ? 'pDex' : 'eDex', extra: side === 'player' ? 'pDexExtra' : 'eDexExtra' },
-      intelligence: { value: side === 'player' ? 'pInt' : 'eInt', extra: null },
-      constitution: { value: side === 'player' ? 'pCon' : 'eCon', extra: null },
-      luck: { value: side === 'player' ? 'pLuck' : 'eLuck', extra: null },
-    };
-
-    for (const stat of Object.keys(statMap)) {
-      const el = $(statMap[stat].value);
-      if (!el) continue;
-      const val = Number(baseStatsForView?.[stat] ?? data.stats?.[stat] ?? 10);
-      el.textContent = formatStatValue(val);
-      const extraId = statMap[stat].extra;
-      if (extraId) {
-        const extraEl = $(extraId);
-        if (extraEl) extraEl.textContent = calculateStatBonus(stat, Number(data.stats?.[stat] ?? val), data.level);
-      }
-    }
-
-    updateHP(side, data.currentHP, data.maxHP);
-  }
-
-  function openResult(title, text) {
-    const modal = $('resultModal');
-    if (!modal) return;
-    $('resultTitle').textContent = title;
-    $('resultText').textContent = text;
-    modal.classList.add('show');
-    modal.setAttribute('aria-hidden', 'false');
-  }
-
-  function closeResult() {
-    const modal = $('resultModal');
-    if (!modal) return;
-    modal.classList.remove('show');
-    modal.setAttribute('aria-hidden', 'true');
-  }
-
-  // ===== Context loader (mise / crypta) =====
-  function pullMissionPayload() {
+  // ===== SEND MAIL NOTIFICATION =====
+  async function sendBattleNotification(winnerId, loserId, winnerName, loserName, moneyChange) {
     try {
-      const raw = sessionStorage.getItem('arenaFromMission');
-      if (!raw) return null;
-      sessionStorage.removeItem('arenaFromMission');
-      return JSON.parse(raw);
-    } catch {
-      return null;
+      const sb = await ensureOnline();
+      
+      // Mail pro poraženého
+      const loserMail = {
+        id: `battle_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        user_id: loserId,
+        from_name: 'ARENA',
+        to_name: loserName,
+        subject: '⚔️ Byl jsi napaden!',
+        body: `**${winnerName}** na tebe zaútočil v aréně!\n\n**PROHRA** 💀\n\n**-${Math.abs(moneyChange)}₽**\n\nZkus to příště lépe!`,
+        created_at: new Date().toISOString(),
+        unread: true,
+        important: true,
+        kind: 'arena'
+      };
+
+      // Mail pro vítěze
+      const winnerMail = {
+        id: `battle_${Date.now()}_${Math.random().toString(36).slice(2)}_win`,
+        user_id: winnerId,
+        from_name: 'ARENA',
+        to_name: winnerName,
+        subject: '⚔️ Vítězství v aréně!',
+        body: `Porazil jsi **${loserName}** v aréně!\n\n**VÍTĚZSTVÍ** 🏆\n\n**+${moneyChange}₽**\n\nSkvělý boj!`,
+        created_at: new Date().toISOString(),
+        unread: true,
+        important: true,
+        kind: 'arena'
+      };
+
+      await sb.from('player_mail').insert([loserMail, winnerMail]);
+      console.log('✅ Battle notifications sent');
+    } catch (e) {
+      console.error('❌ Failed to send battle notifications:', e);
     }
   }
 
-  function pullCryptaHint() {
-    const qs = new URLSearchParams(location.search);
-    if (qs.get('fromCrypta') === '1') return { fromCrypta: true };
-    return null;
-  }
-
-  async function loadCryptaPayload() {
-    // 1) sessionStorage fallback (když supabase fetch selže)
-    try {
-      const raw = sessionStorage.getItem('arenaFromCrypta');
-      if (raw) {
-        sessionStorage.removeItem('arenaFromCrypta');
-        return JSON.parse(raw);
-      }
-    } catch { /* ignore */ }
-
-    // 2) Supabase: crypta_fights (auto.js tam ukládá payload)
-    try {
-      await (window.SFReady || Promise.resolve());
-      const sb = window.SF?.sb || window.supabaseClient;
-      const uid = window.SF?.user?.id || window.SF?.stats?.user_id;
-      if (!sb || !uid) return null;
-      const { data } = await sb
-        .from('crypta_fights')
-        .select('payload')
-        .eq('user_id', uid)
-        .maybeSingle();
-      if (data?.payload) return data.payload;
-      return null;
-    } catch {
-      return null;
+  // ===== BATTLE FLOW =====
+  async function startBattle() {
+    if (gameState.battleInProgress) {
+      console.warn('⚠️ Battle already in progress!');
+      return;
     }
-  }
-
-  function buildEnemyFromMission(missionPayload, player) {
-    const diff = String(missionPayload?.difficulty || 'easy').toLowerCase();
-    const diffMul = diff === 'easy' ? 0.85 : diff === 'medium' ? 1.05 : diff === 'hard' ? 1.25 : 1.45;
-    const lvl = Math.max(1, Math.round(player.level * diffMul));
-    const stats = {
-      strength: Math.max(10, Math.round(player.stats.strength * diffMul)),
-      defense: Math.max(6, Math.round(player.stats.defense * (0.9 + diffMul * 0.08))),
-      dexterity: Math.max(6, Math.round(player.stats.dexterity * (0.9 + diffMul * 0.06))),
-      intelligence: Math.max(6, Math.round(player.stats.intelligence * (0.9 + diffMul * 0.06))),
-      constitution: Math.max(8, Math.round(player.stats.constitution * (0.95 + diffMul * 0.08))),
-      luck: Math.max(1, Math.round(player.stats.luck * (0.8 + diffMul * 0.05))),
-    };
-    const maxHP = calculateMaxHP(stats.constitution);
-    const name = missionPayload?.enemy ? String(missionPayload.enemy) : 'NEPŘÍTEL';
-    return {
-      userId: 'npc_mission',
-      name,
-      level: lvl,
-      stats,
-      maxHP,
-      currentHP: maxHP,
-      critChance: getCritChanceFromDexAndLevel(stats.dexterity, lvl),
-      avatar: 'avatar.jpg',
-      __source: { type: 'mission', payload: missionPayload },
-    };
-  }
-
-  function buildEnemyFromBoss(bossPayload, player) {
-    const boss = bossPayload?.boss || {};
-    const lvl = Math.max(1, Number(boss.level || bossPayload?.bossIndex + 1 || player.level));
-    const hp = Math.max(500, Number(boss.hp || 2000));
-    const mul = 0.95 + (lvl * 0.06);
-    const stats = {
-      strength: Math.max(12, Math.round(player.stats.strength * mul)),
-      defense: Math.max(8, Math.round(player.stats.defense * (mul * 0.95))),
-      dexterity: Math.max(8, Math.round(player.stats.dexterity * (mul * 0.85))),
-      intelligence: Math.max(6, Math.round(player.stats.intelligence * (mul * 0.6))),
-      constitution: Math.max(10, Math.round((hp - 500) / 25)),
-      luck: Math.max(1, Math.round(player.stats.luck * (0.7 + lvl * 0.02))),
-    };
-    // boss HP je dané → přepíšeme maxHP
-    const maxHP = hp;
-    const name = boss.name ? String(boss.name) : 'BOSS';
-    const avatar = boss.avatar ? String(boss.avatar) : 'avatar.jpg';
-    return {
-      userId: 'npc_boss',
-      name,
-      level: lvl,
-      stats,
-      maxHP,
-      currentHP: maxHP,
-      critChance: getCritChanceFromDexAndLevel(stats.dexterity, lvl),
-      avatar,
-      __source: { type: 'crypta', payload: bossPayload },
-    };
-  }
-
-  // ===== Reward application =====
-  function safeNum(n, def = 0) {
-    const x = Number(n);
-    return Number.isFinite(x) ? x : def;
-  }
-
-  async function applyMissionWin(missionPayload) {
-    const rewards = missionPayload?.rewards || {};
-    const moneyGain = safeNum(rewards.money, 0);
-    const xpGain = safeNum(rewards.exp, 0);
-    const cigGain = safeNum(rewards.cigarettes, 0);
-
-    const patch = {
-      money: safeNum(window.SF?.stats?.money, 0) + moneyGain,
-      xp: safeNum(window.SF?.stats?.xp, 0) + xpGain,
-      cigarettes: safeNum(window.SF?.stats?.cigarettes, 0) + cigGain,
-    };
-
-    // vyčisti aktivní misi v daném slotu (aby se nevracela zpátky)
-    const slot = missionPayload?.slot;
-    const md = window.SF?.stats?.missiondata || window.SF?.stats?.missionData;
-    if (md && slot && md.activeMissions && md.activeMissions[slot]) {
-      const nextMd = structuredClone(md);
-      nextMd.activeMissions[slot] = null;
-      nextMd.completedMissions = safeNum(nextMd.completedMissions, 0) + 1;
-      nextMd.totalExpEarned = safeNum(nextMd.totalExpEarned, 0) + xpGain;
-      nextMd.totalMoneyEarned = safeNum(nextMd.totalMoneyEarned, 0) + moneyGain;
-      nextMd.totalBattles = safeNum(nextMd.totalBattles, 0) + 1;
-      nextMd.totalWins = safeNum(nextMd.totalWins, 0) + 1;
-      patch.missiondata = nextMd; // menu.js posílá do DB správný klíč
+    
+    if (!gameState.player || !gameState.enemy) {
+      console.error('❌ Cannot start battle - player or enemy not loaded!');
+      return;
     }
+    
+    console.log('⚔️ Battle started!');
+    
+    gameState.battleInProgress = true;
+    gameState.roundNumber = 0;
 
-    window.SF.updateStats(patch);
-    // menu.js si to uloží samo (debounce)
-  }
-
-  async function applyCryptaWin(bossPayload) {
-    const bossIndex = Number(bossPayload?.bossIndex);
-    const reward = bossPayload?.reward;
-
-    const row = window.SF?.stats || {};
-    const progress = row.crypta_progress || { current: 0, defeated: [] };
-    const defeated = Array.isArray(progress.defeated) ? [...progress.defeated] : [];
-
-    if (Number.isFinite(bossIndex) && !defeated.includes(bossIndex)) defeated.push(bossIndex);
-    const nextCurrent = Math.max(progress.current || 0, (Number.isFinite(bossIndex) ? bossIndex + 1 : progress.current || 0));
-
-    const inv = Array.isArray(row.inventory) ? [...row.inventory] : [];
-    if (reward && typeof reward === 'object') {
-      // Uložíme jako objekt → postava/shop to umí zobrazit
-      inv.push({
-        id: reward.id,
-        name: reward.name,
-        icon: reward.icon,
-        bonuses: reward.bonuses || {},
-        type: reward.type || 'special',
-        // instance_id aby se daly odlišit duplicitní dropy
-        instance_id: `${reward.id}_${Date.now()}`
-      });
-    }
-
-    window.SF.updateStats({
-      inventory: inv,
-      crypta_progress: { current: nextCurrent, defeated },
-    });
-  }
-
-  // ===== Main battle runner =====
-  async function runBattle(player, enemy) {
-    let battleInProgress = true;
     $('attackBtn').disabled = true;
-    $('nextEnemyBtn').disabled = true;
-    $('nextEnemyBtn').style.display = 'none'; // v PvE nedává smysl
-    $('attackBtn').textContent = '⚔️ FIGHT...';
+    $('attackBtn').textContent = '⚔️ BOJ PROBÍHÁ...';
+    $('attackBtn').style.opacity = '0.5';
 
-    while (battleInProgress) {
-      await performAttack(player, enemy, 'player');
-      if (enemy.currentHP <= 0) {
-        battleInProgress = false;
-        break;
-      }
-      await performAttack(enemy, player, 'enemy');
-      if (player.currentHP <= 0) {
-        battleInProgress = false;
-        break;
-      }
+    while (gameState.player.currentHP > 0 && gameState.enemy.currentHP > 0) {
+      gameState.roundNumber++;
+
+      await performAttack(gameState.player, gameState.enemy, 'player');
+      
+      if (gameState.enemy.currentHP <= 0) break;
+
+      await sleep(500);
+
+      await performAttack(gameState.enemy, gameState.player, 'enemy');
+      
+      if (gameState.player.currentHP <= 0) break;
+      
+      await sleep(500);
     }
 
-    const playerWon = enemy.currentHP <= 0 && player.currentHP > 0;
-    const enemyWon = player.currentHP <= 0 && enemy.currentHP > 0;
+    console.log('🏁 Battle ended!');
+    gameState.battleInProgress = false;
+    // Arena2: bez arena cooldownu
 
-    // výsledky
-    if (playerWon) {
-      if (enemy.__source?.type === 'mission') {
-        await applyMissionWin(enemy.__source.payload);
-        const r = enemy.__source.payload?.rewards || {};
-        openResult('VÝHRA!', `Mise: ${enemy.__source.payload?.missionName || ''}\n+${safeNum(r.exp,0)} XP\n+${safeNum(r.money,0)}₽\n+${safeNum(r.cigarettes,0)} 🚬`);
-      } else if (enemy.__source?.type === 'crypta') {
-        await applyCryptaWin(enemy.__source.payload);
-        const rw = enemy.__source.payload?.reward;
-        openResult('BOSS PORAŽEN!', rw ? `Drop: ${rw.icon || '🎁'} ${rw.name || ''}` : 'BOSS PORAŽEN!');
-      } else {
-        openResult('VÝHRA!', 'Vyhrál jsi.');
-      }
-    } else if (enemyWon) {
-      openResult('PROHRA!', 'Dostal jsi na držku. Zkus to znovu.');
+    await sleep(1000);
+    
+    if (gameState.player.currentHP > 0) {
+      await handleVictory();
     } else {
-      openResult('KONEC', 'Souboj skončil.');
+      await handleDefeat();
     }
-
-    $('attackBtn').textContent = '⚔️ ZAÚTOČIT';
   }
 
-  async function boot() {
-    await (window.SFReady || Promise.resolve());
-    const row = window.SF?.stats;
-    if (!row?.user_id) {
-      // menu.js už by to mělo řešit, ale pro jistotu
-      location.href = 'login.html';
+  
+  async function handleVictory() {
+    console.log('🏆 Victory (Arena2)!');
+    const ctx = readArena2Context() || {};
+    await window.SFReady;
+
+    if (ctx.type === 'mission' && ctx.rewards) {
+      const addMoney = Number(ctx.rewards.money || 0);
+      const addXp = Number(ctx.rewards.exp || 0);
+
+      const md = (window.SF?.stats?.missiondata || window.SF?.stats?.missionData || {});
+      const slot = ctx.slot;
+      const active = md.activeMissions ? { ...md.activeMissions } : { slot1: null, slot2: null };
+      if (slot && active[slot]) active[slot] = null;
+
+      const nextMd = {
+        ...md,
+        completedMissions: (md.completedMissions || 0) + 1,
+        totalExpEarned: (md.totalExpEarned || 0) + addXp,
+        totalMoneyEarned: (md.totalMoneyEarned || 0) + addMoney,
+        totalBattles: (md.totalBattles || 0) + 1,
+        totalWins: (md.totalWins || 0) + 1,
+        activeMissions: active
+      };
+
+      window.SF.updateStats({
+        money: Number(window.SF.stats.money || 0) + addMoney,
+        xp: Number(window.SF.stats.xp || 0) + addXp,
+        missiondata: nextMd
+      });
+
+      showResultModal('🏆 VÍTĚZSTVÍ! 🏆', `Mise splněna: ${ctx.missionName || ''}
+
+Odměna:
+💰 +${addMoney.toLocaleString('cs-CZ')}₽
+⭐ +${addXp} XP`);
+      sessionStorage.removeItem('arenaFromMission');
+      sessionStorage.removeItem('arena2_context');
       return;
     }
 
-    // player
-    const totalStats = calculateTotalStats(row);
-    const level = Number(row.level || 1);
-    const maxHP = calculateMaxHP(totalStats.constitution);
-    const charName = row?.stats?.character_name || row?.stats?.stats?.character_name || ('HRÁČ #' + String(row.user_id).slice(0, 8).toUpperCase());
+    if (ctx.type === 'crypta' && ctx.reward) {
+      const inv = Array.isArray(window.SF?.stats?.inventory) ? [...window.SF.stats.inventory] : [];
+      const ref = ctx.reward.id || ctx.reward;
+      if (ref) inv.push(ref);
+      window.SF.updateStats({ inventory: inv });
 
-    const player = {
-      userId: row.user_id,
-      name: charName,
-      level,
-      stats: totalStats,
-      maxHP,
-      currentHP: maxHP,
-      critChance: getCritChanceFromDexAndLevel(totalStats.dexterity, level),
-      avatar: 'avatar2.jpg',
+      showResultModal('🏆 VÍTĚZSTVÍ! 🏆', `Porazil jsi bosse: ${gameState.enemy.name}
+
+Získáváš:
+${ctx.reward.icon || '🎁'} ${ctx.reward.name || ref}`);
+      sessionStorage.removeItem('arenaFromCrypta');
+      sessionStorage.removeItem('arena2_context');
+      return;
+    }
+
+    showResultModal('🏆 VÍTĚZSTVÍ! 🏆', `Porazil jsi ${gameState.enemy.name}!`);
+  }
+
+  
+  async function handleDefeat() {
+    console.log('💀 Defeat (Arena2)!');
+    const ctx = readArena2Context() || {};
+    await window.SFReady;
+
+    if (ctx.type === 'mission') {
+      const md = (window.SF?.stats?.missiondata || window.SF?.stats?.missionData || {});
+      const nextMd = { ...md, totalBattles: (md.totalBattles || 0) + 1 };
+      window.SF.updateStats({ missiondata: nextMd });
+
+      showResultModal('💀 PROHRA 💀', `Prohrál jsi misi proti: ${gameState.enemy.name}
+
+Zkus to znovu!`);
+      sessionStorage.removeItem('arenaFromMission');
+      sessionStorage.removeItem('arena2_context');
+      return;
+    }
+
+    if (ctx.type === 'crypta') {
+      showResultModal('💀 PROHRA 💀', `Boss tě porazil: ${gameState.enemy.name}
+
+Zkus to znovu!`);
+      sessionStorage.removeItem('arenaFromCrypta');
+      sessionStorage.removeItem('arena2_context');
+      return;
+    }
+
+    showResultModal('💀 PROHRA 💀', `Byl jsi poražen!`);
+  }
+
+  function calculateReward(
+ {
+    const enemyLevel = gameState.enemy.level;
+    const baseMoney = 100;
+    const baseXP = 50;
+    
+    const moneyReward = Math.round(baseMoney * (1 + enemyLevel * 0.3));
+    const xpReward = Math.round(baseXP * (1 + enemyLevel * 0.2));
+    
+    return {
+      money: moneyReward,
+      xp: xpReward
     };
+  }
 
-    // context
-    const missionPayload = pullMissionPayload();
-    const cryptaHint = pullCryptaHint();
-    let enemy = null;
-
-    if (missionPayload?.fromMission) {
-      enemy = buildEnemyFromMission(missionPayload, player);
-    } else if (cryptaHint?.fromCrypta) {
-      const bossPayload = await loadCryptaPayload();
-      if (bossPayload?.fromCrypta) enemy = buildEnemyFromBoss(bossPayload, player);
-    }
-
-    if (!enemy) {
-      // fallback: aspoň něco, ať to nikdy nepadne
-      enemy = buildEnemyFromMission({ fromMission: true, enemy: 'TRÉNINKOVÝ PANÁK', difficulty: 'easy', rewards: { money: 0, exp: 0 } }, player);
-    }
-
-    // render
-    renderSide('player', player, row?.stats?.stats || row?.stats || {});
-    renderSide('enemy', enemy, enemy.stats);
-
-    // tlačítka
-    const continueBtn = $('resultContinue');
-    if (continueBtn) {
-      continueBtn.onclick = () => {
-        closeResult();
-        // návrat na zdrojovou stránku
-        if (enemy.__source?.type === 'mission') location.href = 'mise.html';
-        else if (enemy.__source?.type === 'crypta') location.href = 'auto.html';
-        else location.href = 'arena.html';
-      };
-    }
-
-    // v arena2 startujeme automaticky (mise i crypta)
-    const autoStart = (missionPayload?.fromMission) || (enemy.__source?.type === 'crypta' && enemy.__source?.payload?.autoStart);
-    if (autoStart) {
-      await sleep(500);
-      await runBattle(player, enemy);
-    } else {
-      // manuální start (kdyby se sem někdo dostal jen tak)
-      $('attackBtn').disabled = false;
-      $('attackBtn').textContent = '⚔️ ZAČÍT FIGHT';
-      $('attackBtn').onclick = async () => {
-        $('attackBtn').onclick = null;
-        await runBattle(player, enemy);
-      };
-      $('nextEnemyBtn').style.display = 'none';
+  function showResultModal(title, text) {
+    const modal = $('resultModal');
+    const titleEl = $('resultTitle');
+    const textEl = $('resultText');
+    
+    if (modal && titleEl && textEl) {
+      titleEl.textContent = title;
+      textEl.textContent = text;
+      modal.classList.add('show');
     }
   }
 
-  document.addEventListener('DOMContentLoaded', boot);
+  function hideResultModal() {
+    const modal = $('resultModal');
+    if (modal) {
+      modal.classList.remove('show');
+    }
+  }
+
+  // ===== LOAD NEW OPPONENT =====
+  async function loadNewOpponent() {
+    console.log('🔄 Loading new opponent...');
+    
+    $('nextEnemyBtn').disabled = true;
+    $('nextEnemyBtn').textContent = '⏳ NAČÍTÁNÍ...';
+    
+    const enemyRow = await fetchRandomOpponent();
+    
+    if (!enemyRow) {
+      showNotification('Nepodařilo se načíst soupeře', 'error');
+      $('nextEnemyBtn').disabled = false;
+      $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
+      return;
+    }
+
+    gameState.enemy = loadEnemyData(enemyRow);
+    renderEnemy(gameState.enemy);
+    
+    gameState.player.currentHP = gameState.player.maxHP;
+    renderPlayer(gameState.player);
+
+    showNotification(`Nový soupeř: ${gameState.enemy.name} (Level ${gameState.enemy.level})`, 'success');
+
+    startCooldownTimer();
+  }
+
+  // ===== NOTIFICATIONS =====
+  function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)'};
+      color: white;
+      border-radius: 12px;
+      font-weight: 900;
+      font-size: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.6);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
+  }
+
+  // ===== SYNC CURRENCY UI =====
+  function syncCurrencyUI() {
+    if (!window.SF) return;
+    
+    const stats = window.SF.stats;
+    if (!stats) return;
+    
+    if ($('money')) $('money').textContent = Number(stats.money || 0).toLocaleString('cs-CZ');
+    if ($('cigarettes')) $('cigarettes').textContent = String(stats.cigarettes || 0);
+    if ($('energy')) $('energy').textContent = String(stats.energy || 0);
+    
+    const xpFill = $('xpFill');
+    const xpText = $('xpText');
+    
+    if (xpFill && xpText) {
+      const xp = stats.xp || 0;
+      const level = stats.level || 1;
+      const requiredXP = Math.floor(100 * Math.pow(1.5, Math.max(0, level - 1)));
+      const xpPercent = (xp / requiredXP) * 100;
+      
+      xpFill.style.width = `${xpPercent}%`;
+      xpText.textContent = `${xp} / ${requiredXP}`;
+    }
+    
+    const energyFill = $('energyFill');
+    const energyText = $('energyText');
+    
+    if (energyFill && energyText) {
+      const energy = stats.energy || 0;
+      const maxEnergy = stats.max_energy || 100;
+      const energyPercent = (energy / maxEnergy) * 100;
+      
+      energyFill.style.width = `${energyPercent}%`;
+      energyText.textContent = `${energy} / ${maxEnergy}`;
+    }
+
+    if ($('levelDisplay')) $('levelDisplay').textContent = stats.level || 1;
+  }
+
+  // ===== EVENT HANDLERS =====
+  async function onAttack() {
+    if (gameState.battleInProgress) {
+      showNotification('Boj již probíhá!', 'error');
+      return;
+    }
+    
+    if (!gameState.enemy) {
+      showNotification('Nejprve načti soupeře!', 'error');
+      return;
+    }
+    
+    const userId = window.SF?.user?.id;
+    if (!userId) {
+      showNotification('Uživatel není přihlášen!', 'error');
+      return;
+    }
+    
+    const remaining = await getCooldownRemaining(userId);
+    if (remaining > 0) {
+      showNotification('Musíš počkat na cooldown!', 'error');
+      return;
+    }
+    
+    await startBattle();
+  }
+
+  async function onNextEnemy() {
+    showNotification('V Arena2 nelze měnit soupeře.', 'info');
+  }
+
+  function onResultContinue() {
+    hideResultModal();
+  }
+
+  // ===== INIT =====
+  async function init() {
+    console.log('🎮 Initializing arena...');
+
+    // Load player
+    gameState.player = await loadPlayerData();
+    
+    if (!gameState.player) {
+      showNotification('Nepodařilo se načíst data hráče', 'error');
+      return;
+    }
+
+    renderPlayer(gameState.player);
+
+    
+// Arena2: načti soupeře z mise/crypty a začni automaticky
+let ctx = readArena2Context();
+
+// Fallback: pokud přišel jen query fromCrypta=1, zkus vytáhnout payload z DB (crypta_fights)
+if (ctx && ctx.type === 'crypta' && ctx._fromQuery) {
+  try {
+    if (window.SFReady) await window.SFReady;
+    const sb = supabaseClient();
+    const uid = window.SF?.user?.id || window.SF?.stats?.user_id;
+    if (sb && uid) {
+      const { data } = await sb.from('crypta_fights').select('payload').eq('user_id', uid).maybeSingle();
+      if (data?.payload) {
+        sessionStorage.setItem('arenaFromCrypta', JSON.stringify(data.payload));
+        ctx = { type: 'crypta', autoStart: true, ...data.payload };
+      }
+    }
+  } catch (e) {
+    console.warn('crypta payload load failed', e);
+  }
+}
+
+if (!ctx) {
+  showNotification('Arena2: chybí data z mise/crypty. Vrácení do arény.', 'error');
+  setTimeout(() => location.href = 'arena.html', 800);
+  return;
+}
+
+if (ctx.type === 'mission') {
+  gameState.enemy = normalizeEnemyFromMission(ctx.enemy, gameState.player?.level || 1);
+} else {
+  gameState.enemy = normalizeEnemyFromBoss(ctx.boss || ctx.enemy || ctx);
+}
+
+renderEnemy(gameState.enemy);
+
+gameState.player.currentHP = gameState.player.maxHP;
+renderPlayer(gameState.player);
+
+if ($('nextEnemyBtn')) {
+  $('nextEnemyBtn').disabled = true;
+  $('nextEnemyBtn').style.display = 'none';
+}
+
+if (ctx.autoStart) {
+  setTimeout(() => { onAttack(); }, 300);
+}
+// Wire buttons
+    $('attackBtn').addEventListener('click', onAttack);
+    $('nextEnemyBtn').addEventListener('click', onNextEnemy);
+    $('resultContinue').addEventListener('click', onResultContinue);
+
+    // Sync currency
+    syncCurrencyUI();
+
+    console.log('✅ Arena initialized!');
+  }
+
+  // ===== BOOT =====
+  document.addEventListener('DOMContentLoaded', async () => {
+    await init();
+  });
+
+  // Listen to stats updates
+  document.addEventListener('sf:stats', () => {
+    syncCurrencyUI();
+  });
+
 })();
+
+// ===== CSS ANIMATIONS =====
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(400px); opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
+
+console.log('✅ Arena system loaded!');
