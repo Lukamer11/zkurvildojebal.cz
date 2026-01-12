@@ -201,6 +201,8 @@
   function loadEnemyData(enemyRow) {
     if (!enemyRow) return null;
 
+    const baseStats = enemyRow.stats || {};
+    const bonuses = calculateTotalBonuses(enemyRow);
     const totalStats = calculateTotalStats(enemyRow);
     const level = Number(enemyRow.level || 1);
     const maxHP = calculateMaxHP(totalStats.constitution);
@@ -209,12 +211,51 @@
       userId: enemyRow.user_id,
       name: 'HRÁČ #' + enemyRow.user_id.slice(0, 8).toUpperCase(),
       level: level,
+      baseStats: baseStats,
+      bonuses: bonuses,
       stats: totalStats,
       maxHP: maxHP,
       currentHP: maxHP,
       critChance: getCritChanceFromDexAndLevel(totalStats.dexterity, level),
-      classType: getPlayerClass(enemyRow.stats || {})
+      classType: getPlayerClass(baseStats)
     };
+  }
+
+  function formatStatValue(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '0';
+    const rounded = Math.round(n * 100) / 100;
+    const s = String(rounded);
+    return s.includes('.') ? rounded.toFixed(2).replace(/\.00$/, '').replace(/(\.[0-9])0$/, '$1') : s;
+  }
+
+  function calculateStatBonus(stat, value, level) {
+    const v = Number(value);
+    const val = Number.isFinite(v) ? v : 0;
+    
+    switch (stat) {
+      case "strength":
+        return `+${Math.round(val * 2)} DMG`;
+      case "defense": {
+        const red = Math.min(75, Math.round(val));
+        return `${red}% Redukce`;
+      }
+      case "dexterity": {
+        const crit = getCritChanceFromDexAndLevel(val, level);
+        return `${crit}% Crit`;
+      }
+      case "intelligence":
+        return `+${Math.round(val * 1.5)}% Magie`;
+      case "constitution":
+        return `${Math.round(val * 50)} HP`;
+      case "luck": {
+        const drop = Math.min(100, Math.round(val));
+        const dodge = Math.round(val);
+        return `${drop}% / ${dodge}%`;
+      }
+      default:
+        return "";
+    }
   }
 
   // ===== UI RENDERING =====
@@ -224,13 +265,44 @@
     $('playerName').textContent = player.name;
     $('playerLevelText').textContent = `Level ${player.level}`;
     
-    // Stats
-    $('pStr').textContent = Math.round(player.stats.strength);
-    $('pDef').textContent = Math.round(player.stats.defense);
-    $('pDex').textContent = Math.round(player.stats.dexterity);
-    $('pInt').textContent = Math.round(player.stats.intelligence);
-    $('pCon').textContent = Math.round(player.stats.constitution);
-    $('pLuck').textContent = Math.round(player.stats.luck);
+    // Get base stats and bonuses from SF
+    const baseStats = window.SF?.stats?.stats || {};
+    const bonuses = calculateTotalBonuses(window.SF?.stats || {});
+    
+    // Stats - show BASE + BONUS format
+    const statElements = {
+      strength: { value: 'pStr', extra: 'pStrExtra' },
+      defense: { value: 'pDef', extra: 'pDefExtra' },
+      dexterity: { value: 'pDex', extra: 'pDexExtra' },
+      intelligence: { value: 'pInt', extra: null },
+      constitution: { value: 'pCon', extra: null },
+      luck: { value: 'pLuck', extra: null }
+    };
+    
+    Object.keys(statElements).forEach(stat => {
+      const els = statElements[stat];
+      const valueEl = $(els.value);
+      if (!valueEl) return;
+      
+      const base = Number(baseStats[stat] || 10);
+      const bonus = bonuses[stat] || 0;
+      const total = base + bonus;
+      
+      // Show value with bonus
+      if (bonus !== 0) {
+        valueEl.innerHTML = `${formatStatValue(base)} <span style="color: #4af; font-size: 14px;">+${bonus}</span>`;
+      } else {
+        valueEl.textContent = formatStatValue(base);
+      }
+      
+      // Show extra info
+      if (els.extra) {
+        const extraEl = $(els.extra);
+        if (extraEl) {
+          extraEl.textContent = calculateStatBonus(stat, total, player.level);
+        }
+      }
+    });
 
     // HP
     updateHP('player', player.currentHP, player.maxHP);
@@ -242,13 +314,44 @@
     $('enemyName').textContent = enemy.name;
     $('enemyLevel').textContent = `Level ${enemy.level}`;
     
-    // Stats
-    $('eStr').textContent = Math.round(enemy.stats.strength);
-    $('eDef').textContent = Math.round(enemy.stats.defense);
-    $('eDex').textContent = Math.round(enemy.stats.dexterity);
-    $('eInt').textContent = Math.round(enemy.stats.intelligence);
-    $('eCon').textContent = Math.round(enemy.stats.constitution);
-    $('eLuck').textContent = Math.round(enemy.stats.luck);
+    // Get base stats and bonuses
+    const baseStats = enemy.baseStats || {};
+    const bonuses = enemy.bonuses || {};
+    
+    // Stats - show BASE + BONUS format
+    const statElements = {
+      strength: { value: 'eStr', extra: 'eStrExtra' },
+      defense: { value: 'eDef', extra: 'eDefExtra' },
+      dexterity: { value: 'eDex', extra: 'eDexExtra' },
+      intelligence: { value: 'eInt', extra: null },
+      constitution: { value: 'eCon', extra: null },
+      luck: { value: 'eLuck', extra: null }
+    };
+    
+    Object.keys(statElements).forEach(stat => {
+      const els = statElements[stat];
+      const valueEl = $(els.value);
+      if (!valueEl) return;
+      
+      const base = Number(baseStats[stat] || 10);
+      const bonus = bonuses[stat] || 0;
+      const total = base + bonus;
+      
+      // Show value with bonus
+      if (bonus !== 0) {
+        valueEl.innerHTML = `${formatStatValue(base)} <span style="color: #4af; font-size: 14px;">+${bonus}</span>`;
+      } else {
+        valueEl.textContent = formatStatValue(base);
+      }
+      
+      // Show extra info
+      if (els.extra) {
+        const extraEl = $(els.extra);
+        if (extraEl) {
+          extraEl.textContent = calculateStatBonus(stat, total, enemy.level);
+        }
+      }
+    });
 
     // HP
     updateHP('enemy', enemy.currentHP, enemy.maxHP);
@@ -365,40 +468,61 @@
 
   // ===== BATTLE FLOW =====
   async function startBattle() {
-    if (gameState.battleInProgress) return;
+    if (gameState.battleInProgress) {
+      console.warn('⚠️ Battle already in progress!');
+      return;
+    }
+    
+    if (!gameState.player || !gameState.enemy) {
+      console.error('❌ Cannot start battle - player or enemy not loaded!');
+      return;
+    }
+    
+    console.log('⚔️ Battle started!');
+    console.log('Player HP:', gameState.player.currentHP, '/', gameState.player.maxHP);
+    console.log('Enemy HP:', gameState.enemy.currentHP, '/', gameState.enemy.maxHP);
     
     gameState.battleInProgress = true;
     gameState.roundNumber = 0;
 
-    console.log('⚔️ Battle started!');
-
     // Disable next enemy button during battle
     $('nextEnemyBtn').disabled = true;
     $('nextEnemyBtn').style.opacity = '0.5';
+    $('nextEnemyBtn').textContent = '⚔️ BOJ PROBÍHÁ...';
 
     while (gameState.player.currentHP > 0 && gameState.enemy.currentHP > 0) {
       gameState.roundNumber++;
-      console.log(`Round ${gameState.roundNumber}`);
+      console.log(`⚔️ Round ${gameState.roundNumber}`);
 
       // Player attacks
       await performAttack(gameState.player, gameState.enemy, 'player');
       
-      if (gameState.enemy.currentHP <= 0) break;
+      if (gameState.enemy.currentHP <= 0) {
+        console.log('Enemy defeated!');
+        break;
+      }
 
       await sleep(500);
 
       // Enemy attacks
       await performAttack(gameState.enemy, gameState.player, 'enemy');
       
+      if (gameState.player.currentHP <= 0) {
+        console.log('Player defeated!');
+        break;
+      }
+      
       await sleep(500);
     }
 
     // Battle ended
+    console.log('🏁 Battle ended!');
     gameState.battleInProgress = false;
 
     // Enable next enemy button
     $('nextEnemyBtn').disabled = false;
     $('nextEnemyBtn').style.opacity = '1';
+    $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
 
     await sleep(1000);
     
@@ -484,10 +608,16 @@
   async function loadNewOpponent() {
     console.log('🔄 Loading new opponent...');
     
+    // Show loading state
+    $('nextEnemyBtn').disabled = true;
+    $('nextEnemyBtn').textContent = '⏳ NAČÍTÁNÍ...';
+    
     const enemyRow = await fetchRandomOpponent();
     
     if (!enemyRow) {
       showNotification('Nepodařilo se načíst soupeře', 'error');
+      $('nextEnemyBtn').disabled = false;
+      $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
       return;
     }
 
@@ -500,9 +630,18 @@
 
     showNotification(`Nový soupeř: ${gameState.enemy.name} (Level ${gameState.enemy.level})`, 'success');
 
-    // Auto-start battle after 1 second
-    await sleep(1000);
-    startBattle();
+    // Reset button text
+    $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
+
+    // Auto-start battle after 1.5 seconds
+    console.log('⏰ Starting battle in 1.5 seconds...');
+    await sleep(1500);
+    
+    // Check if we're still ready to battle (user didn't navigate away)
+    if (gameState.player && gameState.enemy && !gameState.battleInProgress) {
+      console.log('🎬 Auto-starting battle now!');
+      startBattle();
+    }
   }
 
   // ===== NOTIFICATIONS =====
@@ -610,6 +749,19 @@
 
     console.log('✅ Arena initialized!');
   }
+
+  // ===== BOOT =====
+  document.addEventListener('DOMContentLoaded', async () => {
+    await init();
+  });
+
+  // Listen to stats updates
+  document.addEventListener('sf:stats', () => {
+    syncCurrencyUI();
+  });
+
+})();
+      </div>
 
   // ===== BOOT =====
   document.addEventListener('DOMContentLoaded', async () => {
