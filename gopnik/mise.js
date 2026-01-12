@@ -531,7 +531,7 @@ function missionComplete(slot) {
   showNotification('Mise hotová! Přesměrování do areny...', 'success');
   
   setTimeout(() => {
-    window.location.href = 'arena.html';
+    window.location.href = 'arena2.html';
   }, 1500);
 }
 

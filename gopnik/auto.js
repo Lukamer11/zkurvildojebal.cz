@@ -338,9 +338,11 @@ async function startBossFight(bossIndex) {
   if (sb && uid) {
     await sb.from('crypta_fights').upsert({ user_id: uid, payload: bossData }, { onConflict: 'user_id' });
   }
+  // Fallback i bez realtime/Supabase (nebo když se to nestihne):
+  try { sessionStorage.setItem('arenaFromCrypta', JSON.stringify(bossData)); } catch(_) {}
   const qs = new URLSearchParams();
   qs.set('fromCrypta', '1');
-  window.location.href = 'arena.html?' + qs.toString();
+  window.location.href = 'arena2.html?' + qs.toString();
 }
 
 // ===== INIT =====
