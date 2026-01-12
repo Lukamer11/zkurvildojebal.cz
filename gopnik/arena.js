@@ -136,7 +136,7 @@
 
   // ===== HP CALCULATION =====
   function calculateMaxHP(constitution) {
-    return Math.floor(constitution * 50);
+    return Math.round(500 + constitution * 25);
   }
 
   // ===== FETCH RANDOM OPPONENT =====
@@ -237,21 +237,22 @@
       case "strength":
         return `+${Math.round(val * 2)} DMG`;
       case "defense": {
-        const red = Math.min(75, Math.round(val));
+        const red = Math.min(100, Math.floor((val / 28) * 100));
         return `${red}% Redukce`;
       }
       case "dexterity": {
         const crit = getCritChanceFromDexAndLevel(val, level);
-        return `${crit}% Crit`;
+        return `+${crit}% Crit`;
       }
       case "intelligence":
-        return `+${Math.round(val * 1.5)}% Magie`;
-      case "constitution":
-        return `${Math.round(val * 50)} HP`;
+        return `+${Math.floor(val * 1.5)}% Magie`;
+      case "constitution": {
+        const hp = Math.round(500 + val * 25);
+        return `${hp} HP`;
+      }
       case "luck": {
-        const drop = Math.min(100, Math.round(val));
-        const dodge = Math.round(val);
-        return `${drop}% / ${dodge}%`;
+        const luckPercent = Math.min(100, Math.floor(val));
+        return `${luckPercent}% / 100%`;
       }
       default:
         return "";
@@ -485,10 +486,10 @@
     gameState.battleInProgress = true;
     gameState.roundNumber = 0;
 
-    // Disable next enemy button during battle
-    $('nextEnemyBtn').disabled = true;
-    $('nextEnemyBtn').style.opacity = '0.5';
-    $('nextEnemyBtn').textContent = '⚔️ BOJ PROBÍHÁ...';
+    // Show battle in progress
+    $('attackBtn').disabled = true;
+    $('attackBtn').textContent = '⚔️ BOJ PROBÍHÁ...';
+    $('attackBtn').style.opacity = '0.5';
 
     while (gameState.player.currentHP > 0 && gameState.enemy.currentHP > 0) {
       gameState.roundNumber++;
@@ -519,10 +520,8 @@
     console.log('🏁 Battle ended!');
     gameState.battleInProgress = false;
 
-    // Enable next enemy button
-    $('nextEnemyBtn').disabled = false;
-    $('nextEnemyBtn').style.opacity = '1';
-    $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
+    // Start cooldown
+    startCooldownTimer();
 
     await sleep(1000);
     
@@ -604,6 +603,66 @@
     }
   }
 
+  // ===== COOLDOWN MANAGEMENT =====
+  let lastAttackTime = 0;
+  const ATTACK_COOLDOWN = 5 * 60 * 1000; // 5 minut v ms
+
+  function getCooldownRemaining() {
+    const elapsed = Date.now() - lastAttackTime;
+    return Math.max(0, ATTACK_COOLDOWN - elapsed);
+  }
+
+  function updateCooldownDisplay() {
+    const remaining = getCooldownRemaining();
+    
+    if (remaining > 0) {
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      const timeText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      
+      $('attackBtn').disabled = true;
+      $('nextEnemyBtn').disabled = true;
+      $('attackBtn').textContent = `⏰ ${timeText}`;
+      $('nextEnemyBtn').textContent = `⏰ ${timeText}`;
+      $('attackBtn').style.opacity = '0.5';
+      $('nextEnemyBtn').style.opacity = '0.5';
+    } else {
+      $('attackBtn').disabled = false;
+      $('nextEnemyBtn').disabled = false;
+      $('attackBtn').textContent = '⚔️ ZAÚTOČIT';
+      $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
+      $('attackBtn').style.opacity = '1';
+      $('nextEnemyBtn').style.opacity = '1';
+    }
+  }
+
+  function startCooldownTimer() {
+    lastAttackTime = Date.now();
+    
+    // Save to localStorage
+    localStorage.setItem('arenaLastAttack', lastAttackTime.toString());
+    
+    updateCooldownDisplay();
+    
+    const interval = setInterval(() => {
+      updateCooldownDisplay();
+      
+      if (getCooldownRemaining() <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+  }
+
+  function loadCooldownFromStorage() {
+    const saved = localStorage.getItem('arenaLastAttack');
+    if (saved) {
+      lastAttackTime = parseInt(saved, 10);
+      if (getCooldownRemaining() > 0) {
+        startCooldownTimer();
+      }
+    }
+  }
+
   // ===== LOAD NEW OPPONENT =====
   async function loadNewOpponent() {
     console.log('🔄 Loading new opponent...');
@@ -630,18 +689,8 @@
 
     showNotification(`Nový soupeř: ${gameState.enemy.name} (Level ${gameState.enemy.level})`, 'success');
 
-    // Reset button text
-    $('nextEnemyBtn').textContent = '🔄 DALŠÍ SOUPEŘ';
-
-    // Auto-start battle after 1.5 seconds
-    console.log('⏰ Starting battle in 1.5 seconds...');
-    await sleep(1500);
-    
-    // Check if we're still ready to battle (user didn't navigate away)
-    if (gameState.player && gameState.enemy && !gameState.battleInProgress) {
-      console.log('🎬 Auto-starting battle now!');
-      startBattle();
-    }
+    // Start cooldown
+    startCooldownTimer();
   }
 
   // ===== NOTIFICATIONS =====
@@ -714,7 +763,38 @@
   }
 
   // ===== EVENT HANDLERS =====
+  async function onAttack() {
+    if (gameState.battleInProgress) {
+      showNotification('Boj již probíhá!', 'error');
+      return;
+    }
+    
+    if (!gameState.enemy) {
+      showNotification('Nejprve načti soupeře!', 'error');
+      return;
+    }
+    
+    const remaining = getCooldownRemaining();
+    if (remaining > 0) {
+      showNotification('Musíš počkat na cooldown!', 'error');
+      return;
+    }
+    
+    await startBattle();
+  }
+
   async function onNextEnemy() {
+    if (gameState.battleInProgress) {
+      showNotification('Boj právě probíhá!', 'error');
+      return;
+    }
+    
+    const remaining = getCooldownRemaining();
+    if (remaining > 0) {
+      showNotification('Musíš počkat na cooldown!', 'error');
+      return;
+    }
+    
     hideResultModal();
     await loadNewOpponent();
   }
@@ -727,6 +807,9 @@
   async function init() {
     console.log('🎮 Initializing arena...');
 
+    // Load cooldown from storage
+    loadCooldownFromStorage();
+
     // Load player
     gameState.player = await loadPlayerData();
     
@@ -737,10 +820,16 @@
 
     renderPlayer(gameState.player);
 
-    // Load first opponent
-    await loadNewOpponent();
+    // Load first opponent automatically
+    const remaining = getCooldownRemaining();
+    if (remaining <= 0) {
+      await loadNewOpponent();
+    } else {
+      showNotification('Arena je na cooldownu, počkej nebo načti soupeře', 'info');
+    }
 
     // Wire buttons
+    $('attackBtn').addEventListener('click', onAttack);
     $('nextEnemyBtn').addEventListener('click', onNextEnemy);
     $('resultContinue').addEventListener('click', onResultContinue);
 
