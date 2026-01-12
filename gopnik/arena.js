@@ -761,19 +761,6 @@
   });
 
 })();
-      </div>
-
-  // ===== BOOT =====
-  document.addEventListener('DOMContentLoaded', async () => {
-    await init();
-  });
-
-  // Listen to stats updates
-  document.addEventListener('sf:stats', () => {
-    syncCurrencyUI();
-  });
-
-})();
 
 // ===== CSS ANIMATIONS =====
 const style = document.createElement('style');
