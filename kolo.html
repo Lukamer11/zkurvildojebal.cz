@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <title>Kolo Štěstí - Gamble System</title>
+  <link rel="stylesheet" href="kolo.css">
+  <script src="supabase_stub.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <script src="menu.js" defer></script>
+<script src="lang_pack.js"></script>
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+
+  <!-- LEVÝ PANEL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- KOLO AREA -->
+  <main class="kolo-area">
+
+    <!-- NÁZEV -->
+    <div class="kolo-title">🎰 KOLO ŠTĚSTÍ 🎰</div>
+
+    <!-- GAME TABS -->
+    <div class="game-tabs">
+      <button class="game-tab active" data-game="wheel">🎰 KOLO ŠTĚSTÍ</button>
+      <button class="game-tab" data-game="coinflip">🪙 COIN FLIP</button>
+      <button class="game-tab" data-game="crash">📈 CRASH GAME</button>
+      <button class="game-tab" data-game="dice">🎲 KOSTKY</button>
+    </div>
+
+    <div class="kolo-container">
+
+      <!-- GAME: WHEEL OF FORTUNE -->
+      <div class="game-content active" id="game-wheel">
+      <div class="wheel-section">
+        <div class="section-header">
+          <h2>🎡 TOČIT KOLEM</h2>
+          <div class="free-spin-badge" id="freeSpinBadge">
+            ⭐ ZDARMA DNES
+          </div>
+        </div>
+
+        <div class="wheel-wrapper">
+          <div class="wheel-pointer">▼</div>
+          <canvas id="wheelCanvas" width="500" height="500"></canvas>
+          <button class="spin-button" id="spinButton">
+            <div class="spin-icon">🎰</div>
+            <div class="spin-text">ZATOČIT</div>
+            <div class="spin-cost" id="spinCost">10 🚬</div>
+          </button>
+        </div>
+
+        <!-- CURRENT REWARD DISPLAY -->
+        <div class="current-reward" id="currentReward" style="display: none;">
+          <div class="reward-glow"></div>
+          <div class="reward-content">
+            <div class="reward-icon" id="rewardIcon">💰</div>
+            <div class="reward-text" id="rewardText">VÝHRA!</div>
+            <div class="reward-amount" id="rewardAmount">+500₽</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROSTŘEDNÍ ČÁST - STATISTIKY & INFO -->
+      <div class="stats-section">
+        <div class="section-header">
+          <h2>📊 STATISTIKY</h2>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">🎲</div>
+          <div class="stat-info">
+            <div class="stat-label">Celkem zatočení</div>
+            <div class="stat-value" id="totalSpins">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <div class="stat-label">Celková výhra (₽)</div>
+            <div class="stat-value" id="totalMoneyWon">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">🚬</div>
+          <div class="stat-info">
+            <div class="stat-label">Celková výhra (cig)</div>
+            <div class="stat-value" id="totalCigsWon">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-info">
+            <div class="stat-label">Největší výhra</div>
+            <div class="stat-value" id="biggestWin">0₽</div>
+          </div>
+        </div>
+
+        <div class="stat-card special">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-info">
+            <div class="stat-label">Dnešní zdarma</div>
+            <div class="stat-value" id="freeSpin">Dostupné</div>
+          </div>
+        </div>
+
+        <div class="stat-card special">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-info">
+            <div class="stat-label">Aktivní dílky</div>
+            <div class="stat-value" id="activeSlices">6 / 11</div>
+          </div>
+        </div>
+
+        <!-- TIMER DO DALŠÍHO FREE SPINU -->
+        <div class="timer-card">
+          <div class="timer-icon">⏰</div>
+          <div class="timer-info">
+            <div class="timer-label">Další zdarma za:</div>
+            <div class="timer-value" id="freeSpinTimer">00:00:00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRAVÁ ČÁST - UPGRADY & HISTORY -->
+      <div class="upgrade-section">
+        <div class="section-header">
+          <h2>⬆️ UPGRADY KOLA</h2>
+        </div>
+
+        <div class="upgrade-info">
+          <p>Odemkni další dílky na kole pro lepší šance na výhru!</p>
+          <p><strong>Cena:</strong> 50🚬 za každý dílek</p>
+          <p><strong>Maximum:</strong> 11 dílků</p>
+        </div>
+
+        <div class="upgrade-grid" id="upgradeGrid">
+          <!-- Generated by JS -->
+        </div>
+
+        <div class="section-header" style="margin-top: 24px;">
+          <h2>📜 POSLEDNÍ VÝHRY</h2>
+        </div>
+
+        <div class="history-list" id="historyList">
+          <div class="history-empty">
+            <div class="history-empty-icon">🎰</div>
+            <div class="history-empty-text">Zatočte kolem!</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+    <!-- GAME: COIN FLIP -->
+    <div class="game-content" id="game-coinflip">
+      <div class="coinflip-section">
+        <div class="section-header">
+          <h2>🪙 COIN FLIP</h2>
+          <div class="game-balance">Sázka: <span id="coinBet">50</span>₽</div>
+        </div>
+
+        <div class="coin-arena">
+          <div class="coin-display" id="coinDisplay">
+            <div class="coin">
+              <div class="coin-face heads">₽</div>
+              <div class="coin-face tails">💀</div>
+            </div>
+          </div>
+
+          <div class="bet-controls">
+            <div class="bet-input-group">
+              <button class="bet-adjust" onclick="adjustCoinBet(-10)">-10</button>
+              <input type="number" id="coinBetInput" value="50" min="10" max="10000">
+              <button class="bet-adjust" onclick="adjustCoinBet(10)">+10</button>
+            </div>
+            <div class="bet-quick">
+              <button onclick="setCoinBet(50)">50₽</button>
+              <button onclick="setCoinBet(100)">100₽</button>
+              <button onclick="setCoinBet(500)">500₽</button>
+              <button onclick="setCoinBet(1000)">1K₽</button>
+            </div>
+          </div>
+
+          <div class="choice-buttons">
+            <button class="choice-btn heads" onclick="playCoinFlip('heads')">
+              <div class="choice-icon">₽</div>
+              <div class="choice-text">HLAVA</div>
+              <div class="choice-multi">2x výhra</div>
+            </button>
+            <button class="choice-btn tails" onclick="playCoinFlip('tails')">
+              <div class="choice-icon">💀</div>
+              <div class="choice-text">OREL</div>
+              <div class="choice-multi">2x výhra</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="game-stats-section">
+        <div class="section-header">
+          <h2>📊 STATISTIKY</h2>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🎲</div>
+          <div class="stat-info">
+            <div class="stat-label">Celkem her</div>
+            <div class="stat-value" id="coinTotalGames">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <div class="stat-label">Výhry</div>
+            <div class="stat-value" id="coinWins">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">❌</div>
+          <div class="stat-info">
+            <div class="stat-label">Prohry</div>
+            <div class="stat-value" id="coinLosses">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <div class="stat-label">Celkový profit</div>
+            <div class="stat-value" id="coinProfit">0₽</div>
+          </div>
+        </div>
+        <div class="game-history-section">
+          <div class="section-header">
+            <h2>📜 HISTORIE</h2>
+          </div>
+          <div class="history-list" id="coinHistory">
+            <div class="history-empty">
+              <div class="history-empty-icon">🪙</div>
+              <div class="history-empty-text">Zatím žádné hry</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME: CRASH -->
+    <div class="game-content" id="game-crash">
+      <div class="crash-section">
+        <div class="section-header">
+          <h2>📈 CRASH GAME</h2>
+          <div class="game-balance">Sázka: <span id="crashBet">100</span>₽</div>
+        </div>
+
+        <div class="crash-arena">
+          <div class="crash-display">
+            <div class="crash-graph" id="crashGraph">
+              <canvas id="crashCanvas" width="600" height="400"></canvas>
+              <div class="crash-multiplier" id="crashMultiplier">1.00x</div>
+            </div>
+          </div>
+
+          <div class="bet-controls">
+            <div class="bet-input-group">
+              <button class="bet-adjust" onclick="adjustCrashBet(-50)">-50</button>
+              <input type="number" id="crashBetInput" value="100" min="10" max="10000">
+              <button class="bet-adjust" onclick="adjustCrashBet(50)">+50</button>
+            </div>
+            <div class="bet-quick">
+              <button onclick="setCrashBet(100)">100₽</button>
+              <button onclick="setCrashBet(500)">500₽</button>
+              <button onclick="setCrashBet(1000)">1K₽</button>
+              <button onclick="setCrashBet(5000)">5K₽</button>
+            </div>
+          </div>
+
+          <div class="crash-actions">
+            <button class="crash-bet-btn" id="crashBetBtn" onclick="startCrash()">
+              <div class="btn-text">VSADIT</div>
+            </button>
+            <button class="crash-cashout-btn" id="crashCashoutBtn" onclick="cashoutCrash()" style="display: none;">
+              <div class="btn-text">VYBRAT</div>
+              <div class="btn-multi" id="cashoutMulti">0.00x</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="game-stats-section">
+        <div class="section-header">
+          <h2>📊 STATISTIKY</h2>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🎲</div>
+          <div class="stat-info">
+            <div class="stat-label">Celkem her</div>
+            <div class="stat-value" id="crashTotalGames">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-info">
+            <div class="stat-label">Nejvyšší multi</div>
+            <div class="stat-value" id="crashHighest">0.00x</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <div class="stat-label">Celkový profit</div>
+            <div class="stat-value" id="crashProfit">0₽</div>
+          </div>
+        </div>
+        <div class="game-history-section">
+          <div class="section-header">
+            <h2>📜 HISTORIE</h2>
+          </div>
+          <div class="history-list" id="crashHistory">
+            <div class="history-empty">
+              <div class="history-empty-icon">📈</div>
+              <div class="history-empty-text">Zatím žádné hry</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME: DICE -->
+    <div class="game-content" id="game-dice">
+      <div class="dice-section">
+        <div class="section-header">
+          <h2>🎲 KOSTKY</h2>
+          <div class="game-balance">Sázka: <span id="diceBet">50</span>🚬</div>
+        </div>
+
+        <div class="dice-arena">
+          <div class="dice-display">
+            <div class="dice-row">
+              <div class="dice" id="dice1">
+                <div class="dice-face">⚀</div>
+              </div>
+              <div class="dice" id="dice2">
+                <div class="dice-face">⚀</div>
+              </div>
+              <div class="dice" id="dice3">
+                <div class="dice-face">⚀</div>
+              </div>
+            </div>
+            <div class="dice-total" id="diceTotal">Součet: 3</div>
+          </div>
+
+          <div class="bet-controls">
+            <div class="bet-input-group">
+              <button class="bet-adjust" onclick="adjustDiceBet(-5)">-5</button>
+              <input type="number" id="diceBetInput" value="5" min="1" max="100">
+              <button class="bet-adjust" onclick="adjustDiceBet(5)">+5</button>
+            </div>
+            <div class="bet-quick">
+              <button onclick="setDiceBet(5)">5🚬</button>
+              <button onclick="setDiceBet(10)">10🚬</button>
+              <button onclick="setDiceBet(25)">25🚬</button>
+              <button onclick="setDiceBet(50)">50🚬</button>
+            </div>
+          </div>
+
+          <div class="dice-prediction">
+            <label>Tipy na součet:</label>
+            <div class="prediction-grid">
+              <button class="pred-btn" onclick="playDice('low')">
+                <div>3-8</div>
+                <div class="pred-multi">2.5x</div>
+              </button>
+              <button class="pred-btn" onclick="playDice('mid')">
+                <div>9-12</div>
+                <div class="pred-multi">2x</div>
+              </button>
+              <button class="pred-btn" onclick="playDice('high')">
+                <div>13-18</div>
+                <div class="pred-multi">2.5x</div>
+              </button>
+              <button class="pred-btn special" onclick="playDice('triple')">
+                <div>TRIPLE</div>
+                <div class="pred-multi">10x</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="game-stats-section">
+        <div class="section-header">
+          <h2>📊 STATISTIKY</h2>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🎲</div>
+          <div class="stat-info">
+            <div class="stat-label">Celkem her</div>
+            <div class="stat-value" id="diceTotalGames">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <div class="stat-label">Výhry</div>
+            <div class="stat-value" id="diceWins">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🚬</div>
+          <div class="stat-info">
+            <div class="stat-label">Celkový profit</div>
+            <div class="stat-value" id="diceProfit">0🚬</div>
+          </div>
+        </div>
+        <div class="game-history-section">
+          <div class="section-header">
+            <h2>📜 HISTORIE</h2>
+          </div>
+          <div class="history-list" id="diceHistory">
+            <div class="history-empty">
+              <div class="history-empty-icon">🎲</div>
+              <div class="history-empty-text">Zatím žádné hry</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script src="kolo.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

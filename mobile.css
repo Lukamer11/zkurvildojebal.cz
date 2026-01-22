@@ -1,0 +1,199 @@
+/* mobile.css — globální responzivní opravy pro malé obrazovky */
+/* Cíl: aby to vypadalo konzistentně na mobilech bez rozbíjení layoutu */
+
+:root{
+  --sf-gap: 10px;
+}
+
+/* ===== sjednocené stat UI (arena style) ===== */
+.stat b{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  line-height:1.05;
+}
+.stat .stat-value-main{
+  font-weight:1000;
+  font-size: clamp(16px, 3.8vw, 28px);
+  color:#ffffff;
+  text-shadow:0 3px 10px rgba(0,0,0,0.95);
+}
+.stat .stat-value-sub{
+  font-weight:1000;
+  font-size: clamp(11px, 2.6vw, 14px);
+  opacity:.95;
+}
+.stat .stat-value-sub .item{ color:#4af; }
+.stat .stat-value-sub .pet{ color:#f1d27a; }
+
+.stat .stat-extra{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:center;
+  gap:2px;
+  text-align:right;
+}
+.stat .stat-extra-main{
+  font-weight:1000;
+}
+.stat .stat-extra-sub{
+  font-weight:1000;
+  font-size: clamp(11px, 2.6vw, 14px);
+  opacity:.95;
+  color:#f1d27a;
+}
+
+/* když je stat řádek úzký, slož ho "arena style" do dvou řádků */
+@media (max-width: 1100px){
+  .stats-frame .stat,
+  .character-stats-section .stat,
+  #playerStats .stat{
+    display:grid !important;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "label btn"
+      "value extra";
+    row-gap: 6px;
+    column-gap: 10px;
+    align-items:center;
+  }
+  .stats-frame .stat > span:first-child,
+  .character-stats-section .stat > span:first-child{
+    grid-area: label;
+    justify-self:start;
+  }
+  .stats-frame .stat > b,
+  .character-stats-section .stat > b{
+    grid-area: value;
+    justify-self:start;
+    align-items:flex-start;
+  }
+  .stats-frame .stat .stat-extra,
+  .character-stats-section .stat .stat-extra{
+    grid-area: extra;
+    justify-self:end;
+  }
+  .stats-frame .stat > button{
+    grid-area: btn;
+    justify-self:end;
+  }
+}
+
+
+html, body{
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body{
+  font-size: clamp(14px, 2.8vw, 18px);
+  -webkit-text-size-adjust: 100%;
+}
+
+img, video, canvas{
+  max-width: 100%;
+  height: auto;
+}
+
+/* klikatelnost na mobilu */
+button, .sf-btn, a{
+  touch-action: manipulation;
+}
+
+@media (max-width: 768px){
+
+  /* horní panel (avatar + level + bary) ať se skládá hezky pod sebe */
+  .menu-top{
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sf-gap);
+    padding: 10px 10px 0 10px;
+  }
+
+  .avatar-box{
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stats-box{
+    width: 100%;
+    max-width: 520px;
+  }
+
+  /* hlavní menu tlačítka */
+  .menu-frame{
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .menu-frame .sf-btn{
+    flex: 1 1 calc(50% - 8px);
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 0.95em;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* dlouhá tlačítka (např. SLAV CLICKER) */
+  .menu-frame .sf-btn--last{
+    flex-basis: 100%;
+  }
+
+  /* obsah */
+  .content, .content-wrap, .main, .container{
+    width: 100%;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    box-sizing: border-box;
+  }
+
+  /* tabulky a dlouhé seznamy: horizontální scroll místo rozbití */
+  table{
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* areény a dvě strany vedle sebe: na mobilu pod sebe */
+  .arena-container, .arena2-container, .battle-container, .fight-container{
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .player-section, .enemy-section, .left-panel, .right-panel{
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* karty / boxy */
+  .card, .panel, .box, .shop-card, .item-card{
+    width: 100% !important;
+  }
+
+  /* menší paddingy pro dlouhé texty */
+  .log-box, .chat-box, .mail-box{
+    padding: 10px !important;
+  }
+}
+
+@media (max-width: 420px){
+  .menu-frame .sf-btn{
+    flex-basis: 100%;
+    font-size: 0.95em;
+  }
+}
+
+
+/* === LANDSCAPE LOCK === */
+#portraitBlock{position:fixed;inset:0;background:#000;z-index:99999;display:none;align-items:center;justify-content:center;}
+#portraitBlock .rotateBox{color:#fff;font-size:22px;text-align:center;line-height:1.3;}
+
+@media (orientation: landscape){ body{ -webkit-text-size-adjust:100%; } }

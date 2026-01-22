@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <title>UPGRADE</title>
+  <link rel="stylesheet" href="neviem.css">
+  <script src="supabase_stub.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+  <link rel="stylesheet" href="sf_scale.css">
+  <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+  <audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+  <div class="layout">
+    <!-- LEVÝ PANEL (vygeneruje menu.js) -->
+    <aside class="left-panel">
+  
+</aside>
+
+    <!-- UPGRADE AREA -->
+    <main class="upgrade-area">
+      <div class="upgrade-title">⬆️ UPGRADE ⬆️</div>
+
+      <div class="upgrade-card">
+        <p class="upgrade-note">Tahle stránka je zatím placeholder (neviem.html). Sem dej upgrade systém.
+        </p>
+        <div class="upgrade-hint">
+          Tip: můžeš tu udělat např. permanentní upgrady (bonus k dmg, bonus k grošům, rychlejší energie, atd.).
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const music = document.getElementById("bgMusic");
+    if (music) {
+      music.volume = 0.4;
+      const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+      if (!Number.isNaN(savedTime) && savedTime > 0) {
+        try { music.currentTime = savedTime; } catch (_) {}
+      }
+      function safePlay() {
+        const p = music.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      }
+      safePlay();
+      setInterval(() => {
+        try { localStorage.setItem("musicTime", String(music.currentTime || 0)); } catch (_) {}
+      }, 1000);
+    }
+  </script>
+<script src="mobile_lock.js"></script>
+</body>
+</html>

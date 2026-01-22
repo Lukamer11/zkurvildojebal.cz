@@ -1,0 +1,133 @@
+<!-- mail.html -->
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mail</title>
+
+  <link rel="stylesheet" href="mail.css">
+
+  <!-- SUPABASE -->
+  <script src="supabase_stub.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+<link rel="stylesheet" href="mobile.css">
+</head>
+
+<body>
+
+<div class="layout">
+
+  <!-- LEVÝ PANEL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- MAIL AREA -->
+  <main class="mail-area">
+
+    <div class="mail-title">📬 POŠTA</div>
+
+    <div class="mail-container">
+
+      <!-- LIST -->
+      <section class="mail-list-section">
+        <div class="section-header">
+          <h2>✉️ ZPRÁVY</h2>
+
+          <div class="mail-tabs-row">
+            <div class="mail-tabs">
+              <button class="tab-btn active" type="button">Všechny</button>
+              <button class="tab-btn" type="button">Nepřečtené</button>
+              <button class="tab-btn" type="button">Důležité</button>
+            </div>
+
+            <button class="compose-open-btn" type="button">✏️ NAPSAT ZPRÁVU</button>
+          </div>
+
+          <!-- BULK ACTIONS -->
+          <div class="bulk-actions">
+            <button id="refreshMailBtn" class="bulk-btn" type="button" title="Obnovit poštu">
+              🔄 Obnovit
+            </button>
+            <button id="markAllReadBtn" class="bulk-btn" type="button" title="Označit vše jako přečtené">
+              ✓ Označit vše
+            </button>
+            <button id="deleteAllReadBtn" class="bulk-btn danger" type="button" title="Smazat přečtené">
+              🗑️ Smazat přečtené
+            </button>
+          </div>
+        </div>
+
+        <!-- COMPOSE PANEL -->
+        <div class="compose-panel" id="composePanel" aria-hidden="true">
+          <div class="compose-header">
+            <div class="compose-title">✉️ Napsat zprávu</div>
+            <button class="compose-close action-btn" type="button" title="Zavřít">✖</button>
+          </div>
+
+          <div class="compose-grid">
+            <label class="compose-label">
+              <span>Adresát</span>
+              <input id="composeTo" class="compose-input" type="text" placeholder="Zadejte adresáta…">
+            </label>
+
+            <label class="compose-label">
+              <span>Předmět</span>
+              <input id="composeSubject" class="compose-input" type="text" placeholder="Zadejte předmět…">
+            </label>
+
+            <label class="compose-label compose-full">
+              <span>Zpráva</span>
+              <textarea id="composeBody" class="compose-textarea" rows="6" placeholder="Zadejte text zprávy…"></textarea>
+            </label>
+          </div>
+
+          <div class="compose-actions">
+            <button class="reply-btn primary" id="composeSend" type="button">📨 ODESLAT</button>
+            <button class="reply-btn" id="composeCancel" type="button">ZAVŘÍT</button>
+          </div>
+
+          <div class="compose-hint">
+            Tip: adresát může být cokoliv (nick / e-mail / „BORIS").
+          </div>
+        </div>
+
+        <div class="mail-list">
+          <!-- mail.js to naplní -->
+          <div class="mail-item">
+            <div class="mail-icon">📩</div>
+            <div class="mail-info">
+              <div class="mail-from">Načítám…</div>
+              <div class="mail-subject">Prosím čekej</div>
+              <div class="mail-preview">Připojuji Supabase a tahám data.</div>
+            </div>
+            <div class="mail-meta">
+              <div class="mail-time">…</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DETAIL -->
+      <section class="mail-detail-section">
+        <div class="mail-detail-body">
+          <p>Vyber zprávu vlevo.</p>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script src="mail.js"></script>
+<script src="mobile_lock.js"></script>
+</body>
+</html>

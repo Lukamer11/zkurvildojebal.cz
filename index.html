@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="3;url=stranka/index.html" />
+    <!-- Redirect do hry (root). Pro offline/PWA je důležité, aby cíl existoval i lokálně. -->
+    <meta http-equiv="refresh" content="3;url=login.html" />
     <title>Loading...</title>
     <style>
         * {
@@ -249,6 +250,12 @@
             text-shadow: 1px 1px 0 #000;
         }
     </style>
+  <link rel="stylesheet" href="mobile.css">
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang.js" defer></script>
+<script src="lang_pack.js"></script>
 </head>
 <body>
     <div class="loading-container">
@@ -304,8 +311,9 @@
 
         // Backup redirect pokud meta refresh nefunguje
         setTimeout(() => {
-            window.location.href = 'stranka/index.html';
+            window.location.href = 'login.html';
         }, 3000);
     </script>
+<script src="mobile_lock.js"></script>
 </body>
 </html>

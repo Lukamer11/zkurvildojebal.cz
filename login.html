@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>Slav Fantasy - Přihlášení</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #000;
+      color: #fff;
+      overflow: hidden;
+      min-height: 100vh;
+    }
+
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      background: url('anim1.jpg');
+      background-size: cover;
+      background-position: center;
+      filter: saturate(1.1) contrast(1.08) brightness(0.7);
+      z-index: 0;
+      animation: kenburns 25s ease-in-out infinite alternate;
+    }
+
+    @keyframes kenburns {
+      0% { transform: scale(1.08) translate(0, 0); }
+      100% { transform: scale(1.18) translate(-2%, -2%); }
+    }
+
+    .vignette {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0.9) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .mist {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(to bottom, 
+        rgba(0,0,0,0.3), 
+        rgba(0,0,0,0.65) 80%,
+        rgba(0,0,0,0.85) 100%);
+      z-index: 2;
+    }
+
+    .grain {
+      position: fixed;
+      inset: -20%;
+      opacity: 0.15;
+      background-image: repeating-linear-gradient(
+        0deg,
+        rgba(255,255,255,.05),
+        rgba(255,255,255,.05) 1px,
+        rgba(0,0,0,.05) 2px,
+        rgba(0,0,0,.05) 3px
+      );
+      animation: grain 2s steps(6) infinite;
+      mix-blend-mode: overlay;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    @keyframes grain {
+      0% { transform: translate(-2%, -1%); }
+      100% { transform: translate(2%, 1%); }
+    }
+
+    /* ALPHA TEST pruh (v menu/panelu) */
+    .alpha-banner{
+      width: 100%;
+      padding: 10px 12px;
+      margin: 0 0 14px 0;
+      text-align: center;
+      font-weight: 1000;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #fff;
+      background:
+        repeating-linear-gradient(
+          135deg,
+          rgba(255,255,255,.18) 0px,
+          rgba(255,255,255,.18) 10px,
+          rgba(0,0,0,.12) 10px,
+          rgba(0,0,0,.12) 20px
+        ),
+        linear-gradient(135deg, #ff3a3a, #8f0d0d);
+      border: 2px solid rgba(255,120,120,0.95);
+      border-radius: 10px;
+      box-shadow:
+        0 10px 25px rgba(0,0,0,.55),
+        0 0 0 1px rgba(0,0,0,.35) inset;
+      opacity: 0.95;
+      user-select: none;
+      text-shadow: 0 2px 0 rgba(0,0,0,.45);
+    }
+
+    .auth-container {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      gap: 30px;
+    }
+
+    .game-logo {
+      font-size: 64px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 8px;
+      color: #f1d27a;
+      text-shadow: 
+        0 0 30px rgba(241, 210, 122, 0.8),
+        0 0 60px rgba(241, 210, 122, 0.5),
+        0 8px 25px rgba(0,0,0,1);
+      margin-bottom: 10px;
+      animation: glow 3s ease-in-out infinite;
+      text-align: center;
+    }
+
+    @keyframes glow {
+      0%, 100% { 
+        text-shadow: 
+          0 0 30px rgba(241, 210, 122, 0.8),
+          0 0 60px rgba(241, 210, 122, 0.5),
+          0 8px 25px rgba(0,0,0,1);
+      }
+      50% { 
+        text-shadow: 
+          0 0 40px rgba(241, 210, 122, 1),
+          0 0 80px rgba(241, 210, 122, 0.7),
+          0 8px 25px rgba(0,0,0,1);
+      }
+    }
+
+    .game-subtitle {
+      font-size: 18px;
+      font-weight: 900;
+      color: #c9a44a;
+      letter-spacing: 4px;
+      text-shadow: 0 4px 12px rgba(0,0,0,.8);
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .auth-panel {
+      background: 
+        linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99));
+      border: 4px solid;
+      border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 
+        0 20px 60px rgba(0,0,0,.9),
+        0 0 40px rgba(241, 210, 122, 0.1),
+        inset 0 2px 10px rgba(255,215,100,0.1);
+      width: 100%;
+      max-width: 500px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 215, 100, 0.05), 
+        transparent);
+      animation: shine 4s infinite;
+    }
+
+    @keyframes shine {
+      0%, 100% { left: -100%; }
+      50% { left: 100%; }
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 25px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab-btn {
+      padding: 14px;
+      background: rgba(0,0,0,0.5);
+      border: 3px solid #5a4520;
+      border-radius: 12px;
+      color: #c9a44a;
+      font-weight: 900;
+      font-size: 16px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 
+        inset 0 2px 8px rgba(0,0,0,0.3),
+        0 4px 10px rgba(0,0,0,0.4);
+    }
+
+    .tab-btn:hover {
+      border-color: #7a5a23;
+      transform: translateY(-2px);
+      box-shadow: 
+        inset 0 2px 8px rgba(0,0,0,0.3),
+        0 6px 15px rgba(0,0,0,0.5);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #c9a44a, #7a5a23);
+      border-color: #f1d27a;
+      color: #2b1a0f;
+      box-shadow: 
+        0 0 25px rgba(241, 210, 122, 0.4),
+        inset 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .auth-form {
+      display: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .auth-form.active {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 900;
+      color: #f1d27a;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,.8);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(0,0,0,0.6);
+      border: 3px solid #5a4520;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      outline: none;
+      transition: all 0.3s ease;
+      box-shadow: 
+        inset 0 2px 8px rgba(0,0,0,0.4),
+        0 3px 8px rgba(0,0,0,0.3);
+    }
+
+    .form-input:focus {
+      border-color: #c9a44a;
+      box-shadow: 
+        0 0 25px rgba(241, 210, 122, 0.3),
+        inset 0 2px 8px rgba(0,0,0,0.4);
+      background: rgba(0,0,0,0.7);
+    }
+
+    .form-input::placeholder {
+      color: rgba(255,255,255,0.35);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #c9a44a, #7a5a23);
+      border: 3px solid #f1d27a;
+      border-radius: 12px;
+      color: #2b1a0f;
+      font-size: 16px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 
+        0 5px 15px rgba(0,0,0,.6),
+        0 0 20px rgba(241, 210, 122, 0.2),
+        inset 0 2px 8px rgba(255,215,100,0.2);
+      margin-top: 10px;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 
+        0 10px 30px rgba(0,0,0,.8),
+        0 0 35px rgba(241, 210, 122, 0.5);
+      filter: brightness(1.15);
+    }
+
+    .submit-btn:active:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      filter: grayscale(0.5);
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+      border: 3px solid;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .message.success {
+      display: block;
+      background: rgba(16, 185, 129, 0.25);
+      border-color: rgba(16, 185, 129, 0.6);
+      color: #10b981;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .message.error {
+      display: block;
+      background: rgba(239, 68, 68, 0.25);
+      border-color: rgba(239, 68, 68, 0.6);
+      color: #ef4444;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      border-radius: 12px;
+      font-weight: 900;
+      font-size: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.6);
+      z-index: 10000;
+      animation: slideIn 0.3s ease;
+    }
+
+    .notification.error {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .game-logo {
+        font-size: 42px;
+        letter-spacing: 4px;
+      }
+      
+      .game-subtitle {
+        font-size: 14px;
+        letter-spacing: 2px;
+      }
+      
+      .auth-panel {
+        padding: 24px;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="mobile.css">
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang.js" defer></script>
+<script src="lang_pack.js"></script>
+</head>
+<body>
+  <div class="bg-layer"></div>
+  <div class="mist"></div>
+  <div class="vignette"></div>
+  <div class="grain"></div>
+
+  <div class="auth-container">
+    <div>
+      <div class="game-logo">⚔️ SLAV FANTASY ⚔️</div>
+      <div class="game-subtitle">Komunismus • rasismus</div>
+    </div>
+
+    <div class="auth-panel">
+      <div class="alpha-banner">ALPHA TEST</div>
+      <div class="auth-tabs">
+        <button class="tab-btn active" data-tab="login">Přihlášení</button>
+        <button class="tab-btn" data-tab="register">Registrace</button>
+      </div>
+
+      <div class="message" id="message"></div>
+
+      <form class="auth-form active" id="loginForm">
+        <div class="form-group">
+          <label class="form-label">📧 Email</label>
+          <input 
+            type="email" 
+            class="form-input" 
+            id="loginEmail" 
+            placeholder="např. gopnik@seznam.cz"
+            autocomplete="email"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🔒 Heslo</label>
+          <input 
+            type="password" 
+            class="form-input" 
+            id="loginPassword" 
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <button type="submit" class="submit-btn" id="loginBtn">
+          ⚔️ Vstoupit do arény
+        </button>
+      </form>
+
+      <form class="auth-form" id="registerForm">
+        <div class="form-group">
+          <label class="form-label">👤 Přezdívka (volitelné)</label>
+          <input 
+            type="text" 
+            class="form-input" 
+            id="registerNickname" 
+            placeholder="např. Viktor"
+            autocomplete="nickname"
+            maxlength="24"
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">📧 Email</label>
+          <input 
+            type="email" 
+            class="form-input" 
+            id="registerEmail" 
+            placeholder="např. anna@seznam.cz"
+            autocomplete="email"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🔒 Heslo</label>
+          <input 
+            type="password" 
+            class="form-input" 
+            id="registerPassword" 
+            placeholder="min. 6 znaků"
+            autocomplete="new-password"
+            required
+          >
+        </div>
+
+        <button type="submit" class="submit-btn" id="registerBtn">
+          ⚔️ Založit účet
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="supabase_stub.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://wngzgptxrgfrwuyiyueu.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZ3pncHR4cmdmcnd1eWl5dWV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5NzQzNTYsImV4cCI6MjA4MzU1MDM1Nn0.N-UJpDi_CQVTC6gYFzYIFQdlm0C4x6K7GjeXGzdS8No';
+    const NEXT_URL = 'postava.html';
+
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const messageEl = document.getElementById('message');
+
+    function showMessage(text, type = 'success') {
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+      setTimeout(() => {
+        messageEl.className = 'message';
+      }, 5000);
+    }
+
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    function setBusy(isBusy) {
+      document.getElementById('loginBtn').disabled = isBusy;
+      document.getElementById('registerBtn').disabled = isBusy;
+    }
+
+    function requireOnline() {
+      if (navigator.onLine) return true;
+      showMessage('Musíš být online (připojení k internetu).', 'error');
+      return false;
+    }
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.dataset.tab;
+        
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        document.querySelectorAll('.auth-form').forEach(form => {
+          form.classList.remove('active');
+        });
+        
+        if (targetTab === 'login') {
+          loginForm.classList.add('active');
+        } else {
+          registerForm.classList.add('active');
+        }
+        
+        messageEl.className = 'message';
+      });
+    });
+
+    async function ensurePlayerStats(userId) {
+      const { data: existing, error: selErr } = await sb
+        .from("player_stats")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (selErr) throw selErr;
+      if (existing) return existing;
+
+      const payload = {
+        user_id: userId,
+        money: 5000,
+        cigarettes: 100,
+        energy: 100,
+        damage: 1,
+        mail_claimed: false
+      };
+
+      const { data, error } = await sb
+        .from("player_stats")
+        .upsert(payload, { onConflict: "user_id" })
+        .select("*")
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+
+    async function goToGame(playerRow) {
+      const clsDb = String(
+        playerRow?.stats?.player_class || playerRow?.player_class || ''
+      ).toLowerCase();
+
+      if (!clsDb) {
+        window.location.href = 'vyber.html';
+        return;
+      }
+
+      window.location.href = NEXT_URL;
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!requireOnline()) return;
+      
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        showMessage('Vyplň email a heslo!', 'error');
+        return;
+      }
+
+      setBusy(true);
+      
+      try {
+        const { data, error } = await sb.auth.signInWithPassword({ 
+          email, 
+          password 
+        });
+        
+        if (error) throw error;
+
+        const user = data.user;
+        if (!user) throw new Error('Chybí user data ze Supabase.');
+
+        const row = await ensurePlayerStats(user.id);
+
+        showMessage('Přihlášeno! Vstupuješ do arény...', 'success');
+        showNotification('Vítej zpět, bojovníku! ⚔️', 'success');
+        
+        setTimeout(() => goToGame(row), 1500);
+      } catch (error) {
+        showMessage(error?.message || 'Chyba přihlášení!', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!requireOnline()) return;
+      
+      const nickname = document.getElementById('registerNickname').value.trim() || null;
+      const email = document.getElementById('registerEmail').value.trim();
+      const password = document.getElementById('registerPassword').value;
+
+      if (!email || !password) {
+        showMessage('Vyplň email a heslo!', 'error');
+        return;
+      }
+
+      if (password.length < 6) {
+        showMessage('Heslo musí mít aspoň 6 znaků!', 'error');
+        return;
+      }
+
+      setBusy(true);
+      
+      try {
+        const { data, error } = await sb.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { nickname },
+            emailRedirectTo: window.location.origin + '/postava.html'
+          }
+        });
+        
+        if (error) throw error;
+
+        const user = data.user;
+
+        if (!user) {
+          showMessage('Registrace hotová! Zkontroluj email a potvrď účet, pak se přihlas.', 'success');
+          setTimeout(() => {
+            tabBtns[0].click();
+          }, 2000);
+          return;
+        }
+
+        const row = await ensurePlayerStats(user.id, user.email || email, nickname);
+
+        showMessage('Registrace OK! Vstupuješ do arény...', 'success');
+        showNotification('Vítej v aréně, nováčku! ⚔️', 'success');
+        
+        setTimeout(() => goToGame(row), 1500);
+      } catch (error) {
+        showMessage(error?.message || 'Chyba registrace!', 'error');
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    (async function autoRedirect() {
+      try {
+        const { data, error } = await sb.auth.getSession();
+        if (error) throw error;
+
+        const sess = data?.session;
+        if (!sess?.user) return;
+
+        let row;
+        try {
+          row = await ensurePlayerStats(
+            sess.user.id,
+            sess.user.email || '',
+            null
+          );
+        } catch (e) {
+          return;
+        }
+
+        showNotification('Již jsi přihlášen! Přesměrování...', 'success');
+        setTimeout(() => {
+          if (row) goToGame(row);
+        }, 500);
+
+      } catch (error) {
+        console.warn('Auto session check:', error);
+      }
+    })();
+  </script>
+
+  <script>
+    // PWA/offline: service worker (funguje na https GitHub Pages; v APK wrapperu jen pokud běží přes http(s))
+    try{
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
+      }
+    }catch(e){}
+  </script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

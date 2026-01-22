@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="cs">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+  <title>Mise - Gopnik Adventures</title>
+  <link rel="stylesheet" href="mise.css">
+  <script src="supabase_stub.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+
+  <!-- LEVÉ PANEL - GOPNIK STYL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- STŘED - MISE AREA -->
+  <main class="mission-area">
+
+    <!-- NÁZEV -->
+    <div class="mission-title">🎯 GOPNIK MISE - DOBRODRUŽSTVÍ 🎯</div>
+
+    <div class="mission-container-new">
+
+      <!-- LEVÝ SLOUPEC - Stats + Assassin -->
+      <div class="left-column">
+        <!-- INFO BOX -->
+        <div class="mission-info">
+          <div class="info-header">
+            <h3>📊 STATISTIKY</h3>
+          </div>
+          <div class="info-content">
+            <div class="info-row">
+              <span>Dokončené:</span>
+              <b id="completed-missions">0</b>
+            </div>
+            <div class="info-row">
+              <span>Celkový EXP:</span>
+              <b id="total-exp-earned">0</b>
+            </div>
+            <div class="info-row">
+              <span>Celkové groše:</span>
+              <b id="total-money-earned">0🪙</b>
+            </div>
+            <div class="info-row">
+              <span>Win rate:</span>
+              <b id="win-rate">0%</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- NÁJEMNÝ VRAH -->
+        <div class="assassin-box">
+          <div class="info-header">
+            <h3>🔪 NÁJEMNÝ VRAH</h3>
+          </div>
+          
+          <div id="assassin-idle" class="assassin-content">
+            <div class="assassin-icon">🥷</div>
+            <p class="assassin-desc">Najmi vraha na 14 hodin</p>
+            <p class="assassin-reward">Odměna: <b id="assassin-reward-text">0🪙</b></p>
+            <button class="mission-btn assassin-btn" id="hire-assassin-btn">
+              <span class="btn-icon">💰</span>
+              NAJMOUT (50 energie)
+            </button>
+          </div>
+
+          <div id="assassin-active" class="assassin-content" style="display: none;">
+            <div class="assassin-icon working">🥷💀</div>
+            <p class="assassin-status">Vrah pracuje...</p>
+            <div class="assassin-timer" id="assassin-timer">14:00:00</div>
+            <button class="mission-btn assassin-collect-btn" id="collect-assassin-btn" style="display: none;">
+              <span class="btn-icon">🎁</span>
+              VYZVEDNOUT ODMĚNU
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STŘEDNÍ SLOUPEC - Mission Slots -->
+      <div class="missions-column">
+        
+        <!-- SLOT 1 -->
+        <div class="mission-slot">
+          <div class="slot-header">
+            <h3>🎯 MISE #1</h3>
+            <span class="energy-cost">⚡ 15</span>
+          </div>
+
+          <div id="slot1-empty" class="slot-empty">
+            <div class="empty-icon">🎲</div>
+            <p>Prázdný slot</p>
+            <button class="mission-btn generate-btn" onclick="startMission('slot1')">
+              <span class="btn-icon">🎲</span>
+              GENEROVAT
+            </button>
+          </div>
+
+          <div id="slot1-active" class="mission-card-slot" style="display: none;">
+            <div class="mission-header-active">
+              <div class="mission-name-big" id="slot1-name">...</div>
+              <div class="mission-difficulty" id="slot1-difficulty">EASY</div>
+            </div>
+
+            <div class="mission-story" id="slot1-story">...</div>
+
+            <div class="timer-section">
+              <div class="timer-icon">⏳</div>
+              <div class="timer-display" id="slot1-timer">05:00</div>
+            </div>
+
+            <button class="mission-btn cancel-btn" onclick="cancelMission('slot1')">
+              <span class="btn-icon">❌</span>
+              ZRUŠIT
+            </button>
+          </div>
+        </div>
+
+        <!-- SLOT 2 -->
+        <div class="mission-slot">
+          <div class="slot-header">
+            <h3>🎯 MISE #2</h3>
+            <span class="energy-cost">⚡ 15</span>
+          </div>
+
+          <div id="slot2-empty" class="slot-empty">
+            <div class="empty-icon">🎲</div>
+            <p>Prázdný slot</p>
+            <button class="mission-btn generate-btn" onclick="startMission('slot2')">
+              <span class="btn-icon">🎲</span>
+              GENEROVAT
+            </button>
+          </div>
+
+          <div id="slot2-active" class="mission-card-slot" style="display: none;">
+            <div class="mission-header-active">
+              <div class="mission-name-big" id="slot2-name">...</div>
+              <div class="mission-difficulty" id="slot2-difficulty">EASY</div>
+            </div>
+
+            <div class="mission-story" id="slot2-story">...</div>
+
+            <div class="timer-section">
+              <div class="timer-icon">⏳</div>
+              <div class="timer-display" id="slot2-timer">05:00</div>
+            </div>
+
+            <button class="mission-btn cancel-btn" onclick="cancelMission('slot2')">
+              <span class="btn-icon">❌</span>
+              ZRUŠIT
+            </button>
+          </div>
+        </div>
+
+        <!-- SLOT 3 -->
+        <div class="mission-slot">
+          <div class="slot-header">
+            <h3>🎯 MISE #3</h3>
+            <span class="energy-cost">⚡ 15</span>
+          </div>
+
+          <div id="slot3-empty" class="slot-empty">
+            <div class="empty-icon">🎲</div>
+            <p>Prázdný slot</p>
+            <button class="mission-btn generate-btn" onclick="startMission('slot3')">
+              <span class="btn-icon">🎲</span>
+              GENEROVAT
+            </button>
+          </div>
+
+          <div id="slot3-active" class="mission-card-slot" style="display: none;">
+            <div class="mission-header-active">
+              <div class="mission-name-big" id="slot3-name">...</div>
+              <div class="mission-difficulty" id="slot3-difficulty">EASY</div>
+            </div>
+
+            <div class="mission-story" id="slot3-story">...</div>
+
+            <div class="timer-section">
+              <div class="timer-icon">⏳</div>
+              <div class="timer-display" id="slot3-timer">05:00</div>
+            </div>
+
+            <button class="mission-btn cancel-btn" onclick="cancelMission('slot3')">
+              <span class="btn-icon">❌</span>
+              ZRUŠIT
+            </button>
+          </div>
+        </div>
+
+        <!-- SLOT 4 (unlock) -->
+        <div class="mission-slot" id="slot4-container">
+          <div class="slot-header">
+            <h3>🎯 MISE #4</h3>
+            <span class="energy-cost">⚡ 15</span>
+          </div>
+
+          <div id="slot4-locked" class="slot-empty">
+            <div class="empty-icon">🔒</div>
+            <p>Odemkni další slot</p>
+            <button class="mission-btn generate-btn" onclick="upgradeMissionSlot(4)">
+              <span class="btn-icon">🚬</span>
+              UPGRADE (500)
+            </button>
+          </div>
+
+          <div id="slot4-empty" class="slot-empty" style="display:none;">
+            <div class="empty-icon">🎲</div>
+            <p>Prázdný slot</p>
+            <button class="mission-btn generate-btn" onclick="startMission('slot4')">
+              <span class="btn-icon">🎲</span>
+              GENEROVAT
+            </button>
+          </div>
+
+          <div id="slot4-active" class="mission-card-slot" style="display:none;">
+            <div class="mission-header-active">
+              <div class="mission-name-big" id="slot4-name">...</div>
+              <div class="mission-difficulty" id="slot4-difficulty">EASY</div>
+            </div>
+            <div class="mission-story" id="slot4-story">...</div>
+            <div class="timer-section">
+              <div class="timer-icon">⏳</div>
+              <div class="timer-display" id="slot4-timer">05:00</div>
+            </div>
+            <button class="mission-btn cancel-btn" onclick="cancelMission('slot4')">
+              <span class="btn-icon">❌</span>
+              ZRUŠIT
+            </button>
+          </div>
+        </div>
+
+        <!-- SLOT 5 (unlock) -->
+        <div class="mission-slot" id="slot5-container">
+          <div class="slot-header">
+            <h3>🎯 MISE #5</h3>
+            <span class="energy-cost">⚡ 15</span>
+          </div>
+
+          <div id="slot5-locked" class="slot-empty">
+            <div class="empty-icon">🔒</div>
+            <p>Odemkni další slot</p>
+            <button class="mission-btn generate-btn" onclick="upgradeMissionSlot(5)">
+              <span class="btn-icon">🚬</span>
+              UPGRADE (500)
+            </button>
+          </div>
+
+          <div id="slot5-empty" class="slot-empty" style="display:none;">
+            <div class="empty-icon">🎲</div>
+            <p>Prázdný slot</p>
+            <button class="mission-btn generate-btn" onclick="startMission('slot5')">
+              <span class="btn-icon">🎲</span>
+              GENEROVAT
+            </button>
+          </div>
+
+          <div id="slot5-active" class="mission-card-slot" style="display:none;">
+            <div class="mission-header-active">
+              <div class="mission-name-big" id="slot5-name">...</div>
+              <div class="mission-difficulty" id="slot5-difficulty">EASY</div>
+            </div>
+            <div class="mission-story" id="slot5-story">...</div>
+            <div class="timer-section">
+              <div class="timer-icon">⏳</div>
+              <div class="timer-display" id="slot5-timer">05:00</div>
+            </div>
+            <button class="mission-btn cancel-btn" onclick="cancelMission('slot5')">
+              <span class="btn-icon">❌</span>
+              ZRUŠIT
+            </button>
+          </div>
+        </div>
+
+        <!-- SLOT 6 (unlock) -->
+        <div class="mission-slot" id="slot6-container">
+          <div class="slot-header">
+            <h3>🎯 MISE #6</h3>
+            <span class="energy-cost">⚡ 15</span>
+          </div>
+
+          <div id="slot6-locked" class="slot-empty">
+            <div class="empty-icon">🔒</div>
+            <p>Odemkni další slot</p>
+            <button class="mission-btn generate-btn" onclick="upgradeMissionSlot(6)">
+              <span class="btn-icon">🚬</span>
+              UPGRADE (500)
+            </button>
+          </div>
+
+          <div id="slot6-empty" class="slot-empty" style="display:none;">
+            <div class="empty-icon">🎲</div>
+            <p>Prázdný slot</p>
+            <button class="mission-btn generate-btn" onclick="startMission('slot6')">
+              <span class="btn-icon">🎲</span>
+              GENEROVAT
+            </button>
+          </div>
+
+          <div id="slot6-active" class="mission-card-slot" style="display:none;">
+            <div class="mission-header-active">
+              <div class="mission-name-big" id="slot6-name">...</div>
+              <div class="mission-difficulty" id="slot6-difficulty">EASY</div>
+            </div>
+            <div class="mission-story" id="slot6-story">...</div>
+            <div class="timer-section">
+              <div class="timer-icon">⏳</div>
+              <div class="timer-display" id="slot6-timer">05:00</div>
+            </div>
+            <button class="mission-btn cancel-btn" onclick="cancelMission('slot6')">
+              <span class="btn-icon">❌</span>
+              ZRUŠIT
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- PRAVÝ SLOUPEC - Tips -->
+      <div class="right-column">
+        <div class="mission-tips">
+          <div class="info-header">
+            <h3>💡 TIPY</h3>
+          </div>
+          <div class="tip-content">
+            <div class="tip-item">
+              <span class="tip-icon">⚡</span>
+              <p>Energie: +1 každých 5 minut</p>
+            </div>
+            <div class="tip-item">
+              <span class="tip-icon">🎯</span>
+              <p>Každá mise stojí 15 energie</p>
+            </div>
+            <div class="tip-item">
+              <span class="tip-icon">⏱️</span>
+              <p>Mise trvají 5-20 minut</p>
+            </div>
+            <div class="tip-item">
+              <span class="tip-icon">🥷</span>
+              <p>Vrah: 50 energie, 14 hodin</p>
+            </div>
+            <div class="tip-item">
+              <span class="tip-icon">💰</span>
+              <p>Vyšší level = větší odměny</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script src="mise.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

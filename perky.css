@@ -1,0 +1,1147 @@
+/* perky.css */
+
+/* ===== PERKY AREA ===== */
+.perky-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.perky-title {
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow: 
+    0 0 20px rgba(100, 255, 150, 0.8),
+    0 0 40px rgba(100, 255, 150, 0.5),
+    0 4px 15px rgba(0,0,0,1),
+    0 8px 25px rgba(0,0,0,0.8);
+  padding: 10px 32px;
+  background: 
+    linear-gradient(135deg, 
+      rgba(34, 139, 34, 0.95) 0%,
+      rgba(25, 100, 25, 0.98) 50%,
+      rgba(34, 139, 34, 0.95) 100%);
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #90ee90, #32cd32, #90ee90) 1;
+  border-radius: 16px;
+  box-shadow: 
+    0 12px 40px rgba(0,0,0,.8),
+    inset 0 -4px 20px rgba(0,0,0,0.5),
+    inset 0 4px 20px rgba(100,255,150,0.2);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.perky-container {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
+  align-items: start;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ===== LEFT SECTION - INFO & STATS ===== */
+.perky-info-section {
+  background: 
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #228b22, #32cd32, #228b22) 1;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(100,255,150,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.perky-info-section::-webkit-scrollbar {
+  width: 8px;
+}
+
+.perky-info-section::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
+.perky-info-section::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(100,255,150,0.6), rgba(50,205,50,0.8));
+  border-radius: 10px;
+  border: 2px solid rgba(0,0,0,0.3);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(100,255,150,0.3);
+  flex-shrink: 0;
+}
+
+.section-header h2 {
+  font-size: 20px;
+  font-weight: 900;
+  color: #90ee90;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+}
+
+.tree-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.tree-zoom-btn,
+.tree-reset-btn {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, rgba(50,205,50,0.3), rgba(34,139,34,0.4));
+  border: 2px solid #32cd32;
+  border-radius: 8px;
+  color: #90ee90;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 
+    0 3px 8px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tree-zoom-btn:hover,
+.tree-reset-btn:hover {
+  background: linear-gradient(135deg, rgba(50,205,50,0.5), rgba(34,139,34,0.6));
+  border-color: #90ee90;
+  transform: translateY(-2px);
+  box-shadow: 
+    0 5px 12px rgba(0,0,0,0.6),
+    0 0 15px rgba(50,205,50,0.3);
+}
+
+.tree-zoom-btn:active,
+.tree-reset-btn:active {
+  transform: translateY(0);
+}
+
+/* Character Info Card */
+.character-info-card {
+  background-image: url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 3px solid #32cd32;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 
+    0 8px 24px rgba(0,0,0,0.6),
+    inset 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.char-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.char-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 12px;
+  border: 3px solid #90ee90;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  object-fit: cover;
+}
+
+.char-class-badge {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #32cd32, #228b22);
+  border: 3px solid rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+
+.char-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.char-name {
+  font-size: 18px;
+  font-weight: 900;
+  color: #90ee90;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.char-class-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #32cd32;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  text-transform: uppercase;
+}
+
+.char-level {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+
+/* Perk Stats Row */
+.perk-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.perk-stat-box {
+  background-image: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 3px solid #32cd32;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.5),
+    inset 0 2px 0 rgba(255,255,255,0.1);
+}
+
+.perk-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.8);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.perk-stat-value {
+  font-size: 24px;
+  font-weight: 900;
+  color: #90ee90;
+  text-shadow: 
+    0 0 10px rgba(144,238,144,0.6),
+    0 2px 6px rgba(0,0,0,0.9);
+  line-height: 1;
+}
+
+/* Perk Points Card */
+.perk-points-card {
+  background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.2));
+  border: 4px solid #ffd700;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 
+    0 8px 24px rgba(0,0,0,0.6),
+    0 0 30px rgba(255,215,0,0.4),
+    inset 0 2px 12px rgba(255,215,0,0.2);
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 
+      0 8px 24px rgba(0,0,0,0.6),
+      0 0 20px rgba(255,215,0,0.3),
+      inset 0 2px 12px rgba(255,215,0,0.2);
+  }
+  50% {
+    box-shadow: 
+      0 10px 30px rgba(0,0,0,0.7),
+      0 0 40px rgba(255,215,0,0.6),
+      inset 0 2px 15px rgba(255,215,0,0.3);
+  }
+}
+
+.perk-points-label {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 
+    0 0 10px rgba(255,215,0,0.8),
+    0 2px 6px rgba(0,0,0,0.9);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.perk-points-value {
+  font-size: 56px;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 
+    0 0 30px rgba(255,215,0,1),
+    0 0 50px rgba(255,215,0,0.6),
+    0 4px 12px rgba(0,0,0,0.9);
+  line-height: 1;
+  filter: drop-shadow(0 0 20px rgba(255,215,0,0.8));
+}
+
+.perk-points-info {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Stats Summary */
+.stats-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-summary-item {
+  background-image: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 2px solid #32cd32;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 
+    0 3px 8px rgba(0,0,0,0.3),
+    inset 0 2px 0 rgba(255,255,255,0.1);
+}
+
+.stat-summary-item:hover {
+  transform: translateX(3px);
+  border-color: #90ee90;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.stat-icon {
+  font-size: 20px;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 900;
+  color: #90ee90;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+/* Reset Button */
+.reset-perks-btn {
+  padding: 12px 20px;
+  background-image: url('tlacitko_shopik.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 3px solid rgba(255, 100, 100, 0.6);
+  border-radius: 10px;
+  color: #ff6b6b;
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  box-shadow: 
+    0 4px 10px rgba(0,0,0,0.5),
+    inset 0 2px 5px rgba(255,100,100,0.15);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.reset-perks-btn:hover {
+  filter: brightness(1.2);
+  transform: translateY(-3px);
+  border-color: #ff6b6b;
+  box-shadow: 
+    0 6px 15px rgba(0,0,0,0.6),
+    0 0 20px rgba(255,107,107,0.3);
+}
+
+.reset-perks-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.9);
+}
+
+/* ===== MIDDLE SECTION - PERK TREE ===== */
+.perky-tree-section {
+  background: 
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #228b22, #32cd32, #228b22) 1;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(100,255,150,0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tree-scroll-wrapper {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  margin-top: 14px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.2);
+}
+
+.tree-scroll-wrapper::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.tree-scroll-wrapper::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.3);
+  border-radius: 10px;
+}
+
+.tree-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(100,255,150,0.6), rgba(50,205,50,0.8));
+  border-radius: 10px;
+  border: 2px solid rgba(0,0,0,0.3);
+}
+
+.tree-scroll-wrapper::-webkit-scrollbar-corner {
+  background: rgba(0,0,0,0.3);
+}
+
+.tree-canvas {
+  position: relative;
+  min-width: 100%;
+  min-height: 100%;
+  padding: 40px;
+}
+
+/* ===== PERK NODE ===== */
+.perk-node {
+  position: absolute;
+  width: 110px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.perk-node-inner {
+  background: 
+    linear-gradient(135deg, rgba(139,69,19,0.95), rgba(101,67,33,0.98)),
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
+  border: 3px solid #7a5a23;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 
+    0 5px 15px rgba(0,0,0,0.7),
+    inset 0 2px 8px rgba(0,0,0,0.4),
+    inset 0 -2px 6px rgba(255,215,100,0.1);
+  position: relative;
+  min-height: 110px;
+}
+
+.perk-node:hover .perk-node-inner {
+  transform: translateY(-4px) scale(1.05);
+  border-color: #c9a44a;
+  box-shadow: 
+    0 10px 25px rgba(0,0,0,0.7),
+    0 0 25px rgba(201,164,74,0.4),
+    inset 0 2px 12px rgba(255,215,100,0.2);
+}
+
+/* Perk States */
+.perk-node.unlocked .perk-node-inner {
+  background: 
+    linear-gradient(135deg, rgba(50,205,50,0.3), rgba(34,139,34,0.4)),
+    linear-gradient(135deg, rgba(139,69,19,0.8), rgba(101,67,33,0.9)),
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: screen, multiply, normal;
+  border-color: #32cd32;
+  box-shadow: 
+    0 6px 18px rgba(0,0,0,0.6),
+    0 0 25px rgba(50,205,50,0.5),
+    inset 0 2px 10px rgba(50,205,50,0.2);
+}
+
+.perk-node.available .perk-node-inner {
+  background: 
+    linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,165,0,0.3)),
+    linear-gradient(135deg, rgba(139,69,19,0.8), rgba(101,67,33,0.9)),
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: screen, multiply, normal;
+  border-color: #ffd700;
+  box-shadow: 
+    0 6px 18px rgba(0,0,0,0.6),
+    0 0 25px rgba(255,215,0,0.5),
+    inset 0 2px 10px rgba(255,215,0,0.2);
+  animation: pulsate 2s ease-in-out infinite;
+}
+
+.perk-node.locked .perk-node-inner {
+  border-color: #3a3020;
+  filter: grayscale(0.8) brightness(0.5);
+  opacity: 0.5;
+}
+
+.perk-node.locked .perk-icon {
+  border-color: #3a3020;
+  filter: grayscale(1) brightness(0.4);
+}
+
+.perk-node.locked .perk-name {
+  color: rgba(255,255,255,0.3);
+}
+
+@keyframes pulsate {
+  0%, 100% {
+    box-shadow: 
+      0 6px 18px rgba(0,0,0,0.6),
+      0 0 15px rgba(255,215,0,0.3),
+      inset 0 2px 8px rgba(0,0,0,0.3);
+  }
+  50% {
+    box-shadow: 
+      0 8px 24px rgba(0,0,0,0.7),
+      0 0 30px rgba(255,215,0,0.6),
+      inset 0 2px 12px rgba(255,215,0,0.2);
+  }
+}
+
+.perk-icon {
+  width: 55px;
+  height: 55px;
+  border-radius: 10px;
+  background: 
+    radial-gradient(circle at center, rgba(139,69,19,0.6), rgba(101,67,33,0.8)),
+    linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+  background-blend-mode: overlay;
+  border: 2px solid #7a5a23;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: 
+    inset 0 0 15px rgba(0,0,0,0.6),
+    0 3px 8px rgba(0,0,0,0.6);
+  flex-shrink: 0;
+}
+
+.perk-node.unlocked .perk-icon {
+  background: 
+    radial-gradient(circle at center, rgba(50,205,50,0.4), rgba(34,139,34,0.5)),
+    radial-gradient(circle at center, rgba(139,69,19,0.6), rgba(101,67,33,0.8));
+  background-blend-mode: screen, normal;
+  border-color: #32cd32;
+  box-shadow: 
+    inset 0 0 20px rgba(50,205,50,0.3),
+    0 4px 10px rgba(0,0,0,0.6),
+    0 0 15px rgba(50,205,50,0.4);
+}
+
+.perk-node.available .perk-icon {
+  background: 
+    radial-gradient(circle at center, rgba(255,215,0,0.4), rgba(255,165,0,0.5)),
+    radial-gradient(circle at center, rgba(139,69,19,0.6), rgba(101,67,33,0.8));
+  background-blend-mode: screen, normal;
+  border-color: #ffd700;
+  box-shadow: 
+    inset 0 0 20px rgba(255,215,0,0.3),
+    0 4px 10px rgba(0,0,0,0.6),
+    0 0 15px rgba(255,215,0,0.4);
+}
+
+.perk-name {
+  font-size: 10px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-align: center;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+  text-transform: uppercase;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.2px;
+  padding: 0 3px;
+}
+
+.perk-node.locked .perk-name {
+  color: rgba(255,255,255,0.4);
+}
+
+.perk-level-req {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  border: 2px solid rgba(0,0,0,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #1a0f00;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.7);
+  z-index: 1;
+}
+
+.perk-node.locked .perk-level-req {
+  background: linear-gradient(135deg, #555, #333);
+  color: rgba(255,255,255,0.4);
+}
+
+/* Connection Lines */
+.perk-connection {
+  position: absolute;
+  background: rgba(90,69,32,0.6);
+  z-index: 1;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.perk-connection.unlocked {
+  background: linear-gradient(90deg, #32cd32, #90ee90);
+  box-shadow: 0 0 10px rgba(50,205,50,0.4);
+}
+
+.perk-connection.vertical {
+  width: 4px;
+}
+
+.perk-connection.horizontal {
+  height: 4px;
+}
+
+/* ===== PERK MODAL ===== */
+.perk-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.perk-modal.active {
+  display: flex;
+}
+
+.perk-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.perk-modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  background: 
+    linear-gradient(135deg, rgba(30,36,42,0.98), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 5px solid;
+  border-image: linear-gradient(135deg, #228b22, #32cd32, #228b22) 1;
+  border-radius: 20px;
+  box-shadow: 
+    0 25px 80px rgba(0,0,0,0.9),
+    0 0 60px rgba(50,205,50,0.3),
+    inset 0 2px 20px rgba(100,255,150,0.1);
+  animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.perk-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(135deg, rgba(255,100,100,0.3), rgba(220,38,38,0.4));
+  border: 3px solid #ff6b6b;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.perk-modal-close:hover {
+  background: linear-gradient(135deg, rgba(255,100,100,0.5), rgba(220,38,38,0.6));
+  border-color: #ff4444;
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.7);
+}
+
+#perkModalBody {
+  padding: 25px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+#perkModalBody::-webkit-scrollbar {
+  width: 10px;
+}
+
+#perkModalBody::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.3);
+  border-radius: 10px;
+}
+
+#perkModalBody::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(100,255,150,0.6), rgba(50,205,50,0.8));
+  border-radius: 10px;
+  border: 2px solid rgba(0,0,0,0.3);
+}
+
+/* Perk Detail Card (in modal) */
+.perk-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.perk-detail-header {
+  background: 
+    linear-gradient(135deg, rgba(139,69,19,0.4), rgba(101,67,33,0.5)),
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: multiply;
+  border: 4px solid #7a5a23;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  box-shadow: 
+    0 10px 30px rgba(0,0,0,0.7),
+    inset 0 2px 12px rgba(0,0,0,0.4);
+  margin-bottom: 20px;
+}
+
+.perk-detail-header.unlocked {
+  background: 
+    linear-gradient(135deg, rgba(50,205,50,0.25), rgba(34,139,34,0.3)),
+    linear-gradient(135deg, rgba(139,69,19,0.4), rgba(101,67,33,0.5)),
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: screen, multiply, normal;
+  border-color: #32cd32;
+  box-shadow: 
+    0 10px 30px rgba(0,0,0,0.7),
+    0 0 30px rgba(50,205,50,0.4),
+    inset 0 2px 12px rgba(50,205,50,0.2);
+}
+
+.perk-detail-header.available {
+  background: 
+    linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,165,0,0.3)),
+    linear-gradient(135deg, rgba(139,69,19,0.4), rgba(101,67,33,0.5)),
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: screen, multiply, normal;
+  border-color: #ffd700;
+  box-shadow: 
+    0 10px 30px rgba(0,0,0,0.7),
+    0 0 30px rgba(255,215,0,0.4),
+    inset 0 2px 12px rgba(255,215,0,0.2);
+}
+
+.perk-detail-icon-wrapper {
+  flex-shrink: 0;
+}
+
+.perk-detail-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 16px;
+  background: 
+    radial-gradient(circle at center, rgba(139,69,19,0.6), rgba(101,67,33,0.8)),
+    linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+  background-blend-mode: overlay;
+  border: 4px solid #7a5a23;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56px;
+  box-shadow: 
+    inset 0 0 25px rgba(0,0,0,0.6),
+    0 6px 15px rgba(0,0,0,0.7);
+}
+
+.perk-detail-header.unlocked .perk-detail-icon {
+  background: 
+    radial-gradient(circle at center, rgba(50,205,50,0.4), rgba(34,139,34,0.5)),
+    radial-gradient(circle at center, rgba(139,69,19,0.6), rgba(101,67,33,0.8));
+  background-blend-mode: screen, normal;
+  border-color: #32cd32;
+  box-shadow: 
+    inset 0 0 25px rgba(50,205,50,0.3),
+    0 6px 15px rgba(0,0,0,0.7),
+    0 0 20px rgba(50,205,50,0.5);
+}
+
+.perk-detail-header.available .perk-detail-icon {
+  background: 
+    radial-gradient(circle at center, rgba(255,215,0,0.4), rgba(255,165,0,0.5)),
+    radial-gradient(circle at center, rgba(139,69,19,0.6), rgba(101,67,33,0.8));
+  background-blend-mode: screen, normal;
+  border-color: #ffd700;
+  box-shadow: 
+    inset 0 0 25px rgba(255,215,0,0.3),
+    0 6px 15px rgba(0,0,0,0.7),
+    0 0 20px rgba(255,215,0,0.5);
+}
+
+.perk-detail-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.perk-detail-name {
+  font-size: 24px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 
+    0 0 15px rgba(241,210,122,0.6),
+    0 2px 8px rgba(0,0,0,0.9);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+
+.perk-detail-tier {
+  font-size: 13px;
+  font-weight: 700;
+  color: #c9a44a;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  margin-bottom: 8px;
+}
+
+.perk-detail-status {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.perk-detail-status.unlocked {
+  background: rgba(50,205,50,0.3);
+  color: #90ee90;
+  border: 2px solid #32cd32;
+  box-shadow: 0 0 15px rgba(50,205,50,0.3);
+}
+
+.perk-detail-status.available {
+  background: rgba(255,215,0,0.3);
+  color: #ffd700;
+  border: 2px solid #ffa500;
+  box-shadow: 0 0 15px rgba(255,215,0,0.3);
+}
+
+.perk-detail-status.locked {
+  background: rgba(90,69,32,0.3);
+  color: rgba(255,255,255,0.5);
+  border: 2px solid #5a4520;
+}
+
+.perk-detail-description {
+  background-image: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 2px solid #32cd32;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.5),
+    inset 0 2px 0 rgba(255,255,255,0.1);
+}
+
+.perk-detail-description p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  margin: 0;
+}
+
+.perk-detail-effects {
+  background-image: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 2px solid #32cd32;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.5),
+    inset 0 2px 0 rgba(255,255,255,0.1);
+}
+
+.perk-detail-effects-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #90ee90;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.perk-effect-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.perk-effect-item:last-child {
+  border-bottom: none;
+}
+
+.perk-effect-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.perk-effect-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  flex: 1;
+}
+
+.perk-effect-value {
+  font-size: 14px;
+  font-weight: 900;
+  color: #32cd32;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.perk-detail-requirements {
+  background-image: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 2px solid rgba(255,165,0,0.6);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.5),
+    inset 0 2px 0 rgba(255,255,255,0.1);
+}
+
+.perk-detail-requirements-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffa500;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.perk-requirement-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.perk-requirement-item.met {
+  opacity: 0.6;
+}
+
+.perk-requirement-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.perk-requirement-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  flex: 1;
+}
+
+.perk-requirement-check {
+  font-size: 16px;
+}
+
+.perk-detail-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.perk-unlock-btn {
+  flex: 1;
+  padding: 14px 20px;
+  background-image: url('tlacitko_shopik.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 3px solid rgba(255,215,0,0.6);
+  border-radius: 10px;
+  color: #ffd700;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  box-shadow: 
+    0 4px 10px rgba(0,0,0,0.5),
+    inset 0 2px 5px rgba(255,215,0,0.15);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.perk-unlock-btn:hover {
+  filter: brightness(1.2);
+  transform: translateY(-3px);
+  border-color: #ffd700;
+  box-shadow: 
+    0 6px 15px rgba(0,0,0,0.6),
+    0 0 20px rgba(255,215,0,0.3);
+}
+
+.perk-unlock-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.9);
+}
+
+.perk-unlock-btn:disabled {
+  filter: grayscale(0.8);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.perk-unlock-btn.unlocked {
+  background-image: url('tlacitko.jpg');
+  border-color: rgba(50,205,50,0.6);
+  color: #32cd32;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1600px) {
+  .perky-container {
+    grid-template-columns: 340px 1fr 380px;
+  }
+}
+
+@media (max-width: 1400px) {
+  .perky-container {
+    grid-template-columns: 320px 1fr 360px;
+  }
+  
+  .perk-node {
+    width: 100px;
+  }
+}

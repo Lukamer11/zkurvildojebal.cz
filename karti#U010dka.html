@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="cs">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+  <title>Kartička zásah</title>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+      padding-top: 40px;
+    }
+    button {
+      font-size: 20px;
+      padding: 12px 30px;
+      background: #ff9800;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    img {
+      width: 220px;
+      border: 3px solid gold;
+      border-radius: 10px;
+    }
+  </style>
+<script type="module" src="js/globalAuth.js"></script>
+  <link rel="stylesheet" href="mobile.css">
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang.js" defer></script>
+<script src="lang_pack.js"></script>
+</head>
+<body>
+
+  <h1>Kartička</h1>
+  <button onclick="playHit()">ZÁSÁH</button><br>
+  <img id="karta" src="normal.png">
+
+  <script>
+    function playHit() {
+      const karta = document.getElementById("karta");
+
+      // Animace zásahů (1 → 2 → 3 → zpět)
+      setTimeout(() => karta.src = "hit1.png", 100);
+      setTimeout(() => karta.src = "hit2.png", 200);
+      setTimeout(() => karta.src = "hit3.png", 300);
+      setTimeout(() => karta.src = "normal.png", 600);
+    }
+  </script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>
