@@ -1,0 +1,403 @@
+/* pets.css */
+@import url("mise.css");
+
+/* ===== PETS AREA ===== */
+.pets-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pets-title {
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow:
+    0 0 20px rgba(138, 226, 52, 0.8),
+    0 0 40px rgba(138, 226, 52, 0.5),
+    0 4px 15px rgba(0,0,0,1),
+    0 8px 25px rgba(0,0,0,0.8);
+  padding: 10px 32px;
+  background:
+    linear-gradient(135deg,
+      rgba(34, 139, 34, 0.95) 0%,
+      rgba(20, 80, 20, 0.98) 50%,
+      rgba(34, 139, 34, 0.95) 100%);
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #8ae234, #4e9a06, #8ae234) 1;
+  border-radius: 16px;
+  box-shadow:
+    0 12px 40px rgba(0,0,0,.8),
+    inset 0 -4px 20px rgba(0,0,0,0.5),
+    inset 0 4px 20px rgba(138, 226, 52, 0.2);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pets-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(138, 226, 52, 0.3),
+    transparent
+  );
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  50%, 100% { left: 100%; }
+}
+
+/* ===== STATS OVERVIEW ===== */
+.pets-stats-overview {
+  background:
+    linear-gradient(135deg, rgba(30,36,42,0.85), rgba(18,22,26,0.9)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 3px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow:
+    0 10px 30px rgba(0,0,0,.8),
+    inset 0 2px 8px rgba(255,215,100,0.1);
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+
+.stat-bonus-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(0,0,0,0.4);
+  border: 2px solid #7a5a23;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.stat-bonus-item:hover {
+  border-color: #c9a44a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.5);
+}
+
+.bonus-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.8));
+}
+
+.bonus-label {
+  font-size: 11px;
+  font-weight: 900;
+  color: #c9a44a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-bonus-item b {
+  font-size: 16px;
+  font-weight: 900;
+  color: #8ae234;
+  text-shadow: 0 0 10px rgba(138, 226, 52, 0.8);
+}
+
+/* ===== PETS CONTAINER ===== */
+.pets-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  overflow-y: auto;
+  padding-right: 8px;
+  padding-bottom: 10px;
+}
+
+.pets-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pets-container::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
+.pets-container::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.3);
+  border-radius: 10px;
+}
+
+/* ===== PET CARDS ===== */
+.pet-card {
+  background:
+    linear-gradient(135deg, rgba(30,36,42,0.9), rgba(18,22,26,0.95)),
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 3px solid #5a4520;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow:
+    0 8px 20px rgba(0,0,0,.6),
+    inset 0 2px 8px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.pet-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(138, 226, 52, 0.15),
+    transparent
+  );
+  transition: left 0.6s ease;
+}
+
+.pet-card:hover::before {
+  left: 100%;
+}
+
+.pet-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  border-color: #8ae234;
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.8),
+    0 0 25px rgba(138, 226, 52, 0.4),
+    inset 0 2px 12px rgba(138, 226, 52, 0.2);
+}
+
+.pet-card.owned {
+  border-color: #8ae234;
+  box-shadow:
+    0 8px 20px rgba(138, 226, 52, 0.3),
+    inset 0 2px 8px rgba(138, 226, 52, 0.2);
+}
+
+.pet-card.locked {
+  opacity: 0.7;
+  filter: grayscale(0.5);
+}
+
+.pet-icon {
+  font-size: 12px;
+  font-weight: 900;
+  color: #c9a44a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ===== PET AVATAR ===== */
+.pet-avatar {
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 3px solid #5a4520;
+  box-shadow:
+    0 8px 20px rgba(0,0,0,.6),
+    inset 0 0 20px rgba(0,0,0,.3);
+  transition: all 0.3s ease;
+  background: radial-gradient(circle at center, rgba(44,47,52,0.8), rgba(15,17,20,0.95));
+}
+
+.pet-card:hover .pet-avatar {
+  border-color: #8ae234;
+  box-shadow:
+    0 10px 25px rgba(0,0,0,.7),
+    0 0 20px rgba(138, 226, 52, 0.4),
+    inset 0 0 20px rgba(0,0,0,.3);
+}
+
+.pet-card.owned .pet-avatar {
+  border-color: #8ae234;
+}
+
+.pet-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s ease;
+}
+
+.pet-card:hover .pet-avatar img {
+  transform: scale(1.05);
+}
+
+.pet-name {
+  font-size: 16px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.pet-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 4px 0;
+}
+
+.pet-stat span {
+  color: #c9a44a;
+}
+
+.pet-stat b {
+  color: #8ae234;
+  text-shadow: 0 0 8px rgba(138, 226, 52, 0.6);
+}
+
+.pet-level {
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+  text-align: center;
+  padding: 6px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 8px;
+  border: 2px solid #c9a44a;
+}
+
+.pet-bonus {
+  font-size: 14px;
+  font-weight: 900;
+  color: #8ae234;
+  text-align: center;
+  padding: 8px;
+  background: rgba(138, 226, 52, 0.1);
+  border-radius: 8px;
+  border: 2px solid #8ae234;
+  text-shadow: 0 0 10px rgba(138, 226, 52, 0.8);
+}
+
+/* ===== BUTTONS ===== */
+.pet-buy-btn,
+.pet-upgrade-btn {
+  padding: 12px 20px;
+  background:
+    linear-gradient(135deg, rgba(34, 139, 34, 0.9), rgba(20, 80, 20, 0.95)),
+    url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 3px solid #8ae234;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.5);
+}
+
+.pet-buy-btn:hover,
+.pet-upgrade-btn:hover {
+  border-color: #b4f063;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,.6),
+    0 0 20px rgba(138, 226, 52, 0.4);
+}
+
+.pet-buy-btn:active,
+.pet-upgrade-btn:active {
+  transform: translateY(0) scale(1);
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+
+.pet-buy-btn.disabled,
+.pet-upgrade-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.pet-upgrade-btn {
+  background:
+    linear-gradient(135deg, rgba(201, 164, 74, 0.9), rgba(122, 90, 35, 0.95)),
+    url('tlacitko.jpg');
+  border-color: #c9a44a;
+}
+
+.pet-upgrade-btn:hover {
+  border-color: #f1d27a;
+}
+
+.pet-max-level {
+  padding: 10px;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #2b1a0f;
+  font-weight: 900;
+  font-size: 13px;
+  text-align: center;
+  border-radius: 8px;
+  border: 3px solid #fff;
+  box-shadow:
+    0 4px 12px rgba(255, 215, 0, 0.5),
+    inset 0 2px 4px rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .pets-container {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .pets-stats-overview {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .pets-container {
+    grid-template-columns: 1fr;
+  }
+
+  .pets-stats-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pets-title {
+    font-size: 24px;
+    letter-spacing: 2px;
+  }
+}

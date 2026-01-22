@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="cs">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+  <title>Postava</title>
+  <link rel="stylesheet" href="postava.css">
+  <script src="supabase_stub.js"></script>
+  <script src="items.js"></script>
+  <style>
+    /* Equipment slot styling */
+    .slot.has-item {
+      background: radial-gradient(circle at center, rgba(80,85,92,0.95), rgba(45,50,56,0.98));
+      border-color: #7a5a23;
+    }
+    
+    .slot.has-item .slot-emoji {
+      display: none;
+    }
+    
+    .slot-item {
+      font-size: 44px;
+      cursor: grab;
+      user-select: none;
+    }
+    
+    .slot-item:active {
+      cursor: grabbing;
+    }
+    
+    .slot.drag-over {
+      border-color: #4af !important;
+      background: rgba(74, 170, 255, 0.2) !important;
+      box-shadow: 0 0 30px rgba(74, 170, 255, 0.6) !important;
+    }
+    
+    .dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+    
+    .slot-item img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    /* Ikona třídy na avataru (pravý horní roh) */
+    .character {
+      position: relative;
+    }
+    
+    .character .class-badge {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      background: rgba(0,0,0,0.55);
+      border: 2px solid rgba(201,164,74,.85);
+      border-radius: 12px;
+      box-shadow: 0 8px 18px rgba(0,0,0,.55);
+      text-shadow: 0 2px 8px rgba(0,0,0,.95);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Tooltip */
+    .item-tooltip {
+      position: fixed;
+      background: linear-gradient(135deg, rgba(40,30,20,0.98), rgba(25,18,12,0.99));
+      border: 2px solid #c9a44a;
+      border-radius: 10px;
+      padding: 9px;
+      pointer-events: none;
+      z-index: 10000;
+      display: none;
+      min-width: 190px;
+      max-width: 260px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
+  </style>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+<div class="layout">
+
+  <!-- LEVÉ PANEL - GOPNIK STYL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- STŘED - POSTAVA -->
+  <main class="character-area">
+
+    <!-- JMÉNO POSTAVY -->
+    <div class="character-name">BORIS GOPNIKOV</div>
+
+    <!-- POSTAVA + SLOTY -->
+    <div class="character-frame">
+
+      <div class="slots" id="leftSlots" aria-label="Levé sloty vybavení">
+        <div class="slot slot-shop" data-slot="weapon" data-dropzone="true"></div>
+        <div class="slot slot-shop" data-slot="shield" data-dropzone="true"></div>
+        <div class="slot slot-shop" data-slot="ring" data-dropzone="true"></div>
+        <div class="slot slot-shop" data-slot="backpack" data-dropzone="true"></div>
+      </div>
+
+
+      <div class="center-stack">
+
+        <div class="trinket-row">
+          <div class="slot slot-shop slot-center" data-slot="trinket1" data-dropzone="true" aria-label="Trinket 1"></div>
+          <div class="slot slot-shop slot-center" data-slot="trinket3" data-dropzone="true" aria-label="Trinket 3"></div>
+        </div>
+
+        <div class="character">
+          <img src="avatar.jpg" alt="Postava hráče" id="playerAvatar" loading="lazy">
+          <div class="level" id="levelChar">Level 1</div>
+        </div>
+
+        <div class="trinket-row">
+          <div class="slot slot-shop slot-center" data-slot="trinket2" data-dropzone="true" aria-label="Trinket 2"></div>
+          <div class="slot slot-shop slot-center" data-slot="trinket4" data-dropzone="true" aria-label="Trinket 4"></div>
+        </div>
+
+      </div>
+
+      <div class="slots" id="rightSlots" aria-label="Pravé sloty vybavení">
+        <div class="slot slot-shop" data-slot="helmet" data-dropzone="true"></div>
+        <div class="slot slot-shop" data-slot="armor" data-dropzone="true"></div>
+        <div class="slot slot-shop" data-slot="boots" data-dropzone="true"></div>
+        <div class="slot slot-shop" data-slot="gloves" data-dropzone="true"></div>
+      </div>
+
+    </div>
+
+    <!-- ATRIBUTY + INVENTÁŘ (stejně jako v shopu) -->
+    <div class="stats-inv-row">
+
+      <div class="stats-frame">
+      <div class="stat">
+        <span>⚔️ Strength</span>
+        <b id="strengthValue">18</b>
+        <div class="stat-right">
+          <span class="stat-extra" id="strengthExtra">+36 DMG</span>
+          <span class="stat-bonus" id="strengthBonus">🐾 +0%  👥 +0%</span>
+        </div>
+        <button type="button" data-upgrade="strength">
+          +
+          <span class="cost" id="strengthCost">100🪙</span>
+        </button>
+      </div>
+
+      <div class="stat">
+        <span>🛡️ Defense</span>
+        <b id="defenseValue">14</b>
+        <div class="stat-right">
+          <span class="stat-extra" id="defenseExtra">50% Redukce</span>
+          <span class="stat-bonus" id="defenseBonus">🐾 +0%  👥 +0%</span>
+        </div>
+        <button type="button" data-upgrade="defense">
+          +
+          <span class="cost" id="defenseCost">100🪙</span>
+        </button>
+      </div>
+
+      <div class="stat">
+        <span>💪 Constitution</span>
+        <b id="constitutionValue">16</b>
+        <div class="stat-right">
+          <span class="stat-extra" id="constitutionExtra">900 HP</span>
+          <span class="stat-bonus" id="constitutionBonus">🐾 +0%  👥 +0%</span>
+        </div>
+        <button type="button" data-upgrade="constitution">
+          +
+          <span class="cost" id="constitutionCost">100🪙</span>
+        </button>
+      </div>
+
+      <div class="stat">
+        <span>🍀 Luck</span>
+        <b id="luckValue">9</b>
+        <div class="stat-right">
+          <span class="stat-extra" id="luckExtra">9% Crit</span>
+          <span class="stat-bonus" id="luckBonus">🐾 +0%  👥 +0%</span>
+        </div>
+        <!-- data-upgrade="luck" držíme jako interní klíč -->
+        <button type="button" data-upgrade="luck">
+          +
+          <span class="cost" id="luckCost">100🪙</span>
+        </button>
+      </div>
+
+      </div>
+
+      
+      <!-- SELL ZONE (stejné jako v shopu) -->
+      <div class="sell-zone sell-zone-side" id="sellZone" title="Přetáhni item sem nebo klikni pro prodej vybraného itemu">
+        <div class="sell-icon">💰</div>
+        <div class="sell-text">PRODAT ITEM</div>
+        <div class="sell-price" id="sellZonePrice">35% z hodnoty</div>
+      </div>
+
+<div class="postava-inventory" id="inventoryPanel">
+        <div class="section-header">
+          <h2>🎒 INVENTÁŘ</h2>
+          <div class="inv-header-right">
+            <button id="invSizeToggle" class="inv-size-btn" type="button" title="Zvětšit/zmenšit inventář" aria-label="Zvětšit/zmenšit inventář">⤢</button>
+            <button id="trashBtn" class="trash-btn" type="button" title="Koš: smaže vybraný item" aria-label="Koš">🗑️</button>
+            <span class="item-count"><span id="invCount">0</span> / 8</span>
+          </div>
+        </div>
+
+        <div class="inventory-grid inv-big" id="inventoryGrid"></div>
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script src="postava.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

@@ -1,0 +1,670 @@
+/* postava.css */
+@import url("mise.css");
+
+/* ===== STŘED - POSTAVA ===== */
+.character-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.character-name {
+  font-size: 28px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #f1d27a;
+  text-shadow: 
+    0 0 10px rgba(241, 210, 122, 0.5),
+    0 0 20px rgba(241, 210, 122, 0.3),
+    0 4px 8px rgba(0,0,0,.8);
+  padding: 6px 20px;
+  background: linear-gradient(135deg, rgba(60,40,25,0.7), rgba(35,22,14,0.8));
+  border: 2px solid rgba(255, 215, 100, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.5);
+}
+
+/* ===== POSTAVA: 1:1 layout jako PROFIL v ŽEBŘÍČKU ===== */
+.character-frame {
+  display: grid;
+  grid-template-columns: auto 280px auto;
+  gap: 18px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(30,36,42,0.9), rgba(18,22,26,0.95));
+  border: 4px solid #7a5a23;
+  border-radius: 12px;
+  box-shadow: 0 12px 35px rgba(0,0,0,.6);
+  max-width: 100%;
+}
+
+
+/* Center stack: trinkety nad/pod postavou */
+.center-stack{
+  width: 280px;
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+  align-items:center;
+  justify-content:center;
+}
+
+
+/* Řádek pro 2 trinkety vedle sebe (nad/pod postavou) */
+.trinket-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 14px;
+}
+
+/* Sloty ve středním sloupci používají stejné styly jako ostatní */
+.slot-center {
+  /* jen semantická třída – případné future úpravy */
+}
+
+
+/* Zarovnání slotů na střed (aby pravá strana nebyla posunutá) */
+.character-frame > .slots {
+  align-self: center;
+  align-items: center;
+}
+
+/* Když je ve slotu obrázek (JPG), drž stejnou velikost, žádný zoom */
+.slot-shop img,
+.slot img {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  transform: none !important;
+}
+
+.character {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle at center, rgba(44,47,52,0.8), rgba(15,17,20,0.95));
+  border: 4px solid #c9a44a;
+  border-radius: 8px;
+  box-shadow: inset 0 0 30px rgba(0,0,0,.4);
+}
+
+.character img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.level {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #f1d27a, #b8862b);
+  color: #2b1a0f;
+  font-weight: 900;
+  font-size: 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  border: 2px solid #fff0b0;
+  text-align: center;
+  min-width: 80px;
+}
+
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+}
+
+ .slot {
+  width: 92px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+  background: radial-gradient(circle at center, rgba(58,63,70,0.9), rgba(26,31,36,0.95));
+  border: 2px solid #c9a44a;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 0 15px rgba(0,0,0,.3), 0 4px 8px rgba(0,0,0,.3);
+}
+
+.slot:hover {
+  transform: translateY(-2px);
+  border-color: #f1d27a;
+  box-shadow: 0 0 20px rgba(241, 210, 122, 0.4);
+}
+
+/* ===== ATRIBUTY - ZMENŠENÉ ===== */
+/* ===== STAT PANEL – stejný look jako ve shopu ===== */
+.stats-frame {
+  width: 100%;
+  max-width: 520px;
+  background:
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow:
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,215,100,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ===== STATY + INVENTÁŘ VEDLE SEBE (jako v shopu) ===== */
+.stats-inv-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap: 18px;
+  width: 100%;
+  max-width: 1280px;
+}
+
+/* ===== INVENTÁŘ PANEL – velký jako ve shopu (inv-big) ===== */
+.postava-inventory{
+  width: 520px;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 14px;
+  box-shadow:
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,215,100,0.1);
+}
+
+.postava-inventory .section-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom: 10px;
+}
+
+.postava-inventory .section-header h2{
+  margin:0;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: #f1d27a;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+}
+
+.inv-header-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* stejný header jako v shopu */
+.item-count {
+  font-size: 14px;
+  font-weight: 900;
+  color: #c9a44a;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.inv-size-btn{
+  height:28px;
+  min-width:28px;
+  padding:0 8px;
+  border-radius:8px;
+  border:2px solid rgba(201,164,74,0.55);
+  background: rgba(0,0,0,0.35);
+  color:#f1d27a;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow:0 6px 16px rgba(0,0,0,0.55);
+}
+.inv-size-btn:hover{border-color:#f1d27a;transform:translateY(-1px)}
+
+/* ===== INVENTÁŘ GRID + SLOTY (kopie ze shop.css) ===== */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 0;
+}
+
+/* stejný "big" režim jako ve shopu – v postavě je zapnutý defaultně */
+.inventory-grid.inv-big{ gap:12px; }
+.inventory-grid.inv-big .inv-slot{ font-size:44px; }
+.inventory-grid.inv-big .inv-slot img{ width:88px; height:88px; }
+.inventory-grid.inv-big .rarity-label{ transform:scale(1.05); }
+
+.inventory-grid::-webkit-scrollbar { width: 8px; }
+.inventory-grid::-webkit-scrollbar-track { background: rgba(0,0,0,.2); border-radius: 10px; }
+.inventory-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,.3); border-radius: 10px; }
+
+.inv-slot {
+  aspect-ratio: 1/1;
+  background:
+    radial-gradient(circle at center, rgba(58,63,70,0.95), rgba(26,31,36,0.98)),
+    url('panel_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 3px solid #5a4520;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow:
+    inset 0 0 20px rgba(0,0,0,.5),
+    0 4px 10px rgba(0,0,0,.5);
+  cursor: default;
+  font-size: 40px;
+}
+
+/* prázdné sloty v inventáři mají být vidět stejně jako v shopu/žebříčku */
+.inv-slot.empty{
+  opacity: 0.55;
+}
+
+.inv-slot:hover {
+  transform: translateY(-4px) scale(1.03);
+  border-color: #f1d27a;
+  box-shadow:
+    0 0 26px rgba(241, 210, 122, 0.45),
+    0 8px 20px rgba(0,0,0,.7);
+}
+
+.inv-slot.filled{
+  background:
+    radial-gradient(circle at center, rgba(80,85,92,0.95), rgba(45,50,56,0.98)),
+    url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border-color: #7a5a23;
+  cursor: pointer;
+}
+
+.inv-slot.filled[data-rarity-label]::after {
+  content: attr(data-rarity-label);
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  border: 2px solid rgba(0,0,0,0.55);
+  text-shadow: 0 2px 6px rgba(0,0,0,.85);
+  box-shadow: 0 6px 16px rgba(0,0,0,.55);
+  pointer-events: none;
+}
+
+.inv-slot.filled.rarity-rare { border-color: rgba(74,170,255,0.95); }
+.inv-slot.filled.rarity-uncommon { border-color: rgba(124,255,124,0.95); }
+.inv-slot.filled.rarity-epic { border-color: rgba(189,80,255,0.95); }
+.inv-slot.filled.rarity-legendary { border-color: rgba(255,182,44,0.98); }
+
+.inv-slot.filled.rarity-common[data-rarity-label]::after { background: rgba(120,120,120,0.75); color: #fff; }
+.inv-slot.filled.rarity-uncommon[data-rarity-label]::after { background: rgba(124,255,124,0.60); color: #08140a; }
+.inv-slot.filled.rarity-rare[data-rarity-label]::after { background: rgba(74,170,255,0.75); color: #0b1220; }
+.inv-slot.filled.rarity-epic[data-rarity-label]::after { background: rgba(189,80,255,0.75); color: #14061c; }
+.inv-slot.filled.rarity-legendary[data-rarity-label]::after { background: rgba(255,182,44,0.78); color: #1b1206; }
+
+/* default velikost itemů (inv-big to přepíše na 88×88 jako ve shopu) */
+#inventoryGrid .inv-slot img{
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+@media (max-width: 980px){
+  .stats-inv-row{flex-direction:column;align-items:center;}
+  .postava-inventory{width:min(520px, 96vw);}
+}
+
+.stat {
+  display: grid;
+  /* stejné proporce jako ve shopu + tlačítko upgradu na konci */
+  grid-template-columns: 1fr 72px 160px 56px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  padding: 6px 10px;
+  background-image: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 2px solid #c9a44a;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow:
+    0 3px 8px rgba(0,0,0,.3),
+    inset 0 2px 0 rgba(255,255,255,.15);
+  image-rendering: crisp-edges;
+}
+
+/* Pravá část statů: modrý řádek + bonusy pod ním (🐾 / 👥) */
+.stat-right{
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+}
+
+.stat:hover {
+  transform: translateX(3px);
+  border-color: #f1d27a;
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+
+.stat b {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+
+  /* aby se rozpad (item + pet) nelámal do stran */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+}
+
+.stat-value-main{ display:block; }
+.stat-value-sub{
+  display:block;
+  font-size: 11px;
+  margin-top: 2px;
+  opacity: .98;
+  white-space: nowrap;
+}
+.stat-value-sub .item{ color:#4af; }
+.stat-value-sub .pet{ color:#f1d27a; }
+
+.stat span {
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  text-shadow: 0 2px 4px rgba(0,0,0,.5);
+}
+
+/* Název atributu (první span) – držíme na jedné řádce a zarovnáme jako v aréně/shopu */
+.stat > span:first-child{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  white-space: nowrap;
+  /* neseřezávat text na "St/De/Co" – radši ať má prostor */
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.stat-extra {
+  text-align: right;
+  font-size: 11px;
+  font-weight: 900;
+  color: #4af !important;
+  text-shadow: 
+    0 0 10px rgba(74, 170, 255, 0.8),
+    0 2px 4px rgba(0,0,0,.9) !important;
+
+  display:block;
+}
+
+.stat-extra-main{ display:block; }
+.stat-extra-sub{
+  display:block;
+  font-size: 11px;
+  margin-top: 2px;
+  opacity: .98;
+  color:#f1d27a;
+  white-space: nowrap;
+}
+
+/* Bonusy (🐾 / 👥) pod modrým "extra" řádkem */
+.stat-bonus{
+  display:block;
+  text-align:right;
+  font-size: 11px;
+  font-weight: 900;
+  margin-top: 2px;
+  color:#ffffff;
+  opacity:0.95;
+  text-shadow: 0 2px 4px rgba(0,0,0,.9);
+  white-space: nowrap;
+}
+
+.stat button {
+  height: 50px;
+  width: 56px;
+  font-weight: 900;
+  font-size: 22px;
+  background-image: url('panel_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 2px solid rgba(255, 215, 100, 0.5);
+  border-radius: 10px;
+  cursor: pointer;
+  color: #f1d27a;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  box-shadow:
+    0 3px 8px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.15);
+  transition: all 0.15s ease;
+  image-rendering: crisp-edges;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+.stat button:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 16px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.25);
+}
+
+.stat button:active {
+  transform: translateY(0);
+  filter: brightness(0.9);
+  box-shadow:
+    0 2px 6px rgba(0,0,0,.4),
+    inset 0 2px 4px rgba(0,0,0,.5);
+}
+
+.stat button .cost {
+  font-size: 11px;
+  margin-top: 2px;
+  opacity: 1;
+  font-weight: 900;
+  text-shadow: 
+    0 0 6px rgba(255, 255, 255, 0.6),
+    0 1px 3px rgba(0,0,0,.9);
+}
+
+/* ===== RESPONSIVE – ať to vypadá dobře na malých monitorech i mobilech ===== */
+
+/* menší PC monitory / notebooky */
+@media (max-width: 1100px){
+  .character-frame{ grid-template-columns: 1fr; justify-items:center; }
+  .slots{ flex-direction: row; flex-wrap: wrap; justify-content:center; }
+  .stats-frame{ max-width: 620px; }
+}
+
+@media (max-width: 700px){
+  .stat{
+    grid-template-columns: 1fr 44px;
+    grid-template-areas:
+      "name btn"
+      "value extra";
+    row-gap: 4px;
+  }
+  .stat > span:first-child{ grid-area: name; }
+  .stat b{ grid-area: value; text-align:left; padding-left: 2px; align-items:flex-start; }
+  .stat-right{ grid-area: extra; }
+  .stat button{ grid-area: btn; justify-self:end; }
+}
+
+@media (max-width: 420px){
+  .stat{
+    padding: 8px 10px;
+  }
+  .stat-extra{
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+  }
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+
+
+/* KOŠ (stejně jako v shopu: akční tlačítko v hlavičce inventáře) */
+.trash-btn{
+  height:28px;
+  min-width:28px;
+  padding:0 8px;
+  border-radius:8px;
+  border:2px solid rgba(201,164,74,0.55);
+  background: rgba(0,0,0,0.35);
+  color:#f1d27a;
+  font-weight:900;
+  cursor:pointer;
+}
+.trash-btn:hover{
+  background: rgba(0,0,0,0.5);
+}
+.trash-btn:active{
+  transform: translateY(1px);
+}
+
+/* vybraný item v inventáři */
+.inv-slot.selected{
+  outline: 2px solid rgba(74,170,255,0.9);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.25), 0 0 16px rgba(74,170,255,0.35);
+}
+
+
+/* ===== SELL ZONE (z shopu) ===== */
+.sell-zone {
+  width: 100%;
+  padding: 14px;
+  background: 
+    linear-gradient(135deg, rgba(139, 69, 19, 0.95), rgba(101, 67, 33, 0.98)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid #c9a44a;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 
+    0 8px 30px rgba(0,0,0,.85),
+    inset 0 2px 0 rgba(255,255,255,.12);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.sell-zone:hover {
+  border-color: #f1d27a;
+  box-shadow: 
+    0 12px 40px rgba(0,0,0,.9),
+    0 0 30px rgba(241, 210, 122, 0.4);
+  transform: translateY(-3px);
+}
+
+.sell-zone.drag-over {
+  border-color: #ff6b6b !important;
+  background: 
+    linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(220, 38, 38, 0.4)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  box-shadow: 0 0 40px rgba(255, 107, 107, 0.8) !important;
+  transform: translateY(-5px) scale(1.02);
+}
+
+.sell-icon {
+  font-size: 36px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.8));
+}
+
+.sell-text {
+  font-size: 13px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  text-align: center;
+}
+
+.sell-price {
+  font-size: 11px;
+  font-weight: 900;
+  color: #4af;
+  text-shadow: 0 0 10px rgba(74, 170, 255, 0.8);
+}
+
+/* v Postavě chceme SELL ZONE vedle statů */
+.sell-zone-side{
+  width: 220px;
+  min-width: 200px;
+  max-width: 240px;
+  margin-top: 0;
+}

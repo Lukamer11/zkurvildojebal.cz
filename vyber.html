@@ -1,0 +1,1530 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vytvoření postavy</title>
+  <script src="supabase_stub.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      height: 100vh;
+      background-image: url('pozadi2.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: #fff;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    
+    .pick-wrap {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .pick-panel {
+      width: min(1600px, 98vw);
+      height: min(900px, 94vh);
+      border-radius: 20px;
+      overflow: hidden;
+      border: 5px solid;
+      border-image: linear-gradient(135deg, #f1d27a, #c9a44a, #f1d27a) 1;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.9), inset 0 0 100px rgba(0,0,0,0.3);
+      background-image: url('panel_bg.jpg');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    
+    .pick-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 40%, rgba(241,210,122,0.08), transparent 60%),
+                  linear-gradient(135deg, rgba(0,0,0,0.6), rgba(0,0,0,0.3));
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    .pick-panel > * { position: relative; z-index: 1; }
+    
+    .pick-head {
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(15,15,20,0.95), rgba(30,25,20,0.98));
+      border-bottom: 4px solid rgba(241,210,122,0.5);
+      text-align: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+    
+    .pick-title {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      background: linear-gradient(135deg, #f1d27a, #ffd700, #c9a44a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 40px rgba(241,210,122,0.8);
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.9));
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    
+    .pick-sub {
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.95);
+      letter-spacing: 0.5px;
+    }
+    
+    .pick-content {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 20px;
+      padding: 20px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* LEFT - CLASS SECTION */
+    .class-section {
+      background: linear-gradient(135deg, rgba(20,25,35,0.95), rgba(10,15,25,0.98));
+      border: 4px solid rgba(241,210,122,0.4);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .section-title {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #f1d27a, #ffd700);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 3px solid rgba(241,210,122,0.4);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      filter: drop-shadow(0 0 15px rgba(241,210,122,0.4));
+      letter-spacing: 1.5px;
+      flex-shrink: 0;
+    }
+    
+    .class-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+    
+    .class-grid::-webkit-scrollbar { width: 8px; }
+    .class-grid::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+    }
+    .class-grid::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, rgba(241,210,122,0.6), rgba(201,164,74,0.8));
+      border-radius: 10px;
+      border: 2px solid rgba(0,0,0,0.3);
+    }
+    
+    .class-card {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      background: url('tlacitko_shop.jpg');
+      background-size: cover;
+      background-position: center;
+      border: 4px solid rgba(241,210,122,0.35);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7), inset 0 0 40px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 20px;
+      min-height: 180px;
+    }
+    
+    .class-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+    
+    .class-card > * { position: relative; z-index: 1; }
+    
+    .class-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      border-color: rgba(241,210,122,0.7);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.85), 
+                  0 0 40px rgba(241,210,122,0.4),
+                  inset 0 0 60px rgba(241,210,122,0.1);
+    }
+    
+    .class-card:hover::before {
+      background: linear-gradient(135deg, rgba(241,210,122,0.15), rgba(0,0,0,0.6));
+    }
+    
+    .class-card.selected {
+      border-color: #2ecc71;
+      box-shadow: 0 25px 60px rgba(46,204,113,0.4),
+                  0 0 60px rgba(46,204,113,0.6),
+                  inset 0 0 80px rgba(46,204,113,0.15);
+      transform: translateY(-8px) scale(1.04);
+    }
+    
+    .class-card.selected::before {
+      background: linear-gradient(135deg, rgba(46,204,113,0.2), rgba(0,0,0,0.5));
+    }
+    
+    .class-card.selected::after {
+      content: "✓ VYBRÁNO";
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2ecc71, #27ae60);
+      color: #fff;
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: 1px;
+      border: 3px solid rgba(255,255,255,0.3);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5), 0 0 20px rgba(46,204,113,0.6);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+    
+    @keyframes selectedPulse {
+      0%, 100% { box-shadow: 0 25px 60px rgba(46,204,113,0.3), 0 0 50px rgba(46,204,113,0.5); }
+      50% { box-shadow: 0 30px 70px rgba(46,204,113,0.5), 0 0 70px rgba(46,204,113,0.7); }
+    }
+    
+    .class-card.selected {
+      animation: selectedPulse 2s ease-in-out infinite;
+    }
+    
+    .class-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    
+    .class-icon {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(0,0,0,0.5));
+      border: 3px solid rgba(241,210,122,0.6);
+      font-size: 28px;
+      text-shadow: 0 3px 10px rgba(0,0,0,0.95);
+      flex-shrink: 0;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.5);
+    }
+    
+    .class-name {
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 4px 15px rgba(0,0,0,0.95);
+      letter-spacing: 1.2px;
+    }
+    
+    .class-desc {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      line-height: 1.5;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.95);
+      margin-bottom: 14px;
+    }
+    
+    .class-bullets {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(0,0,0,0.6), rgba(0,0,0,0.4));
+      border: 2px solid rgba(241,210,122,0.3);
+      font-size: 12px;
+      font-weight: 800;
+      color: #f7f0d0;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.95);
+      transition: all 0.2s ease;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.4);
+    }
+    
+    .pill:hover {
+      background: linear-gradient(135deg, rgba(241,210,122,0.2), rgba(0,0,0,0.5));
+      border-color: rgba(241,210,122,0.5);
+      transform: translateX(3px);
+    }
+
+    /* RIGHT - AVATAR SECTION */
+    .avatar-section {
+      background: linear-gradient(135deg, rgba(20,25,35,0.95), rgba(10,15,25,0.98));
+      border: 4px solid rgba(241,210,122,0.4);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow: hidden;
+    }
+    
+    .avatar-preview {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1/1;
+      background: radial-gradient(circle at center, rgba(60,65,75,0.9), rgba(20,25,30,0.98));
+      border: 5px solid #c9a44a;
+      border-radius: 16px;
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.7),
+                  0 15px 40px rgba(0,0,0,0.8),
+                  0 0 30px rgba(241,210,122,0.3);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .avatar-preview::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 30%, rgba(241,210,122,0.15), transparent 60%),
+                  radial-gradient(circle at 50% 80%, rgba(0,0,0,0.3), transparent 70%);
+      pointer-events: none;
+    }
+    
+    .avatar-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 50% 35%; /* víc těla, méně uříznutá hlava */
+    }
+    
+    .avatar-class-icon {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+      border: 4px solid #c9a44a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.7), 0 0 20px rgba(241,210,122,0.4);
+      z-index: 10;
+    }
+
+    .customization-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    
+    .custom-tab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 12px 8px;
+      background: url('tlacitko.jpg');
+      background-size: cover;
+      background-position: center;
+      border: 3px solid rgba(122,90,35,0.6);
+      border-radius: 10px;
+      color: #c9a44a;
+      font-weight: 900;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .custom-tab::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+      transition: all 0.25s ease;
+    }
+    
+    .custom-tab span { position: relative; z-index: 1; }
+    
+    .custom-tab:hover {
+      border-color: #c9a44a;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6), 0 0 20px rgba(241,210,122,0.3);
+    }
+    
+    .custom-tab:hover::before {
+      background: linear-gradient(135deg, rgba(241,210,122,0.2), rgba(0,0,0,0.5));
+    }
+    
+    .custom-tab.active {
+      background: linear-gradient(135deg, #c9a44a, #7a5a23);
+      color: #1a0f08;
+      border-color: #f1d27a;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.7), 0 0 30px rgba(241,210,122,0.5);
+      transform: translateY(-3px);
+    }
+    
+    .custom-tab.active::before {
+      background: none;
+    }
+
+    .custom-content {
+      display: none;
+      flex-shrink: 0;
+    }
+    
+    .custom-content.active {
+      display: block;
+    }
+
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-height: 160px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    
+    .avatar-grid::-webkit-scrollbar { width: 6px; }
+    .avatar-grid::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+    }
+    .avatar-grid::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, rgba(241,210,122,0.6), rgba(201,164,74,0.8));
+      border-radius: 10px;
+    }
+    
+    .avatar-option {
+      aspect-ratio: 1/1;
+      border: 3px solid rgba(241,210,122,0.35);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: radial-gradient(circle at center, rgba(70,75,85,0.9), rgba(30,35,40,0.95));
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.4), 0 6px 15px rgba(0,0,0,0.4);
+    }
+    
+    .avatar-option:hover {
+      transform: scale(1.12);
+      border-color: #c9a44a;
+      box-shadow: 0 0 30px rgba(241,210,122,0.5), 0 10px 25px rgba(0,0,0,0.6);
+    }
+    
+    .avatar-option.selected {
+      border-color: #4af;
+      box-shadow: 0 0 35px rgba(74,170,255,0.7), 0 10px 30px rgba(74,170,255,0.4);
+      transform: scale(1.15);
+    }
+    
+    .avatar-option img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .color-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+    
+    .color-option {
+      aspect-ratio: 1/1;
+      border: 3px solid rgba(241,210,122,0.35);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.4), 0 6px 15px rgba(0,0,0,0.4);
+    }
+    
+    .color-option:hover {
+      transform: scale(1.15);
+      border-color: #c9a44a;
+      box-shadow: 0 0 25px rgba(255,255,255,0.4);
+    }
+    
+    .color-option.selected {
+      border-color: #4af;
+      box-shadow: 0 0 35px rgba(74,170,255,0.7);
+      transform: scale(1.2);
+    }
+
+    .name-input-wrap {
+      flex-shrink: 0;
+    }
+    
+    .name-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 900;
+      color: #c9a44a;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      letter-spacing: 0.5px;
+    }
+    
+    .name-input {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, rgba(0,0,0,0.6), rgba(0,0,0,0.5));
+      border: 3px solid rgba(241,210,122,0.4);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 900;
+      text-align: center;
+      text-transform: uppercase;
+      box-shadow: inset 0 4px 15px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);
+      transition: all 0.25s ease;
+      letter-spacing: 1px;
+    }
+    
+    .name-input:focus {
+      outline: none;
+      border-color: #c9a44a;
+      box-shadow: 0 0 30px rgba(241,210,122,0.4), inset 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .randomize-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, rgba(74,170,255,0.4), rgba(59,130,246,0.5));
+      border: 3px solid rgba(74,170,255,0.6);
+      border-radius: 10px;
+      color: #4af;
+      font-weight: 900;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-transform: uppercase;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.3);
+      letter-spacing: 1px;
+    }
+    
+    .randomize-btn:hover {
+      background: linear-gradient(135deg, rgba(74,170,255,0.5), rgba(59,130,246,0.6));
+      border-color: #4af;
+      box-shadow: 0 0 30px rgba(74,170,255,0.5), 0 10px 25px rgba(0,0,0,0.6);
+      transform: translateY(-3px);
+    }
+
+    .stat-preview {
+      background: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.7));
+      border: 3px solid rgba(241,210,122,0.6);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.7), inset 0 0 25px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+    }
+    
+    .stat-preview-title {
+      font-size: 14px;
+      font-weight: 900;
+      color: #f1d27a;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.95);
+      letter-spacing: 0.8px;
+    }
+    
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.95);
+      border-bottom: 1px solid rgba(241,210,122,0.2);
+    }
+    
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+    
+    .stat-row .value {
+      color: #4af;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .pick-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(15,15,20,0.95), rgba(30,25,20,0.98));
+      border-top: 4px solid rgba(241,210,122,0.5);
+      flex-shrink: 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
+    }
+    
+    .pick-btn {
+      height: 50px;
+      padding: 0 28px;
+      border: none;
+      cursor: pointer;
+      border-radius: 12px;
+      background: url('tlacitko_shop.jpg');
+      background-size: cover;
+      background-position: center;
+      color: #fff;
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 1px;
+      text-shadow: 0 3px 12px rgba(0,0,0,0.95);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.7), inset 0 0 30px rgba(0,0,0,0.3);
+      border: 4px solid rgba(241,210,122,0.45);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-transform: uppercase;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .pick-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+      transition: all 0.3s ease;
+    }
+    
+    .pick-btn span { position: relative; z-index: 1; }
+    
+    .pick-btn:hover:not(:disabled) {
+      transform: translateY(-4px);
+      border-color: #c9a44a;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.8), 0 0 35px rgba(241,210,122,0.4);
+    }
+    
+    .pick-btn:hover:not(:disabled)::before {
+      background: linear-gradient(135deg, rgba(241,210,122,0.2), rgba(0,0,0,0.5));
+    }
+    
+    .pick-btn:active:not(:disabled) {
+      transform: translateY(-2px);
+    }
+    
+    .pick-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      filter: grayscale(0.6);
+    }
+    
+    .pick-btn.primary {
+      background: linear-gradient(135deg, #c9a44a, #7a5a23);
+      border-color: #f1d27a;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 25px rgba(241,210,122,0.3);
+    }
+    
+    .pick-btn.primary::before {
+      background: none;
+    }
+    
+    .pick-btn.primary:hover:not(:disabled) {
+      box-shadow: 0 18px 50px rgba(0,0,0,0.85), 0 0 45px rgba(241,210,122,0.6);
+    }
+
+    #debugBox {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      max-height: 34vh;
+      overflow: auto;
+      background: rgba(0,0,0,0.85);
+      border: 2px solid rgba(201,164,74,0.45);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: 12px/1.35 ui-monospace, monospace;
+      z-index: 99999;
+      display: none;
+      white-space: pre-wrap;
+    }
+    
+    #debugBox .t {
+      color: #f1d27a;
+      font-weight: 900;
+    }
+    
+    #debugToggle {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      z-index: 100000;
+      border: 2px solid rgba(201,164,74,0.55);
+      background: rgba(0,0,0,0.65);
+      color: #f1d27a;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1100px) {
+      .pick-content {
+        grid-template-columns: 1fr;
+      }
+      .class-bullets {
+        grid-template-columns: 1fr;
+      }
+    }
+  
+/* ====== COMPACT NO-SCROLL OVERRIDES v3 ====== */
+html, body { height: 100%; }
+body { overflow: hidden; }
+
+/* schovat debug */
+#debugToggle, #debugBox { display: none !important; }
+
+/* celkový panel – víc prostoru dovnitř */
+.pick-wrap { padding: 6px !important; }
+.pick-panel { height: 96vh !important; }
+
+/* header menší */
+.pick-head { padding: 10px 14px !important; }
+.pick-title { font-size: 34px !important; letter-spacing: 2px !important; }
+.pick-sub { font-size: 14px !important; margin-top: 4px !important; }
+
+/* obsah – menší mezery + užší pravý sloupec */
+.pick-content { gap: 12px !important; padding: 12px !important; grid-template-columns: 1fr 350px !important; }
+
+/* levý sloupec – 3 karty se musí vejít bez scrollu */
+.class-grid { gap: 10px !important; overflow: visible !important; padding-right: 0 !important; }
+.class-card { padding: 12px 14px !important; }
+.class-name { font-size: 22px !important; }
+.class-desc { font-size: 13px !important; margin: 6px 0 8px !important; line-height: 1.25 !important; }
+.class-bullets { gap: 8px !important; }
+.pill { padding: 8px 10px !important; font-size: 12px !important; }
+
+/* pravý panel výrazně menší */
+.avatar-section { padding: 12px !important; gap: 10px !important; }
+.avatar-preview { height: 260px !important; aspect-ratio: auto !important; }
+.avatar-preview img { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+
+/* záložky menší */
+.customization-tabs { gap: 8px !important; }
+.custom-tab { padding: 10px 10px !important; font-size: 12px !important; border-radius: 10px !important; }
+.custom-tab span { transform: none !important; }
+
+/* grid avatarů kompaktní */
+.avatar-grid { gap: 8px !important; max-height: 130px !important; overflow-y: auto !important; }
+.avatar-option { width: 70px !important; height: 70px !important; border-radius: 10px !important; }
+.avatar-option img { border-radius: 8px !important; }
+
+/* jméno + statistiky kompaktní */
+.name-input-wrap { gap: 8px !important; }
+.name-label { font-size: 12px !important; margin-bottom: 6px !important; }
+.name-input { padding: 10px 12px !important; font-size: 14px !important; height: 44px !important; }
+.stat-preview { padding: 10px 12px !important; }
+.stat-preview-title { font-size: 12px !important; }
+
+/* spodní tlačítka menší */
+.pick-actions { padding: 10px 12px !important; gap: 12px !important; }
+.pick-btn { padding: 14px 18px !important; font-size: 16px !important; min-width: 220px !important; }
+
+/* nízká výška okna – ještě víc zmenšit pravý panel, zrušit statistiky */
+@media (max-height: 760px) {
+  .pick-panel { height: 98vh !important; }
+  .pick-title { font-size: 30px !important; }
+  .pick-content { padding: 10px !important; grid-template-columns: 1fr 330px !important; }
+  .avatar-preview { height: 210px !important; }
+  .avatar-option { width: 58px !important; height: 58px !important; }
+  #statPreview { display: none !important; }
+}
+
+
+/* 🔒 LOCKED SPECIAL ITEMS */
+.avatar-option.locked,
+.color-option.locked {
+  position: relative;
+  filter: grayscale(1) brightness(0.6);
+  cursor: not-allowed;
+}
+
+.avatar-option.locked::after,
+.color-option.locked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0.08) 6px,
+    rgba(0,0,0,0.2) 6px,
+    rgba(0,0,0,0.2) 12px
+  );
+  border-radius: inherit;
+}
+
+.lock {
+  position: absolute;
+  inset: 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+  text-shadow:0 0 10px #000;
+}
+
+
+/* ====== AVATAR STORY MODAL ====== */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.72);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+  z-index:200000;
+}
+
+.modal-backdrop.open{ display:flex; }
+
+.modal-card{
+  width:min(720px, 96vw);
+  max-height:min(820px, 92vh);
+  overflow:hidden;
+  border-radius:18px;
+  border:5px solid;
+  border-image: linear-gradient(135deg, #f1d27a, #c9a44a, #f1d27a) 1;
+  background-image:url('panel_bg.jpg');
+  background-size:cover;
+  background-position:center;
+  box-shadow:0 30px 90px rgba(0,0,0,0.9), inset 0 0 100px rgba(0,0,0,0.25);
+  position:relative;
+}
+
+.modal-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: radial-gradient(circle at 30% 40%, rgba(241,210,122,0.10), transparent 60%),
+              linear-gradient(135deg, rgba(0,0,0,0.72), rgba(0,0,0,0.38));
+  pointer-events:none;
+}
+
+.modal-card > *{ position:relative; z-index:1; }
+
+.modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 16px;
+  background:linear-gradient(135deg, rgba(15,15,20,0.92), rgba(30,25,20,0.98));
+  border-bottom:4px solid rgba(241,210,122,0.5);
+}
+
+.modal-title{
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  background: linear-gradient(135deg, #f1d27a, #ffd700);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  filter: drop-shadow(0 0 12px rgba(241,210,122,0.35));
+}
+
+.modal-close{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  border:3px solid rgba(241,210,122,0.35);
+  background:rgba(0,0,0,0.45);
+  color:#f1d27a;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(0,0,0,0.55), inset 0 0 18px rgba(0,0,0,0.35);
+}
+
+.modal-close:hover{ border-color:#c9a44a; transform:translateY(-1px); }
+
+.modal-body{
+  padding:14px 16px 16px;
+  display:grid;
+  grid-template-columns: 320px 1fr;
+  gap:14px;
+  align-items:start;
+}
+
+.modal-preview{
+  width:100%;
+  border-radius:16px;
+  overflow:hidden;
+  border:5px solid #c9a44a;
+  background:radial-gradient(circle at center, rgba(60,65,75,0.9), rgba(20,25,30,0.98));
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.7),
+              0 15px 40px rgba(0,0,0,0.75),
+              0 0 30px rgba(241,210,122,0.25);
+  aspect-ratio: 4 / 3;
+}
+
+.modal-preview img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:50% 35%;
+}
+
+.modal-story{
+  background: linear-gradient(135deg, rgba(0,0,0,0.72), rgba(0,0,0,0.55));
+  border:3px solid rgba(241,210,122,0.35);
+  border-radius:14px;
+  padding:12px 14px;
+  box-shadow: inset 0 0 25px rgba(0,0,0,0.45), 0 10px 25px rgba(0,0,0,0.45);
+}
+
+.modal-story-title{
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:#fff;
+  text-shadow:0 3px 12px rgba(0,0,0,0.95);
+  margin-bottom:8px;
+}
+
+.modal-story-text{
+  font-size:13px;
+  font-weight:700;
+  color:rgba(255,255,255,0.9);
+  line-height:1.45;
+  text-shadow:0 2px 10px rgba(0,0,0,0.95);
+}
+
+.modal-actions{
+  grid-column: 1 / -1;
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  margin-top:2px;
+}
+
+.modal-pick{ min-width: 260px; height:48px; }
+.modal-secondary{ min-width: 200px; height:48px; }
+
+.modal-hint{
+  grid-column: 1 / -1;
+  text-align:center;
+  font-size:12px;
+  font-weight:800;
+  color:rgba(255,255,255,0.72);
+  text-shadow:0 2px 10px rgba(0,0,0,0.95);
+  margin-top:2px;
+}
+
+@media (max-width: 720px){
+  .modal-body{ grid-template-columns: 1fr; }
+  .modal-preview{ aspect-ratio: 1 / 1; }
+}
+
+</style>
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang.js" defer></script>
+<script src="lang_pack.js"></script>
+</head>
+<body>
+  <button id="debugToggle" type="button">🐞 DEBUG</button>
+  <div id="debugBox"><span class="t">Debug log:</span>\n</div>
+
+  <div class="pick-wrap">
+    <div class="pick-panel">
+      <div class="pick-head">
+        <div class="pick-title">🎭 VYTVOŘENÍ POSTAVY 🎭</div>
+        <div class="pick-sub">Vyber si třídu, vzhled avatara a pojmenuj svého hrdinu!</div>
+      </div>
+
+      <div class="pick-content">
+        <div class="class-section">
+          <div class="section-title">⚔️ VÝBĚR TŘÍDY</div>
+          <div class="class-grid" id="grid">
+            <div class="class-card" data-class="padouch">
+              <div class="class-top">
+                <div class="class-icon">👻</div>
+                <div class="class-name">PADOUCH</div>
+              </div>
+              <div class="class-desc">Vyvážený bojovník. Pro ty, kdo nechtějí extrém.</div>
+              <div class="class-bullets">
+                <div class="pill">⚔️ Síla: vyváženě</div>
+                <div class="pill">💪 HP: vyváženě</div>
+                <div class="pill">🔧 Upgrady: normální</div>
+                <div class="pill">🎯 Styl: All-rounder</div>
+              </div>
+            </div>
+
+            <div class="class-card" data-class="rvac">
+              <div class="class-top">
+                <div class="class-icon">✊</div>
+                <div class="class-name">RVÁČ</div>
+              </div>
+              <div class="class-desc">Tank. Hodně HP a výdrže, ale menší damage.</div>
+              <div class="class-bullets">
+                <div class="pill">💪 HP: +25%</div>
+                <div class="pill">⚔️ DMG: -15%</div>
+                <div class="pill">🔧 Výdrž roste víc</div>
+                <div class="pill">🛡️ Styl: Obránce</div>
+              </div>
+            </div>
+
+            <div class="class-card" data-class="mozek">
+              <div class="class-top">
+                <div class="class-icon">💡</div>
+                <div class="class-name">MOZEK</div>
+              </div>
+              <div class="class-desc">Glass-cannon. Velký damage, ale křehký jako sklo.</div>
+              <div class="class-bullets">
+                <div class="pill">⚔️ DMG: +20%</div>
+                <div class="pill">💪 HP: -20%</div>
+                <div class="pill">🔧 Síla/Int roste víc</div>
+                <div class="pill">🎯 Styl: DPS</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="avatar-section">
+          <div class="section-title">🎨 VZHLED AVATARA</div>
+
+          <div class="avatar-preview">
+            <img id="previewImg" src="avatar.jpg" alt="avatar">
+            <div class="avatar-class-icon" id="classIconPreview">👻</div>
+          </div>
+
+          <div class="customization-tabs">
+            <button class="custom-tab active" data-tab="avatar" type="button"><span>Avatar</span></button>
+            <button class="custom-tab" data-tab="frame" type="button"><span>Rámeček</span></button>
+            <button class="custom-tab" data-tab="color" type="button"><span>Barva</span></button>
+            <button class="custom-tab" data-tab="random" type="button" onclick="randomizeAvatar(); return false;"><span>🎲 Random</span></button>
+          </div>
+
+          <div class="custom-content active" id="avatarContent">
+            <div class="avatar-grid" id="avatarGrid"></div>
+          </div>
+
+          <div class="custom-content" id="frameContent">
+            <div class="avatar-grid" id="frameGrid"></div>
+          </div>
+          
+          <div class="custom-content" id="colorContent">
+            <div class="color-picker-grid" id="colorGrid"></div>
+          </div>
+
+          <div class="name-input-wrap">
+            <label class="name-label">📝 JMÉNO POSTAVY</label>
+            <input type="text" class="name-input" id="charName" placeholder="BORIS GOPNIKOV" maxlength="20">
+          </div>
+
+          <div class="stat-preview" id="statPreview">
+            <div class="stat-preview-title">📊 STARTOVNÍ STATISTIKY</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pick-actions">
+        <button id="btnConfirm" class="pick-btn primary" disabled><span>✅ VYTVOŘIT POSTAVU</span></button>
+        <button id="btnBack" class="pick-btn" type="button"><span>◀️ ZPĚT</span></button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ====== AVATAR STORY MODAL ====== -->
+  <div class="modal-backdrop" id="avatarModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <div class="modal-title" id="modalTitle">📜 Profil postavy</div>
+        <button class="modal-close" id="modalClose" type="button" aria-label="Zavřít">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-preview">
+          <img id="modalImg" src="avatar.jpg" alt="avatar">
+        </div>
+
+        <div class="modal-story">
+          <div class="modal-story-title" id="modalName">NEZNÁMÝ</div>
+          <div class="modal-story-text" id="modalStory">
+            …
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="pick-btn primary modal-pick" id="modalPick" type="button"><span>✅ VYBRAT</span></button>
+          <button class="pick-btn modal-secondary" id="modalCancel" type="button"><span>↩ ZAVŘÍT</span></button>
+        </div>
+
+        <div class="modal-hint">Tip: Můžeš kdykoliv vybrat jiného avatara — nic není finální, dokud nedáš „VYTVOŘIT POSTAVU“.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    // ========= Debug log =========
+    const debugBox = document.getElementById('debugBox');
+    const debugToggle = document.getElementById('debugToggle');
+    let debugOn = false;
+
+    function dbg(...args) {
+      const line = args.map(a => {
+        try { return (typeof a === 'string') ? a : JSON.stringify(a); }
+        catch { return String(a); }
+      }).join(' ');
+      if (debugOn) {
+        debugBox.style.display = 'block';
+        debugBox.textContent += '\n' + line;
+        debugBox.scrollTop = debugBox.scrollHeight;
+      }
+      console.log(...args);
+    }
+    
+    debugToggle.addEventListener('click', () => {
+      debugOn = !debugOn;
+      debugBox.style.display = debugOn ? 'block' : 'none';
+      debugToggle.textContent = debugOn ? '🐞 DEBUG (ON)' : '🐞 DEBUG';
+      if (debugOn) dbg('Debug ON');
+    });
+
+    window.addEventListener('error', (e) => dbg('❌ window.error:', e?.message || e));
+    window.addEventListener('unhandledrejection', (e) => dbg('❌ unhandledrejection:', e?.reason?.message || String(e?.reason || e)));
+
+    // ========= Assets =========
+    const BASE = new URL('./', window.location.href).href;
+    const asset = (file) => new URL(file, BASE).toString();
+
+    // PŘIDÁNO 3 NOVÉ AVATARY (avatar3.jpg, avatar4.jpg, avatar5.jpg)
+    const avatarOptions = [
+      'avatar.jpg',
+      'avatar2.jpg', 
+      'avatar3.jpg',
+      'avatar4.jpg',
+      'avatar5.jpg',
+      'avatar6.jpg',
+      'avatar7.jpg',
+      'avatar8.jpg',
+      'avatar9.jpg'
+    ].map(asset);
+
+
+    // ========= Avatar příběhy (můžeš si později přepsat) =========
+    const avatarLore = {
+      'avatar.jpg':  { name: 'BORIS "ŘETĚZ" GOPNIKOV', story: 'Boris je typ, co se usmívá jen když to bolí. Vyrůstal mezi panelákama, kde se respekt neprosí — bere se. Řetěz nosí ne pro styl, ale jako připomínku dluhů, které už nikdo nevybere. Když je ticho, něco se chystá.' },
+      'avatar2.jpg': { name: 'IGOR „TAXI“ KRUČINA', story: 'Igor nikoho nesoudí. On jen otevře dveře. Vozí fetáky, dealery, holky bez cíle i chlapy, co se třesou víc než motor na volnoběh. Ví, kdo je sjetej, kdo jen hraje frajera a kdo už je jednou nohou mimo. Na nic se neptá – taxík není zpovědnice. Dokud platíš a nebliješ, jsi jeho zákazník.' },
+      'avatar3.jpg': { name: 'ALEXANDER „KŘÍŽ“ MALINA"', story: 'Sedí vzadu, poslouchá a rozhoduje. Ulice ho zná, ale málokdo ho viděl jednat přímo. Peníze, fet i lidi se hýbou jen proto, že kývne hlavou. Kříž na krku nenosí pro víru – je to seznam dluhů, co někdo jednou splatí. Když Alexander mlčí, je klid. Když promluví, někdo zmizí.' },
+      'avatar4.jpg': { name: 'NINA „POPEL“ KRUČINOVÁ"', story: 'Nina se objeví, když je pozdě. Kouří cizí cigára, mluví sprostě a má talent zmizet dřív, než někdo vytáhne nůž. Nikdy neříká pravdu celou, jen tolik, aby to bolelo. Igor je jedinej, komu zvedne telefon. Ostatní jsou jen zastávky.' },
+      'avatar5.jpg': { name: 'MIŠA "ŠROUBOVÁK"', story: 'Miša opraví cokoliv — zámek, motor i reputaci. Vždycky má po ruce nářadí a jeden nápad navíc. Je to ten typ, co se směje, když ostatní panikaří. A když nejde o sílu, vyhrává téměř vždycky.' },
+      'avatar6.jpg': { name: 'SERGEJ "KOUŘ"', story: 'Sergej mluví málo a kouří hodně. Říká, že dým schová myšlenky. Jeho trpělivost je legendární — čeká, dokud se soupeř neunaví sám. Pak přijde jedna věta. A konec.' },
+      'avatar7.jpg': { name: 'DIMA "SKELET"', story: 'Dima vypadá, jako by ho vítr mohl zlomit. Jenže uvnitř je železo. Neběhá rychle, ale nezastaví se. Když jde o výdrž, je to on, kdo zůstane poslední stát.' },
+      'avatar8.jpg': { name: 'KOLJA "NEON"', story: 'Kolja miluje světla, hluk a rychlý rozhodnutí. Jeho styl je vidět na kilometr — a právě to lidi mate. V chaosu se pohybuje doma. Když ostatní tápou, on už má další krok.' },
+      'avatar9.jpg': { name: 'IGOR "INFERNO"', story: 'Igor se objeví jako jiskra a odejde jako požár. Jeho reputace je přehnaná… dokud ho neuvidíš v akci. Nehledá konflikty — ale když už jsou, dělá to naplno. A bez výčitek.' }
+    };
+
+    function avatarKeyFromUrl(url) {
+      try {
+        const u = new URL(url, BASE);
+        return u.pathname.split('/').pop();
+      } catch {
+        return String(url).split('/').pop();
+      }
+    }
+
+    // ========= Modal logika =========
+    const avatarModal  = document.getElementById('avatarModal');
+    const modalImg     = document.getElementById('modalImg');
+    const modalName    = document.getElementById('modalName');
+    const modalStory   = document.getElementById('modalStory');
+    const modalClose   = document.getElementById('modalClose');
+    const modalCancel  = document.getElementById('modalCancel');
+    const modalPick    = document.getElementById('modalPick');
+
+    let modalAvatarUrl = null;
+
+    function openAvatarModal(avatarUrl){
+      modalAvatarUrl = avatarUrl;
+      modalImg.src = avatarUrl;
+      const key = avatarKeyFromUrl(avatarUrl);
+      const lore = avatarLore[key] || { name: key.replace('.jpg','').toUpperCase(), story: 'Tenhle příběh si doplníš. Zatím je postava zahalená tajemstvím…' };
+      modalName.textContent = lore.name;
+      modalStory.textContent = lore.story;
+
+      avatarModal.classList.add('open');
+      avatarModal.setAttribute('aria-hidden','false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeAvatarModal(){
+      avatarModal.classList.remove('open');
+      avatarModal.setAttribute('aria-hidden','true');
+      modalAvatarUrl = null;
+      document.body.style.overflow = 'hidden'; // stránka má být bez scrollu
+    }
+
+    modalClose?.addEventListener('click', closeAvatarModal);
+    modalCancel?.addEventListener('click', closeAvatarModal);
+
+    avatarModal?.addEventListener('click', (e) => {
+      if (e.target === avatarModal) closeAvatarModal();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && avatarModal?.classList.contains('open')) closeAvatarModal();
+    });
+
+    modalPick?.addEventListener('click', () => {
+      if (!modalAvatarUrl) return;
+      // vybrat avatara (pořád může změnit později)
+      state.selectedAvatar = modalAvatarUrl;
+      previewImg.src = state.selectedAvatar;
+
+      // sync grid selection
+      loadAvatars();
+      loadFrames(); // aby se mini náhledy přepočítaly
+      closeAvatarModal();
+    });
+
+
+    const frameOptions = [
+      { color: 'transparent', name: 'Žádný' },
+      { color: '#c9a44a', name: 'Zlatý' },
+      { color: '#4af', name: 'Modrý' },
+      { color: '#2ecc71', name: 'Zelený' },
+      { color: '#e74c3c', name: 'Červený' },
+      { color: '#9b59b6', name: 'Fialový' },
+
+      // 🔒 SPECIÁLNÍ ZAMČENÉ RÁMEČKY
+      { color: 'linear-gradient(135deg,#ff4fd8,#7f00ff)', name: 'Neon Void', locked: true },
+      { color: 'linear-gradient(135deg,#00ffd5,#00ff88)', name: 'Cyber Mint', locked: true },
+      { color: 'linear-gradient(135deg,#ffb347,#ff3d00)', name: 'Inferno Core', locked: true }
+    ];
+
+    const colorOptions = [
+      '#c9a44a', '#4af', '#2ecc71', 
+      '#e74c3c', '#9b59b6', '#f39c12',
+      '#1abc9c', '#34495e', '#e67e22',
+      '#95a5a6', '#d35400', '#16a085',
+
+      // 🔒 SPECIÁLNÍ ZAMČENÉ BARVY
+      { value:'#ff4fd8', locked:true, name:'Neon Pink' },
+      { value:'#00ffd5', locked:true, name:'Cyber Cyan' },
+      { value:'#ff3d00', locked:true, name:'Inferno Red' }
+    ];
+
+    const classStats = {
+      padouch: { str: 18, def: 14, dex: 11, int: 11, con: 16, luck: 9 },
+      rvac:    { str: 16, def: 18, dex: 9,  int: 8,  con: 20, luck: 8 },
+      mozek:   { str: 20, def: 11, dex: 12, int: 18, con: 13, luck: 10 }
+    };
+
+    const classIcons = { 
+      padouch: '👻', 
+      rvac: '✊', 
+      mozek: '💡' 
+    };
+
+    // ========= State =========
+    let state = {
+      selectedClass: null,
+      selectedAvatar: asset('avatar.jpg'),
+      selectedFrame: 'transparent',
+      selectedColor: '#c9a44a',
+      characterName: 'BORIS GOPNIKOV'
+    };
+
+    // ========= DOM =========
+    const btnConfirm = document.getElementById('btnConfirm');
+    const btnBack = document.getElementById('btnBack');
+    const previewImg = document.getElementById('previewImg');
+    const classIconPreview = document.getElementById('classIconPreview');
+    const charNameInput = document.getElementById('charName');
+
+    // ========= Helpers =========
+    function updateConfirmButton() {
+      btnConfirm.disabled = !state.selectedClass || !state.characterName.trim();
+    }
+
+    function updateStatPreview() {
+      if (!state.selectedClass) return;
+      const stats = classStats[state.selectedClass];
+      const preview = document.getElementById('statPreview');
+      preview.innerHTML = `
+        <div class="stat-preview-title">📊 STARTOVNÍ STATISTIKY</div>
+        <div class="stat-row"><span>⚔️ Síla</span><span class="value">${stats.str}</span></div>
+        <div class="stat-row"><span>🛡️ Obrana</span><span class="value">${stats.def}</span></div>
+        <div class="stat-row"><span>🎯 Obratnost</span><span class="value">${stats.dex}</span></div>
+        <div class="stat-row"><span>🧠 Inteligence</span><span class="value">${stats.int}</span></div>
+        <div class="stat-row"><span>💪 Výdrž</span><span class="value">${stats.con}</span></div>
+        <div class="stat-row"><span>🍀 Štěstí</span><span class="value">${stats.luck}</span></div>
+      `;
+    }
+
+    // ========= Class Selection =========
+    document.querySelectorAll('.class-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        state.selectedClass = card.getAttribute('data-class');
+        classIconPreview.textContent = classIcons[state.selectedClass];
+        updateStatPreview();
+        updateConfirmButton();
+      });
+    });
+
+    // ========= Tab Switching =========
+    document.querySelectorAll('.custom-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.tab;
+        if (targetTab === 'random') return; // Random má vlastní handler
+        
+        document.querySelectorAll('.custom-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.custom-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(targetTab + 'Content').classList.add('active');
+      });
+    });
+
+    // ========= Loaders =========
+    function loadAvatars() {
+      const grid = document.getElementById('avatarGrid');
+      grid.innerHTML = avatarOptions.map(av => `
+        <div class="avatar-option ${av === state.selectedAvatar ? 'selected' : ''}" data-avatar="${av}">
+          <img src="${av}" alt="avatar" onerror="this.src='${asset('avatar.jpg')}'; this.onerror=null;">
+        </div>
+      `).join('');
+
+      grid.querySelectorAll('.avatar-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          // místo okamžitého výběru otevřeme profil + příběh
+          openAvatarModal(opt.dataset.avatar);
+        });
+      });
+    }
+
+    function loadFrames() {
+      const grid = document.getElementById('frameGrid');
+      grid.innerHTML = frameOptions.map(frame => {
+        const locked = frame.locked;
+        const style = frame.color.startsWith('linear')
+          ? `background:${frame.color};`
+          : `border-color:${frame.color}; border-width:4px;`;
+        return `
+        <div class="avatar-option ${frame.color === state.selectedFrame ? 'selected' : ''} ${locked ? 'locked' : ''}"
+             data-frame="${locked ? '' : frame.color}"
+             style="${style}">
+          <img src="${state.selectedAvatar}" alt="frame" style="opacity:0.5;" onerror="this.src='${asset('avatar.jpg')}'; this.onerror=null;">
+          ${locked ? '<div class="lock">🔒</div>' : ''}
+        </div>
+      `;
+      }).join('');
+
+      grid.querySelectorAll('.avatar-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          if (opt.classList.contains('locked')) return;
+          grid.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          state.selectedFrame = opt.dataset.frame;
+          document.querySelector('.avatar-preview').style.borderColor = state.selectedFrame;
+        });
+      });
+    }
+
+    function loadColors() {
+      const grid = document.getElementById('colorGrid');
+      grid.innerHTML = colorOptions.map(color => {
+        const locked = typeof color === 'object' && color.locked;
+        const value = typeof color === 'object' ? color.value : color;
+        return `
+        <div class="color-option ${value === state.selectedColor ? 'selected' : ''} ${locked ? 'locked' : ''}"
+             data-color="${locked ? '' : value}" style="background:${value};">
+             ${locked ? '<div class="lock">🔒</div>' : ''}
+        </div>
+      `;
+      }).join('');
+
+      grid.querySelectorAll('.color-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          if (opt.classList.contains('locked')) return;
+          grid.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          state.selectedColor = opt.dataset.color;
+          classIconPreview.style.borderColor = state.selectedColor;
+          classIconPreview.style.backgroundColor = state.selectedColor + '33';
+        });
+      });
+    }
+
+    // ========= Randomize =========
+    window.randomizeAvatar = function() {
+      state.selectedAvatar = avatarOptions[Math.floor(Math.random() * avatarOptions.length)];
+      state.selectedFrame  = frameOptions[Math.floor(Math.random() * frameOptions.length)].color;
+      state.selectedColor  = colorOptions[Math.floor(Math.random() * colorOptions.length)];
+
+      previewImg.src = state.selectedAvatar;
+      document.querySelector('.avatar-preview').style.borderColor = state.selectedFrame;
+      classIconPreview.style.borderColor = state.selectedColor;
+      classIconPreview.style.backgroundColor = state.selectedColor + '33';
+
+      loadAvatars(); 
+      loadFrames(); 
+      loadColors();
+    };
+
+    // ========= Name Input =========
+    charNameInput.addEventListener('input', (e) => {
+      state.characterName = e.target.value.toUpperCase();
+      e.target.value = state.characterName;
+      updateConfirmButton();
+    });
+
+    // ========= Back Button =========
+    btnBack.addEventListener('click', () => { 
+      window.location.href = 'postava.html'; 
+    });
+
+    // ========= Init UI =========
+    previewImg.src = state.selectedAvatar;
+    loadAvatars(); 
+    loadFrames(); 
+    loadColors(); 
+    updateConfirmButton();
+
+    // ========= Supabase =========
+    async function ensureSF() {
+      if (window.SFReady) {
+        try {
+          await window.SFReady;
+        } catch (e) {
+          dbg('❌ SFReady failed:', e);
+        }
+      }
+      return window.SF || null;
+    }
+
+    async function saveCharacterToDb() {
+      const SF = await ensureSF();
+      if (!SF?.sb || !SF?.user?.id) {
+        alert('Chybí přihlášení (Supabase). Zkus se odhlásit/přihlásit.');
+        return;
+      }
+
+      const uid = SF.user.id;
+      const st = (SF.stats && SF.stats.stats) ? (SF.stats.stats) : {};
+
+      if (st.player_class) return;
+
+      st.player_class   = String(state.selectedClass || 'padouch').toLowerCase();
+      st.character_name = state.characterName;
+      st.avatar_url     = state.selectedAvatar;
+      st.avatar_frame   = state.selectedFrame;
+      st.avatar_color   = state.selectedColor;
+
+      const base = classStats[st.player_class] || classStats.padouch;
+      st.strength = base.str;
+      st.defense = base.def;
+      st.constitution = base.con;
+      st.luck = base.luck;
+
+      const { error } = await SF.sb
+        .from('player_stats')
+        .update({ stats: st })
+        .eq('user_id', uid);
+
+      if (error) throw error;
+
+      if (SF.stats) SF.stats.stats = st;
+    }
+
+    // ========= Confirm Button =========
+    btnConfirm.addEventListener('click', async () => {
+      if (!state.selectedClass || !state.characterName.trim()) return;
+
+      btnConfirm.disabled = true;
+      try {
+        await saveCharacterToDb();
+        window.location.href = 'postava.html';
+      } catch (e) {
+        dbg('❌ saveCharacterToDb:', e);
+        btnConfirm.disabled = false;
+        alert(e?.message || 'Chyba uložení postavy.');
+      }
+    });
+
+    // ========= Boot =========
+    (async function boot() {
+      dbg('🔍 boot vyber start');
+      const SF = await ensureSF();
+
+      if (!SF?.user?.id) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      dbg('✅ uid:', SF.user.id);
+
+      const cls = String(SF?.stats?.stats?.player_class || '').toLowerCase();
+      dbg('player_class:', cls || '(empty)');
+      if (cls) {
+        window.location.href = 'postava.html';
+        return;
+      }
+
+      dbg('✅ staying on vyber');
+    })();
+  </script>
+<script src="mobile_lock.js"></script>
+</body>
+</html>

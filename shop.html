@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="cs">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+  <title>Shop - Zbraně & Zbroj</title>
+  <link rel="stylesheet" href="shop.css">
+  <script src="supabase_stub.js"></script>
+  <script src="items.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+
+  <!-- LEVÝ PANEL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- SHOP AREA -->
+  <main class="shop-area">
+
+    <!-- NÁZEV SHOPU -->
+    <div class="shop-title">🔫 OBCHOD SE ZBRANĚMI 🔫</div>
+
+    <div class="shop-container">
+
+      <!-- LEVÁ ČÁST - SHOP -->
+      <div class="shop-section">
+        <div class="section-header">
+          <h2>🛒 DOSTUPNÉ ZBRANĚ</h2>
+          <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+            <div class="shop-tabs">
+              <button class="tab-btn active" data-category="weapons">Zbraně</button>
+              <button class="tab-btn" data-category="armor">Brnění</button>
+              <button class="tab-btn" data-category="special">Speciální</button>
+            </div>
+            <div id="shopTimer" style="font-size: 11px; color: #c9a44a; font-weight: 900;">🔄 Další rotace: 0:00:00</div>
+            <button id="shopRerollBtn" class="reroll-btn">
+              🎲 NAHRADIT (10 cig)
+            </button>
+          </div>
+        </div>
+
+        <div class="shop-grid" id="shopGrid">
+          <!-- Items will be loaded here by JS -->
+        </div>
+      </div>
+
+      <!-- PROSTŘEDNÍ ČÁST - INVENTÁŘ S AVATAREM -->
+      <div class="inventory-wrapper">
+        <div class="inventory-section">
+          
+          <!-- AVATAR S RÁMEM -->
+          <div class="inventory-avatar">
+            <div class="character-name-shop" id="characterName">BORIS GOPNIKOV</div>
+            
+            <div class="character-frame-shop">
+              <!-- LEFT SLOTS -->
+              <div class="slots-shop">
+                <div class="slot-shop" data-slot="weapon" data-dropzone="true">
+                  <span class="slot-emoji">🗡️</span>
+                </div>
+                <div class="slot-shop" data-slot="shield" data-dropzone="true">
+                  <span class="slot-emoji">🛡️</span>
+                </div>
+                <div class="slot-shop" data-slot="ring" data-dropzone="true">
+                  <span class="slot-emoji">💍</span>
+                </div>
+                <div class="slot-shop" data-slot="backpack" data-dropzone="true">
+                  <span class="slot-emoji">🎒</span>
+                </div>
+              </div>
+              <!-- CENTER STACK (trinkety nad/pod postavou) -->
+              <div class="center-stack-shop">
+                <div class="trinket-row-shop" aria-label="Trinkety nahoře">
+                  <div class="slot-shop slot-center" data-slot="trinket1" data-dropzone="true" aria-label="Trinket 1">
+                    <span class="slot-emoji">📿</span>
+                  </div>
+                  <div class="slot-shop slot-center" data-slot="trinket3" data-dropzone="true" aria-label="Trinket 3">
+                    <span class="slot-emoji">🔮</span>
+                  </div>
+                </div>
+
+                <div class="character-shop">
+                  <img src="avatar.jpg" alt="character" id="avatarImg">
+                  <div class="level-shop" id="levelShop">Level 1</div>
+                  <!-- IKONA TŘÍDY (jako v postava.html) -->
+                  <div class="class-badge" id="classBadge">❓</div>
+                </div>
+
+                <div class="trinket-row-shop" aria-label="Trinkety dole">
+                  <div class="slot-shop slot-center" data-slot="trinket2" data-dropzone="true" aria-label="Trinket 2">
+                    <span class="slot-emoji">🧿</span>
+                  </div>
+                  <div class="slot-shop slot-center" data-slot="trinket4" data-dropzone="true" aria-label="Trinket 4">
+                    <span class="slot-emoji">🪬</span>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <!-- RIGHT SLOTS -->
+              <div class="slots-shop">
+                <div class="slot-shop" data-slot="helmet" data-dropzone="true">
+                  <span class="slot-emoji">🎩</span>
+                </div>
+                <div class="slot-shop" data-slot="armor" data-dropzone="true">
+                  <span class="slot-emoji">👕</span>
+                </div>
+                <div class="slot-shop" data-slot="boots" data-dropzone="true">
+                  <span class="slot-emoji">👢</span>
+                </div>
+                <div class="slot-shop" data-slot="gloves" data-dropzone="true">
+                  <span class="slot-emoji">🧤</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="inventoryPanel" class="inventory-panel">
+            <div class="section-header">
+              <h2>🎒 INVENTÁŘ</h2>
+              <div class="inv-header-right">
+                <button id="invSizeToggle" class="inv-size-btn" type="button" title="Zvětšit/zmenšit inventář" aria-label="Zvětšit/zmenšit inventář">⤢</button>
+                <span class="item-count"><span id="invCount">0</span> / 8</span>
+              </div>
+            </div>
+
+            <!-- defaultně velký inventář (stejně jako v postava) -->
+            <div class="inventory-grid inv-big" id="inventoryGrid">
+              <!-- Inventory items will be loaded here by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRAVÁ ČÁST - CHARACTER STATS + SELL ZONE -->
+      <div class="character-stats-section" id="statsSection">
+        <!-- Stats will be rendered by JS -->
+        <!-- SELL ZONE bude přidána JS pod statistiky -->
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script src="shop.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

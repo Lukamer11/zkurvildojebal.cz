@@ -1,0 +1,95 @@
+/* Shakes & Fidget-like scaling wrapper (virtual canvas)
+   Key detail: we *center using translate* so centering works even when scaled down.
+*/
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+#game {
+  /* default design size; can be overridden by data-design-width/height on <body> */
+  width: var(--design-width, 1920px);
+  height: var(--design-height, 1080px);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 50% 50%;
+  pointer-events: auto;
+}
+
+/* Make mobile browsers less "creative" with text resizing */
+body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Nastavení: snížit pohyb (vypnout animace/transition) */
+html[data-reduce-motion="1"] *,
+html[data-reduce-motion="1"] *::before,
+html[data-reduce-motion="1"] *::after{
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/*
+  IMPORTANT:
+  Projekt teď používá "virtuální plátno" (scale). Proto NECHCEME,
+  aby se spouštěly klasické mobile media-query úpravy (skládání pod sebe,
+  schovávání menu, měnění gridu apod.). Ty by rozbíjely "arena" look.
+  Následující pravidla vše vrací do desktop layoutu a fungují na všech stránkách.
+*/
+
+.layout{
+  display: grid !important;
+  grid-template-columns: var(--menuW, 220px) 1fr !important;
+  gap: 22px !important;
+  padding: 16px !important;
+  height: 100% !important;
+}
+
+.left-panel{
+  display: flex !important;
+}
+
+/* MENU:
+   Nech to řídit menu.css (tam je flex roztažení tlačítek až dolů).
+   Původní pravidla tady přepisovala .menu-frame na block a vypínala flex,
+   což způsobilo, že menu na mobilu nechávalo prázdný prostor dole.
+*/
+
+/* Arena container vždy vedle sebe (ne pod sebe) – škálování to vyřeší */
+.arena-container, .arena2-container, .battle-container, .fight-container{
+  flex-direction: row !important;
+}
+
+/* Běžné "centrované" kontejnery zruš – ať je to protáhlé jako Arena */
+.layout > main{
+  min-width: 0;
+  width: 100% !important;
+}
+.layout > main > .container,
+.layout > main > .content,
+.layout > main > .content-wrap,
+.layout > main > .main,
+.layout > main > .main-content,
+.layout > main > .shop-container,
+.layout > main > .guild-container,
+.layout > main > .crypta-container,
+.layout > main > .mission-container,
+.layout > main > .mission-container-new{
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
