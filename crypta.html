@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="cs">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+  <title>Crypta Panelaku</title>
+  <style>
+/* ===== RESET ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0f1418;
+  background-image: url('pozadi.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  color: #fff;
+  overflow: hidden;
+}
+
+:root {
+  --menuBg: url('panel_bg.jpg');
+  --menuBgFallback: linear-gradient(165deg, #2d1810 0%, #1a0f08 100%);
+  --menuBorder: rgba(255, 215, 100, 0.3);
+  --menuBorderWidth: 3px;
+  --menuShadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+  --menuRadius: 16px;
+  --menuPadding: 10px;
+  --menuGap: 8px;
+  
+  --moneyHudBg: url('pozadi_menu.jpg');
+  --moneyHudFallback: linear-gradient(135deg, rgba(60,40,25,0.95), rgba(35,22,14,0.98));
+  --moneyHudBorder: rgba(0,0,0,.3);
+  --moneyHudRadius: 14px;
+  --moneyHudShadow: inset 0 3px 15px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.2);
+  --moneyHudPadding: 10px;
+  
+  --navBtnHeight: 48px;
+  --navBtnRadius: 24px;
+  --navBtnColor: #ffffff;
+  --navBtnShadow: 0 5px 18px rgba(0,0,0,.4);
+  --navBtnSpacing: 5px;
+  --navBtnFontSize: 13px;
+  --navBtnLetterSpacing: 0.5px;
+  
+  --avatarSize: 110px;
+  --avatarBorder: rgba(0,0,0,.3);
+  --avatarBorderWidth: 3px;
+  --avatarRadius: 12px;
+  --avatarShadow: 0 4px 12px rgba(0,0,0,.3);
+  
+  --currencyBg: rgba(255, 255, 255, 0.2);
+  --currencyBorder: rgba(0, 0, 0, 0.15);
+  --currencyRadius: 11px;
+  --currencyColor: #ffffff;
+  --currencyShadow: 0 3px 10px rgba(0,0,0,.2);
+  --currencyPadding: 6px 10px;
+  --currencyFontSize: 15px;
+  
+  --levelBg: linear-gradient(180deg, rgba(30,160,60,.96), rgba(10,110,40,.96));
+  --levelColor: #eaffff;
+  --levelBorder: rgba(0,0,0,.4);
+  --levelRadius: 8px;
+  --levelShadow: 0 3px 8px rgba(0,0,0,.4);
+  
+  --dividerColor: rgba(255,255,255,.22);
+  --dividerHeight: 1px;
+  --dividerMargin: 6px 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  height: 100vh;
+  gap: 20px;
+  padding: 14px;
+}
+
+/* ===== LEVÉ PANEL ===== */
+.left-panel {
+  border-radius: var(--menuRadius);
+  overflow: hidden;
+  background-image: var(--menuBg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: var(--menuBgFallback);
+  border: var(--menuBorderWidth) solid var(--menuBorder);
+  box-shadow: var(--menuShadow);
+  display: flex;
+  flex-direction: column;
+  padding: var(--menuPadding);
+  gap: var(--menuGap);
+  transition: all 0.3s ease;
+}
+
+.menu-top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--moneyHudPadding);
+  border-radius: var(--moneyHudRadius);
+  background-image: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 2px solid var(--moneyHudBorder);
+  box-shadow: var(--moneyHudShadow);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  position: relative;
+}
+
+.menu-top::after {
+  content: '+';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0,0,0,0.45);
+  border: 2px solid rgba(0,0,0,0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+
+.menu-top:hover::after {
+  background: rgba(0,0,0,0.5);
+  color: rgba(255,255,255,1);
+  transform: scale(1.1);
+}
+
+.avatar-box {
+  position: relative;
+  width: var(--avatarSize);
+  height: var(--avatarSize);
+  border-radius: var(--avatarRadius);
+  overflow: hidden;
+  border: var(--avatarBorderWidth) solid var(--avatarBorder);
+  background: rgba(0,0,0,.2);
+  box-shadow: var(--avatarShadow);
+  margin: 0 auto;
+}
+
+.avatar-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.level-pill {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-weight: 900;
+  color: var(--levelColor);
+  background: var(--levelBg);
+  border: 1px solid var(--levelBorder);
+  box-shadow: var(--levelShadow);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  min-width: 24px;
+}
+
+.level-number {
+  font-size: 16px;
+  font-weight: 900;
+  margin-top: 1px;
+}
+
+.currency-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.currency-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--currencyPadding);
+  border-radius: var(--currencyRadius);
+  background: var(--currencyBg);
+  border: 1px solid var(--currencyBorder);
+  color: var(--currencyColor);
+  font-weight: 900;
+  font-size: var(--currencyFontSize);
+  box-shadow: var(--currencyShadow);
+  transition: all 0.2s ease;
+}
+
+.currency-line:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.currency-line b {
+  margin-left: auto;
+  margin-right: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cur-icon {
+  width: 30px;
+  display: inline-block;
+  text-align: center;
+  font-size: 24px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,.3));
+}
+
+.menu-frame {
+  margin-top: 4px;
+  padding: 6px 4px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.menu-frame::-webkit-scrollbar {
+  width: 8px;
+}
+
+.menu-frame::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
+.menu-frame::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.3);
+  border-radius: 10px;
+}
+
+.menu-frame::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,.4);
+}
+
+.sf-btn {
+  width: 100%;
+  text-align: left;
+  padding: 0 18px;
+  margin: var(--navBtnSpacing) 0;
+  height: var(--navBtnHeight);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: var(--navBtnRadius);
+  border: 2px solid rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  font-weight: 900;
+  font-size: var(--navBtnFontSize);
+  letter-spacing: var(--navBtnLetterSpacing);
+  color: var(--navBtnColor);
+  text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(0,0,0,.5);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: var(--navBtnShadow), inset 0 1px 0 rgba(255,255,255,.15);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  text-decoration: none;
+}
+
+.sf-btn::before {
+  content: attr(data-icon);
+  font-size: 24px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.35);
+  border: 2px solid rgba(0,0,0,0.3);
+  border-radius: 50%;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.sf-btn:hover {
+  filter: brightness(1.1);
+  transform: translateX(3px) scale(1.02);
+  box-shadow: 0 6px 18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.2);
+}
+
+.sf-btn:active {
+  transform: translateY(2px) translateX(4px);
+  filter: brightness(0.9);
+  box-shadow: 0 2px 10px rgba(0,0,0,.4);
+}
+
+.sf-btn.active {
+  filter: brightness(1.15);
+  border: 2px solid rgba(255,215,0,0.5);
+  box-shadow: 0 6px 18px rgba(255,215,0,.4), inset 0 1px 0 rgba(255,255,255,.25);
+}
+
+.sf-btn--last {
+  text-align: center;
+  justify-content: center;
+  border: 2px solid rgba(255,215,0,0.4);
+  background-blend-mode: overlay;
+  filter: brightness(1.05);
+}
+
+.menu-frame > .sf-btn:nth-child(1)  { background-image: url('tlacitko1.jpg'); }
+.menu-frame > .sf-btn:nth-child(2)  { background-image: url('tlacitko2.jpg'); }
+.menu-frame > .sf-btn:nth-child(3)  { background-image: url('tlacitko3.jpg'); }
+.menu-frame > .sf-btn:nth-child(4)  { background-image: url('tlacitko4.jpg'); }
+.menu-frame > .sf-btn:nth-child(5)  { background-image: url('tlacitko5.jpg'); }
+.menu-frame > .sf-btn:nth-child(7)  { background-image: url('tlacitko6.jpg'); }
+.menu-frame > .sf-btn:nth-child(8)  { background-image: url('tlacitko7.jpg'); }
+.menu-frame > .sf-btn:nth-child(9)  { background-image: url('tlacitko8.jpg'); }
+.menu-frame > .sf-btn:nth-child(10) { background-image: url('tlacitko9.jpg'); }
+.menu-frame > .sf-btn:nth-child(11) { background-image: url('tlacitko10.jpg'); }
+
+.divider {
+  height: 2px;
+  margin: 8px 0;
+  background: rgba(255,255,255,.15);
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+
+.menu-bottom {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 12px;
+  margin-top: auto;
+  border-top: 2px solid rgba(255,255,255,.12);
+  box-shadow: 0 -1px 3px rgba(0,0,0,.1);
+}
+
+.gear-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,215,0,0.25);
+  background: rgba(0,0,0,.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.1);
+  font-size: 22px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gear-btn:hover {
+  background: rgba(0,0,0,.4);
+  transform: rotate(45deg) scale(1.08);
+  border-color: rgba(255,215,0,0.4);
+  box-shadow: 0 6px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.15);
+}
+
+.gear-btn:active {
+  transform: translateY(1px) rotate(90deg);
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+
+/* ===== CRYPTA AREA ===== */
+.crypta-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.crypta-title {
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #f1d27a;
+  text-shadow: 
+    0 0 15px rgba(241, 210, 122, 0.6),
+    0 0 30px rgba(241, 210, 122, 0.4),
+    0 4px 10px rgba(0,0,0,.9);
+  padding: 14px 24px;
+  background: 
+    linear-gradient(135deg, rgba(40,35,25,0.95), rgba(25,20,12,0.98)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 
+    0 15px 40px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,215,100,0.15);
+}
+
+.crypta-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.battle-section {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,215,100,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  transition: background-image 0.5s ease;
+}
+
+.enemy-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 16px;
+  border: 3px solid #c9a44a;
+  box-shadow: 0 10px 30px rgba(0,0,0,.7);
+}
+
+.enemy-name {
+  font-size: 36px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 0 20px rgba(241, 210, 122, 0.8), 0 4px 10px rgba(0,0,0,.9);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.enemy-level {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+}
+
+.enemy-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.stat-box {
+  padding: 12px;
+  background: 
+    url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 3px solid #5a4520;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,.5);
+  image-rendering: crisp-edges;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #c9a44a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+}
+
+.navigation-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: auto;
+}
+
+.nav-arrow {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  border: 3px solid #c9a44a;
+  background: 
+    linear-gradient(135deg, rgba(60,40,25,0.9), rgba(35,22,14,0.95)),
+    url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  font-size: 28px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f1d27a;
+  image-rendering: crisp-edges;
+}
+
+.nav-arrow:hover {
+  border-color: #f1d27a;
+  transform: scale(1.1);
+  box-shadow: 
+    0 8px 20px rgba(0,0,0,.7),
+    0 0 20px rgba(241, 210, 122, 0.4);
+}
+
+.nav-arrow:active {
+  transform: scale(0.95);
+}
+
+.enemy-counter {
+  font-size: 18px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+  padding: 10px 20px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  border: 2px solid #5a4520;
+}
+
+.enemy-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  padding: 20px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 12px;
+  border: 2px solid #5a4520;
+}
+
+.enemy-btn {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 3px solid #5a4520;
+  background: 
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  font-weight: 900;
+  font-size: 32px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  image-rendering: crisp-edges;
+  position: relative;
+  overflow: hidden;
+}
+
+.enemy-btn::after {
+  content: attr(data-level);
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(255,68,68,0.9);
+  border-radius: 4px;
+  color: white;
+  font-weight: 900;
+}
+
+.enemy-btn:hover {
+  border-color: #c9a44a;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 
+    0 8px 25px rgba(0,0,0,.7),
+    0 0 20px rgba(241, 210, 122, 0.3);
+}
+
+.enemy-btn.active {
+  border-color: #f1d27a;
+  box-shadow: 
+    0 8px 25px rgba(241, 210, 122, 0.5),
+    0 0 30px rgba(241, 210, 122, 0.6);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 
+      0 8px 25px rgba(241, 210, 122, 0.5),
+      0 0 30px rgba(241, 210, 122, 0.6);
+  }
+  50% {
+    box-shadow: 
+      0 8px 25px rgba(241, 210, 122, 0.8),
+      0 0 40px rgba(241, 210, 122, 0.9);
+  }
+}
+  </style>
+  <script src="supabase_stub.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+
+  <!-- LEVÉ PANEL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- CRYPTA -->
+  <main class="crypta-area">
+
+    <div class="crypta-title">🏚️ CRYPTA PANELAKU 🏚️</div>
+
+    <div class="crypta-container">
+      <div class="battle-section" id="battleSection">
+        
+        <div class="enemy-info">
+          <div class="enemy-name" id="enemyName">GOPNIK BORIS</div>
+          <div class="enemy-level" id="enemyLevel">Level 5</div>
+          
+          <div class="enemy-stats">
+            <div class="stat-box">
+              <div class="stat-label">HP</div>
+              <div class="stat-value" id="enemyHp">850</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">ÚTOK</div>
+              <div class="stat-value" id="enemyAtk">120</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">OBRANA</div>
+              <div class="stat-value" id="enemyDef">85</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="enemy-grid">
+          <button class="enemy-btn active" data-enemy="0" data-level="5">🧔</button>
+          <button class="enemy-btn" data-enemy="1" data-level="7">👨</button>
+          <button class="enemy-btn" data-enemy="2" data-level="10">👴</button>
+          <button class="enemy-btn" data-enemy="3" data-level="8">🧓</button>
+          <button class="enemy-btn" data-enemy="4" data-level="12">👨‍🦰</button>
+          <button class="enemy-btn" data-enemy="5" data-level="6">👨‍🦱</button>
+          <button class="enemy-btn" data-enemy="6" data-level="15">👨‍🦲</button>
+          <button class="enemy-btn" data-enemy="7" data-level="9">🧑</button>
+          <button class="enemy-btn" data-enemy="8" data-level="20">👹</button>
+          <button class="enemy-btn" data-enemy="9" data-level="25">👺</button>
+        </div>
+
+        <div class="navigation-controls">
+          <button class="nav-arrow" id="prevEnemy">◀</button>
+          <div class="enemy-counter"><span id="currentEnemy">1</span> / 10</div>
+          <button class="nav-arrow" id="nextEnemy">▶</button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+const music = document.getElementById("bgMusic");
+
+function safePlay(){
+  if(!music) return;
+  const p = music.play();
+  if(p && typeof p.catch === 'function') p.catch(() => {});
+}
+
+  music.volume = 0.4;
+  safePlay();
+}
+
+document.addEventListener("click", () => {
+  if (music.paused) {
+    safePlay();
+  }
+}, { once: true });
+
+setInterval(() => {
+  if (!music.paused) {
+  }
+}, 500);
+
+// Enemy data
+const enemies = [
+  { name: "GOPNIK BORIS", level: 5, hp: 850, atk: 120, def: 85, bg: "panelak.jpg", icon: "🧔" },
+  { name: "SLAV VLADIMIR", level: 7, hp: 1200, atk: 150, def: 110, bg: "panelak2.jpg", icon: "👨" },
+  { name: "BABUSHKA KILLER", level: 10, hp: 1500, atk: 200, def: 140, bg: "panelak.jpg", icon: "👴" },
+  { name: "DRUNK SERGEI", level: 8, hp: 1100, atk: 170, def: 100, bg: "panelak2.jpg", icon: "🧓" },
+  { name: "ADIDAS WARRIOR", level: 12, hp: 1800, atk: 240, def: 180, bg: "panelak.jpg", icon: "👨‍🦰" },
+  { name: "TRACKSUIT BANDIT", level: 6, hp: 950, atk: 130, def: 90, bg: "panelak2.jpg", icon: "👨‍🦱" },
+  { name: "VODKA MASTER", level: 15, hp: 2200, atk: 300, def: 220, bg: "panelak.jpg", icon: "👨‍🦲" },
+  { name: "SEMECHKI DEALER", level: 9, hp: 1350, atk: 180, def: 130, bg: "panelak2.jpg", icon: "🧑" },
+  { name: "BOSS DIMITRI", level: 20, hp: 3500, atk: 450, def: 350, bg: "panelak.jpg", icon: "👹" },
+  { name: "КРИМИНАЛ LORD", level: 25, hp: 5000, atk: 600, def: 500, bg: "panelak2.jpg", icon: "👺" }
+];
+
+let currentEnemyIndex = 0;
+
+function updateEnemy(index) {
+  const enemy = enemies[index];
+  const battleSection = document.getElementById('battleSection');
+  
+  // Update background
+  battleSection.style.backgroundImage = `url('${enemy.bg}')`;
+  
+  // Update enemy info
+  document.getElementById('enemyName').textContent = enemy.name;
+  document.getElementById('enemyLevel').textContent = `Level ${enemy.level}`;
+  document.getElementById('enemyHp').textContent = enemy.hp;
+  document.getElementById('enemyAtk').textContent = enemy.atk;
+  document.getElementById('enemyDef').textContent = enemy.def;
+  document.getElementById('currentEnemy').textContent = index + 1;
+  
+  // Update active button
+  document.querySelectorAll('.enemy-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === index);
+  });
+}
+
+// Navigation arrows
+document.getElementById('prevEnemy').addEventListener('click', () => {
+  currentEnemyIndex = (currentEnemyIndex - 1 + enemies.length) % enemies.length;
+  updateEnemy(currentEnemyIndex);
+});
+
+document.getElementById('nextEnemy').addEventListener('click', () => {
+  currentEnemyIndex = (currentEnemyIndex + 1) % enemies.length;
+  updateEnemy(currentEnemyIndex);
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') {
+    currentEnemyIndex = (currentEnemyIndex - 1 + enemies.length) % enemies.length;
+    updateEnemy(currentEnemyIndex);
+  } else if (e.key === 'ArrowRight') {
+    currentEnemyIndex = (currentEnemyIndex + 1) % enemies.length;
+    updateEnemy(currentEnemyIndex);
+  }
+});
+
+// Enemy button clicks
+document.querySelectorAll('.enemy-btn').forEach((btn, index) => {
+  btn.addEventListener('click', () => {
+    currentEnemyIndex = index;
+    updateEnemy(currentEnemyIndex);
+  });
+});
+
+// Initialize with first enemy
+updateEnemy(0);

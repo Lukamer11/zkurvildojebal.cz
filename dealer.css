@@ -1,0 +1,779 @@
+/* dealer.css */
+@import url("mise.css");
+
+/* ===== DEALER AREA ===== */
+.dealer-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.dealer-title {
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow: 
+    0 0 20px rgba(255, 100, 255, 0.8),
+    0 0 40px rgba(255, 100, 255, 0.5),
+    0 4px 15px rgba(0,0,0,1),
+    0 8px 25px rgba(0,0,0,0.8);
+  padding: 10px 32px;
+  background: 
+    linear-gradient(135deg, 
+      rgba(139, 19, 139, 0.95) 0%,
+      rgba(101, 33, 101, 0.98) 50%,
+      rgba(139, 19, 139, 0.95) 100%);
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #f27af1, #c94ac9, #f27af1) 1;
+  border-radius: 16px;
+  box-shadow: 
+    0 12px 40px rgba(0,0,0,.8),
+    inset 0 -4px 20px rgba(0,0,0,0.5),
+    inset 0 4px 20px rgba(255,100,255,0.2);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.dealer-container {
+  display: grid;
+  grid-template-columns: 1fr 600px 420px;
+  gap: 20px;
+  align-items: start;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ===== SECTION HEADERS ===== */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(255,100,255,0.3);
+}
+
+.section-header h2 {
+  font-size: 20px;
+  font-weight: 900;
+  color: #f27af1;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+}
+
+.dealer-info {
+  font-size: 11px;
+  color: #c94ac9;
+  font-weight: 900;
+}
+
+.item-count {
+  font-size: 14px;
+  font-weight: 900;
+  color: #c94ac9;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+/* ===== DRUGS SECTION ===== */
+.drugs-section {
+  background: 
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a235a, #c94ac9, #7a235a) 1;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,100,255,0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.drugs-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.drugs-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.drugs-grid::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
+.drugs-grid::-webkit-scrollbar-thumb {
+  background: rgba(255,100,255,.3);
+  border-radius: 10px;
+}
+
+.drug-card {
+  background: 
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 3px solid #5a2045;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 5px 15px rgba(0,0,0,.5),
+    inset 0 2px 8px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+  min-height: 140px;
+}
+
+.drug-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  border-color: #c94ac9;
+  box-shadow: 
+    0 10px 30px rgba(0,0,0,.7),
+    0 0 25px rgba(242, 122, 241, 0.3),
+    inset 0 2px 12px rgba(255,100,255,0.2);
+}
+
+/* Rarity borders */
+.drug-card.rarity-common { border-color: #5a2045; }
+.drug-card.rarity-rare {
+  border-color: rgba(74,170,255,0.95);
+  box-shadow: 0 6px 20px rgba(0,0,0,.55), 0 0 18px rgba(74,170,255,0.25);
+}
+.drug-card.rarity-epic {
+  border-color: rgba(189, 80, 255, 0.95);
+  box-shadow: 0 6px 20px rgba(0,0,0,.55), 0 0 18px rgba(189,80,255,0.25);
+}
+.drug-card.rarity-legendary {
+  border-color: rgba(255, 182, 44, 0.98);
+  box-shadow: 0 6px 20px rgba(0,0,0,.55), 0 0 20px rgba(255,182,44,0.28);
+}
+
+.rarity-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border: 2px solid rgba(0,0,0,0.55);
+  box-shadow: 0 6px 16px rgba(0,0,0,.55);
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.rarity-badge.rarity-common { background: rgba(120,120,120,0.75); color: #fff; }
+.rarity-badge.rarity-rare { background: rgba(74,170,255,0.75); color: #0b1220; }
+.rarity-badge.rarity-epic { background: rgba(189,80,255,0.75); color: #14061c; }
+.rarity-badge.rarity-legendary { background: rgba(255,182,44,0.78); color: #1b1206; }
+
+.drug-icon {
+  flex-shrink: 0;
+  width: 110px;
+  height: 110px;
+  background: radial-gradient(circle at center, rgba(30,34,38,0.85), rgba(15,18,22,0.92));
+  border: 3px solid #c94ac9;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  box-shadow: 
+    inset 0 0 15px rgba(0,0,0,.4),
+    0 4px 12px rgba(0,0,0,.5);
+  font-size: 48px;
+}
+
+.drug-icon img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.drug-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drug-details h3 {
+  font-size: 17px;
+  font-weight: 900;
+  color: #f27af1;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  margin-bottom: 4px;
+}
+
+.drug-desc {
+  font-size: 12px;
+  color: #c94ac9;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.drug-bonuses {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+
+.drug-duration {
+  font-size: 12px;
+  color: #9bd;
+  font-weight: 900;
+  margin-bottom: auto;
+}
+
+.drug-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.price {
+  font-weight: 900;
+  font-size: 16px;
+  color: #f27af1;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+}
+
+.buy-drug-btn {
+  padding: 8px 18px;
+  background-image: url('tlacitko_shopik.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 3px solid rgba(255, 100, 255, 0.6);
+  border-radius: 8px;
+  color: #f27af1;
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  box-shadow: 
+    0 4px 10px rgba(0,0,0,.5),
+    inset 0 2px 5px rgba(255,100,255,0.15);
+}
+
+.buy-drug-btn:hover {
+  filter: brightness(1.2);
+  transform: translateY(-3px);
+  border-color: #f27af1;
+}
+
+.buy-drug-btn:active {
+  transform: translateY(-1px);
+  filter: brightness(0.9);
+}
+
+/* ===== GAME SECTION ===== */
+.game-section {
+  background: 
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a235a, #c94ac9, #7a235a) 1;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,100,255,0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.game-instructions {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 900;
+  color: #c94ac9;
+  line-height: 1.6;
+  padding: 10px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+}
+
+.bet-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bet-type-selector {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.bet-type-btn {
+  padding: 8px 20px;
+  background: rgba(0,0,0,0.4);
+  border: 2px solid #7a235a;
+  border-radius: 8px;
+  color: #c94ac9;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.bet-type-btn:hover {
+  background: rgba(0,0,0,0.6);
+  border-color: #c94ac9;
+}
+
+.bet-type-btn.active {
+  background: linear-gradient(135deg, #c94ac9, #7a235a);
+  color: #2b0f1a;
+  border-color: #f27af1;
+}
+
+.bet-amount-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.bet-amount-control label {
+  font-size: 14px;
+  font-weight: 900;
+  color: #f27af1;
+}
+
+.bet-amount-control input {
+  width: 150px;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.5);
+  border: 2px solid #c94ac9;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+  text-align: center;
+}
+
+.quick-bet-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.quick-bet {
+  padding: 6px 16px;
+  background: rgba(0,0,0,0.4);
+  border: 2px solid #7a235a;
+  border-radius: 8px;
+  color: #c94ac9;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-bet:hover {
+  background: rgba(0,0,0,0.6);
+  border-color: #c94ac9;
+  transform: translateY(-2px);
+}
+
+.play-btn {
+  padding: 12px 24px;
+  background-image: url('tlacitko_shopik.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 3px solid rgba(255, 100, 255, 0.6);
+  border-radius: 12px;
+  color: #f27af1;
+  font-weight: 900;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  box-shadow: 
+    0 6px 15px rgba(0,0,0,.6),
+    inset 0 2px 8px rgba(255,100,255,0.2);
+}
+
+.play-btn:hover {
+  filter: brightness(1.2);
+  transform: translateY(-3px);
+  border-color: #f27af1;
+  box-shadow: 
+    0 8px 20px rgba(0,0,0,.7),
+    0 0 25px rgba(242, 122, 241, 0.4);
+}
+
+.play-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.9);
+}
+
+.game-board {
+  position: relative;
+  background: radial-gradient(circle at center, rgba(30,34,38,0.9), rgba(15,18,22,0.95));
+  border: 4px solid #c94ac9;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: inset 0 0 30px rgba(0,0,0,.5);
+}
+
+.ball {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 32px;
+  z-index: 10;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.8));
+  animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-10px); }
+}
+
+.slots-container {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+
+.game-slot {
+  width: 70px;
+  height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(0,0,0,0.4);
+  border: 3px solid #5a2045;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  padding: 8px;
+}
+
+.game-slot.win {
+  border-color: #10b981;
+  background: rgba(16,185,129,0.1);
+}
+
+.game-slot.lose {
+  border-color: #ef4444;
+  background: rgba(239,68,68,0.1);
+}
+
+.game-slot.active {
+  transform: scale(1.15);
+  border-width: 4px;
+  box-shadow: 0 0 30px rgba(242, 122, 241, 0.8);
+}
+
+.game-slot.winner {
+  animation: winPulse 0.5s ease;
+  border-color: #10b981;
+  background: rgba(16,185,129,0.3);
+}
+
+.game-slot.loser {
+  animation: losePulse 0.5s ease;
+  border-color: #ef4444;
+  background: rgba(239,68,68,0.3);
+}
+
+@keyframes winPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+@keyframes losePulse {
+  0%, 100% { transform: scale(1); }
+  25%, 75% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+}
+
+.slot-label {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.game-slot.win .slot-label {
+  color: #10b981;
+  text-shadow: 0 0 10px rgba(16,185,129,0.8);
+}
+
+.game-slot.lose .slot-label {
+  color: #ef4444;
+  text-shadow: 0 0 10px rgba(239,68,68,0.8);
+}
+
+.slot-mult {
+  font-size: 16px;
+  font-weight: 900;
+  color: #10b981;
+  text-shadow: 0 0 10px rgba(16,185,129,0.8);
+}
+
+.slot-icon {
+  font-size: 24px;
+}
+
+.game-result {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 900;
+  padding: 12px;
+  border-radius: 8px;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-result.win {
+  background: linear-gradient(135deg, rgba(16,185,129,0.3), rgba(5,150,105,0.4));
+  color: #10b981;
+  text-shadow: 0 0 20px rgba(16,185,129,0.8);
+  border: 2px solid #10b981;
+}
+
+.game-result.lose {
+  background: linear-gradient(135deg, rgba(239,68,68,0.3), rgba(220,38,38,0.4));
+  color: #ef4444;
+  text-shadow: 0 0 20px rgba(239,68,68,0.8);
+  border: 2px solid #ef4444;
+}
+
+/* ===== DRUG INVENTORY SECTION ===== */
+.drug-inventory-section {
+  background: 
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a235a, #c94ac9, #7a235a) 1;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,100,255,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.drug-inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 8px;
+  max-height: none;
+}
+
+.drug-inventory-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.drug-inventory-grid::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
+.drug-inventory-grid::-webkit-scrollbar-thumb {
+  background: rgba(255,100,255,.3);
+  border-radius: 10px;
+}
+
+.drug-inv-slot {
+  aspect-ratio: 1/1;
+  background: 
+    radial-gradient(circle at center, rgba(58,63,70,0.95), rgba(26,31,36,0.98)),
+    url('panel_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 3px solid #5a2045;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 
+    inset 0 0 20px rgba(0,0,0,.5),
+    0 4px 10px rgba(0,0,0,.5);
+  cursor: pointer;
+  padding: 10px;
+  min-height: 140px;
+}
+
+.drug-inv-slot:hover {
+  transform: translateY(-5px) scale(1.05);
+  border-color: #f27af1;
+  box-shadow: 
+    0 0 30px rgba(242, 122, 241, 0.6),
+    0 8px 20px rgba(0,0,0,.7);
+}
+
+.drug-inv-slot.filled {
+  background: 
+    radial-gradient(circle at center, rgba(80,85,92,0.95), rgba(45,50,56,0.98)),
+    url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+}
+
+.drug-inv-slot.filled.rarity-rare { border-color: rgba(74,170,255,0.95); }
+.drug-inv-slot.filled.rarity-epic { border-color: rgba(189,80,255,0.95); }
+.drug-inv-slot.filled.rarity-legendary { border-color: rgba(255,182,44,0.98); }
+
+.drug-inv-slot.filled[data-rarity-label]::after {
+  content: attr(data-rarity-label);
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  border: 2px solid rgba(0,0,0,0.55);
+  text-shadow: 0 2px 6px rgba(0,0,0,.85);
+  box-shadow: 0 6px 16px rgba(0,0,0,.55);
+  pointer-events: none;
+}
+
+.drug-inv-slot.filled.rarity-common[data-rarity-label]::after { background: rgba(120,120,120,0.75); color: #fff; }
+.drug-inv-slot.filled.rarity-rare[data-rarity-label]::after { background: rgba(74,170,255,0.75); color: #0b1220; }
+.drug-inv-slot.filled.rarity-epic[data-rarity-label]::after { background: rgba(189,80,255,0.75); color: #14061c; }
+.drug-inv-slot.filled.rarity-legendary[data-rarity-label]::after { background: rgba(255,182,44,0.78); color: #1b1206; }
+
+.drug-inv-slot.empty {
+  cursor: default;
+  border-style: dashed;
+  opacity: 0.75;
+}
+
+.drug-inv-slot.empty::before {
+  content: '+';
+  font-size: 30px;
+  font-weight: 900;
+  color: rgba(242, 122, 241, 0.55);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.9);
+}
+
+.drug-slot-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.8));
+}
+
+.drug-slot-name {
+  font-size: 11px;
+  font-weight: 900;
+  color: #f27af1;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.drug-slot-uses {
+  font-size: 10px;
+  font-weight: 900;
+  color: #9bd;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+}
+
+.inventory-info {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #c94ac9;
+  padding: 8px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  margin-top: auto;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
