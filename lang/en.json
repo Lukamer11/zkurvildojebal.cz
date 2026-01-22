@@ -1,0 +1,28 @@
+{
+  "ui.sound": "Sound",
+  "ui.language": "Language",
+  "ui.settings": "Settings",
+  "ui.close": "Close",
+  "ui.on": "On",
+  "ui.off": "Off",
+  "menu.character": "CHARACTER",
+  "menu.perks": "PERKS",
+  "menu.arena": "ARENA",
+  "menu.boss": "BOSS",
+  "menu.shop": "SHOP",
+  "menu.upgrade": "UPGRADE",
+  "menu.crypta": "CRYPT",
+  "menu.guild": "GUILD",
+  "menu.mail": "MAIL",
+  "menu.leaderboard": "LEADERBOARD",
+  "menu.missions": "MISSIONS",
+  "menu.cigarettes": "CIGARETTE SHOP",
+  "menu.luck": "LUCK",
+  "menu.clicker": "SLAV CLICKER",
+  "menu.blackmarket": "BLACK MARKET",
+  "menu.pets": "PETS",
+  "menu": {
+    "dealer": "DEALER",
+    "boss": "BOSS"
+  }
+}

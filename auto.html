@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="cs">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+  <title>Crypta Panelāků - Boss Fights</title>
+  <link rel="stylesheet" href="auto.css">
+  <script src="supabase_stub.js"></script>
+  <script src="items.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+
+  <!-- LEVÉ PANEL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- STŘED - CRYPTA -->
+  <main class="stable-area">
+
+    <!-- NÃZEV -->
+    <div class="stable-title">💀 CRYPTA PANELÃKŮ 💀</div>
+
+    <!-- Progress Bar -->
+    <div class="crypta-progress">
+      <div class="progress-text">
+        <span>Postup v Cryptě:</span>
+        <b id="cryptaProgress">0 / 40</b>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <div class="stable-container" id="cryptaContainer">
+      <!-- Will be filled by JS -->
+    </div>
+
+  </main>
+
+</div>
+
+<!-- BOSS STORY MODAL -->
+<div id="bossModal" class="boss-modal" aria-hidden="true">
+  <div class="boss-modal-content">
+    <button class="boss-modal-close" id="bossModalClose">×</button>
+    
+    <div class="boss-story-section">
+      <!-- Boss Avatar -->
+      <div class="boss-avatar-container">
+        <img id="bossAvatar" src="boss1.jpg" alt="Boss" class="boss-avatar-img" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect width=%22200%22 height=%22200%22 fill=%22%23222%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22white%22 font-size=%2222%22 text-anchor=%22middle%22 dy=%22.35em%22%3EBOSS%3C/text%3E%3C/svg%3E'">
+      </div>
+      
+      <!-- Boss Title -->
+      <div class="boss-story-title" id="bossStoryTitle">STARÝ DĚDEK GOMEZ</div>
+      
+      <!-- Boss Story -->
+      <div class="boss-story-box">
+        <h3>📜 Příběh</h3>
+        <p id="bossStoryText">V první cryptě panelāku č.1 sedí starý dědek Gomez...</p>
+      </div>
+      
+      <!-- Encounter Text -->
+      <div class="boss-encounter-box">
+        <h3>⚠️ Setkāní</h3>
+        <p id="bossEncounterText">Vstupuješ do zaprāšené crypty...</p>
+      </div>
+      
+      <!-- Fight Button -->
+      <button class="boss-fight-btn" id="bossFightBtn">
+        ⚔️ VSTOUPIT DO ARÉNY ⚔️
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="auto.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

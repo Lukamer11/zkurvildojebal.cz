@@ -1,0 +1,28 @@
+{
+  "ui.sound": "Звук",
+  "ui.language": "Язык",
+  "ui.settings": "Настройки",
+  "ui.close": "Закрыть",
+  "ui.on": "Вкл",
+  "ui.off": "Выкл",
+  "menu.character": "ПЕРСОНАЖ",
+  "menu.perks": "ПЕРКИ",
+  "menu.arena": "АРЕНА",
+  "menu.boss": "БОСС",
+  "menu.shop": "МАГАЗИН",
+  "menu.upgrade": "АПГРЕЙД",
+  "menu.crypta": "СКЛЕП",
+  "menu.guild": "ГИЛЬДИЯ",
+  "menu.mail": "ПОЧТА",
+  "menu.leaderboard": "РЕЙТИНГ",
+  "menu.missions": "МИССИИ",
+  "menu.cigarettes": "СИГАРЕТЫ",
+  "menu.luck": "УДАЧА",
+  "menu.clicker": "SLAV CLICKER",
+  "menu.blackmarket": "ЧЁРНЫЙ РЫНОК",
+  "menu.pets": "ПИТОМЦЫ",
+  "menu": {
+    "dealer": "ДИЛЕР",
+    "boss": "БОСС"
+  }
+}

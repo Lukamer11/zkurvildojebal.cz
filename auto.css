@@ -1,0 +1,643 @@
+/* auto.css */
+@import url("mise.css");
+
+/* ===== CRYPTA AREA ===== */
+.stable-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.stable-title {
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow:
+    0 0 20px rgba(255, 70, 70, 0.8),
+    0 0 40px rgba(255, 70, 70, 0.5),
+    0 4px 15px rgba(0,0,0,1),
+    0 8px 25px rgba(0,0,0,0.8);
+  padding: 10px 32px;
+  background:
+    linear-gradient(135deg,
+      rgba(80, 20, 20, 0.95) 0%,
+      rgba(50, 10, 10, 0.98) 50%,
+      rgba(80, 20, 20, 0.95) 100%);
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #ff4444, #aa2222, #ff4444) 1;
+  border-radius: 16px;
+  box-shadow:
+    0 12px 40px rgba(0,0,0,.8),
+    inset 0 -4px 20px rgba(0,0,0,0.5),
+    inset 0 4px 20px rgba(255,70,70,0.2);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.stable-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 70, 70, 0.3),
+    transparent
+  );
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  50%, 100% { left: 100%; }
+}
+
+/* ===== PROGRESS BAR ===== */
+.crypta-progress {
+  background:
+    linear-gradient(135deg, rgba(30,36,42,0.85), rgba(18,22,26,0.9)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 3px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow:
+    0 10px 30px rgba(0,0,0,.8),
+    inset 0 2px 8px rgba(255,215,100,0.1);
+  flex-shrink: 0;
+}
+
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.progress-text span {
+  color: #c9a44a;
+}
+
+.progress-text b {
+  color: #f1d27a;
+}
+
+.progress-bar-container {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  background: linear-gradient(135deg, rgba(20,20,20,0.95), rgba(10,10,10,0.98));
+  border: 2px solid rgba(201,164,74,0.95);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+}
+
+.progress-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  transition: width 0.5s ease;
+  box-shadow:
+    inset 0 2px 6px rgba(255,255,255,0.3),
+    0 0 15px rgba(245, 158, 11, 0.6);
+}
+
+/* ===== CRYPTA CONTAINER ===== */
+.stable-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  padding-right: 8px;
+  padding-bottom: 10px;
+  flex: 1;
+  overflow: visible;
+}
+
+
+.stable-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.stable-container::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.2);
+  border-radius: 10px;
+}
+
+.stable-container::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.3);
+  border-radius: 10px;
+}
+
+/* ===== CRYPTA CARDS ===== */
+.crypta-card {
+  background: linear-gradient(135deg, rgba(15,15,15,0.9), rgba(5,5,5,0.95));
+  border: 3px solid #5a4520;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow:
+    0 8px 20px rgba(0,0,0,.6),
+    inset 0 2px 8px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.crypta-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 70, 70, 0.15),
+    transparent
+  );
+  transition: left 0.6s ease;
+}
+
+.crypta-card:hover::before {
+  left: 100%;
+}
+
+.crypta-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  border-color: #ff4444;
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.8),
+    0 0 25px rgba(255, 70, 70, 0.4),
+    inset 0 2px 12px rgba(255,70,70,0.2);
+}
+
+.crypta-card.current {
+  border-color: #f59e0b;
+  box-shadow:
+    0 8px 20px rgba(245, 158, 11, 0.5),
+    inset 0 2px 8px rgba(245, 158, 11, 0.2);
+  animation: currentPulse 2s ease-in-out infinite;
+}
+
+@keyframes currentPulse {
+  0%, 100% {
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.5), 0 0 30px rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.7), 0 0 40px rgba(245, 158, 11, 0.5);
+  }
+}
+
+.crypta-card.defeated {
+  opacity: 0.6;
+  border-color: #10b981;
+}
+
+.crypta-card.locked {
+  opacity: 0.6;
+  border-color: #666;
+}
+
+.crypta-number {
+  font-size: 12px;
+  font-weight: 900;
+  color: #c9a44a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.crypta-icon {
+  font-size: 64px;
+  text-align: center;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.6));
+  animation: iconFloat 3s ease-in-out infinite;
+}
+
+/* ===== BOSS AVATAR V KARTĚ ===== */
+.crypta-boss-avatar {
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 3px solid #5a4520;
+  box-shadow: 
+    0 8px 20px rgba(0,0,0,.6),
+    inset 0 0 20px rgba(0,0,0,.3);
+  transition: all 0.3s ease;
+}
+
+.crypta-card:hover .crypta-boss-avatar {
+  border-color: #ff4444;
+  box-shadow:
+    0 10px 25px rgba(0,0,0,.7),
+    0 0 20px rgba(255, 68, 68, 0.4),
+    inset 0 0 20px rgba(0,0,0,.3);
+}
+
+.crypta-card.current .crypta-boss-avatar {
+  border-color: #f59e0b;
+  box-shadow:
+    0 8px 20px rgba(245, 158, 11, 0.5),
+    inset 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.crypta-card.defeated .crypta-boss-avatar {
+  border-color: #10b981;
+  opacity: 0.7;
+}
+
+.crypta-card.locked .crypta-boss-avatar {
+  border-color: #666;
+  filter: none;
+  opacity: 0.8;
+}
+
+.crypta-boss-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s ease;
+}
+
+.crypta-card:hover .crypta-boss-avatar img {
+  transform: scale(1.05);
+}
+
+@keyframes iconFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.crypta-boss-name {
+  font-size: 16px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.crypta-hp,
+.crypta-reward {
+  display: none;
+}
+
+.crypta-status {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.defeated-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+}
+
+.locked-badge {
+  background: linear-gradient(135deg, #666, #444);
+  color: #aaa;
+}
+
+.crypta-enter-btn {
+  padding: 12px 20px;
+  background:
+    linear-gradient(135deg, rgba(80, 20, 20, 0.9), rgba(50, 10, 10, 0.95)),
+    url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 3px solid #ff4444;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.5);
+}
+
+.crypta-enter-btn:hover {
+  border-color: #ff6666;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,.6),
+    0 0 20px rgba(255, 70, 70, 0.4);
+}
+
+.crypta-enter-btn:active {
+  transform: translateY(0) scale(1);
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+
+/* ===== BOSS MODAL ===== */
+.boss-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.92);
+  backdrop-filter: blur(12px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.boss-modal.show {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.boss-modal-content {
+  width: min(700px, 95vw);
+  max-height: 95vh;
+  background:
+    linear-gradient(135deg, rgba(25,18,12,.98), rgba(12,10,8,.98)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #ff4444, #aa2222, #ff4444) 1;
+  border-radius: 20px;
+  padding: 25px 25px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.95);
+  position: relative;
+  overflow-y: auto;
+  animation: modalSlideIn 0.4s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: scale(0.9) translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.boss-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #ff4444;
+  background: rgba(0,0,0,0.8);
+  color: #ff4444;
+  font-size: 28px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boss-modal-close:hover {
+  background: rgba(255, 68, 68, 0.3);
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+}
+
+/* ===== BOSS STORY SECTION ===== */
+.boss-story-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.boss-avatar-container {
+  width: 200px;
+  height: 270px;
+  border: 5px solid #ff4444;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 15px 40px rgba(0,0,0,.8),
+    0 0 30px rgba(255, 68, 68, 0.4),
+    inset 0 0 20px rgba(0,0,0,.5);
+  animation: avatarGlow 2s ease-in-out infinite;
+}
+
+@keyframes avatarGlow {
+  0%, 100% {
+    box-shadow:
+      0 15px 40px rgba(0,0,0,.8),
+      0 0 25px rgba(255, 68, 68, 0.4),
+      inset 0 0 20px rgba(0,0,0,.5);
+  }
+  50% {
+    box-shadow:
+      0 15px 45px rgba(0,0,0,.9),
+      0 0 40px rgba(255, 68, 68, 0.6),
+      inset 0 0 20px rgba(0,0,0,.5);
+  }
+}
+
+.boss-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.boss-story-title {
+  font-size: 30px;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow:
+    0 0 25px rgba(255, 70, 70, 0.9),
+    0 0 50px rgba(255, 70, 70, 0.5),
+    0 4px 20px rgba(0,0,0,1);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+  animation: titlePulse 2s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+  0%, 100% {
+    text-shadow:
+      0 0 20px rgba(255, 70, 70, 0.8),
+      0 0 40px rgba(255, 70, 70, 0.4),
+      0 4px 20px rgba(0,0,0,1);
+  }
+  50% {
+    text-shadow:
+      0 0 30px rgba(255, 70, 70, 1),
+      0 0 60px rgba(255, 70, 70, 0.6),
+      0 4px 20px rgba(0,0,0,1);
+  }
+}
+
+.boss-story-box,
+.boss-encounter-box {
+  width: 100%;
+  padding: 14px 18px;
+  background: rgba(0,0,0,0.6);
+  border: 3px solid #5a4520;
+  border-radius: 14px;
+  backdrop-filter: blur(5px);
+  box-shadow: inset 0 2px 10px rgba(0,0,0,.5);
+}
+
+.boss-story-box h3,
+.boss-encounter-box h3 {
+  font-size: 15px;
+  font-weight: 900;
+  color: #c9a44a;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.boss-story-box p,
+.boss-encounter-box p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+}
+
+.boss-encounter-box {
+  border-color: #ff4444;
+  background: rgba(80, 20, 20, 0.3);
+}
+
+.boss-encounter-box h3 {
+  color: #ff8787;
+}
+
+.boss-fight-btn {
+  padding: 14px 40px;
+  background:
+    linear-gradient(135deg, rgba(80, 20, 20, 0.9), rgba(50, 10, 10, 0.95)),
+    url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 4px solid #ff4444;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  box-shadow: 0 8px 25px rgba(0,0,0,.8);
+  margin-top: 6px;
+  animation: buttonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes buttonPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 25px rgba(0,0,0,.8);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow:
+      0 10px 35px rgba(0,0,0,.9),
+      0 0 30px rgba(255, 70, 70, 0.5);
+  }
+}
+
+.boss-fight-btn:hover {
+  border-color: #ff6666;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow:
+    0 12px 40px rgba(0,0,0,.9),
+    0 0 40px rgba(255, 70, 70, 0.6);
+  animation: none;
+}
+
+.boss-fight-btn:active {
+  transform: translateY(0) scale(1);
+  box-shadow: 0 4px 15px rgba(0,0,0,.7);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .stable-container {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .stable-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .stable-title {
+    font-size: 24px;
+    letter-spacing: 2px;
+  }
+  
+  .boss-story-title {
+    font-size: 28px;
+  }
+  
+  .boss-avatar-container {
+    width: 220px;
+    height: 300px;
+  }
+  
+  .boss-story-box p,
+  .boss-encounter-box p {
+    font-size: 14px;
+  }
+  
+  .boss-fight-btn {
+    font-size: 18px;
+    padding: 14px 35px;
+  }
+}

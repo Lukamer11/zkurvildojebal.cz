@@ -1,0 +1,28 @@
+{
+  "ui.sound": "Dźwięk",
+  "ui.language": "Język",
+  "ui.settings": "Ustawienia",
+  "ui.close": "Zamknij",
+  "ui.on": "Włączone",
+  "ui.off": "Wyłączone",
+  "menu.character": "POSTAĆ",
+  "menu.perks": "PERKI",
+  "menu.arena": "ARENA",
+  "menu.boss": "BOSS",
+  "menu.shop": "SKLEP",
+  "menu.upgrade": "ULEPSZENIA",
+  "menu.crypta": "KRYPTA",
+  "menu.guild": "GILDIA",
+  "menu.mail": "POCZTA",
+  "menu.leaderboard": "RANKING",
+  "menu.missions": "MISJE",
+  "menu.cigarettes": "PAPIEROSY",
+  "menu.luck": "SZCZĘŚCIE",
+  "menu.clicker": "SLAV CLICKER",
+  "menu.blackmarket": "CZARNY RYNEK",
+  "menu.pets": "ZWIERZAKI",
+  "menu": {
+    "dealer": "DEALER",
+    "boss": "BOSS"
+  }
+}

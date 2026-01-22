@@ -1,0 +1,681 @@
+/* =========================================================
+   GLOBAL UI FRAME (applies to all pages)
+   - Decorative border around the whole game viewport
+   - Safe padding so UI doesn't touch the frame
+   ========================================================= */
+
+html, body {
+  height: 100%;
+}
+
+body {
+  box-sizing: border-box;
+  padding: 18px;
+}
+
+/* The frame itself */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 10px;
+  border: 6px solid rgba(201, 164, 74, 0.88);
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: 99999;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.65),
+    0 18px 55px rgba(0, 0, 0, 0.55),
+    inset 0 0 35px rgba(0, 0, 0, 0.45);
+}
+
+/* Slight inner vignette for extra "game" feel */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 10px;
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: 99998;
+  background:
+    radial-gradient(circle at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.35) 100%);
+}
+
+/* =========================================================
+   PAGE TRANSITIONS (S&F vibe)
+   - Smooth page enter/exit when navigating between .html pages
+   - Implemented via body classes toggled in menu.js
+   ========================================================= */
+
+/* Default: keep content visible if JS is off */
+body.sf-page .layout{
+  opacity: 0;
+  transform: translateX(18px);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  will-change: opacity, transform;
+}
+
+body.sf-page.sf-page-ready .layout{
+  opacity: 1;
+  transform: translateX(0);
+}
+
+body.sf-page.sf-page-out .layout{
+  opacity: 0;
+  transform: translateX(-18px);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce){
+  body.sf-page .layout{
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Mobile: keep more space for content */
+@media (max-width: 520px) {
+  body { padding: 12px; }
+  body::before, body::after { inset: 8px; border-radius: 14px; }
+  body::before { border-width: 5px; }
+}
+
+
+/* === V8 GLOBAL FIX === */
+
+/* === V8 FIX: BIG STATS + HIDE EMPTY EQUIP SLOTS === */
+
+/* STATS BIGGER EVERYWHERE */
+.stats-panel, .stats-container, .character-stats, .postava-stats{
+  max-width: 900px !important;
+}
+
+.stat-row, .stat-item, .stat-line{
+  font-size: 22px !important;
+  padding: 14px 18px !important;
+}
+
+.stat-row .value,
+.stat-item .value,
+.stat-line .value,
+.stat-value{
+  font-size: 24px !important;
+  font-weight: 900 !important;
+}
+
+/* PLUS BUTTON BIGGER */
+.stat-row button,
+.stat-item button{
+  transform: scale(1.25);
+}
+
+/* HIDE EMPTY EQUIP SLOTS */
+.equip-slot:empty,
+.item-frame:empty,
+.slot:empty{
+  display: none !important;
+}
+
+/* If game uses data-empty attr */
+.equip-slot[data-empty="true"],
+.item-frame[data-empty="true"],
+.slot[data-empty="true"]{
+  display: none !important;
+}
+
+
+/* =========================================================
+   V12 UI POLISH PACK (GLOBAL)
+   - Button feel (hover/active/disabled)
+   - Unified panels, modals, toasts
+   - Readability helpers (text, backdrop)
+   NOTE: Designed to be "safe" overrides.
+   ========================================================= */
+
+:root{
+  --sf-gold: #c9a44a;
+  --sf-gold-2: #f1d27a;
+  --sf-ink: rgba(0,0,0,.72);
+  --sf-ink-2: rgba(0,0,0,.55);
+  --sf-panel: rgba(14,18,22,.92);
+  --sf-panel-2: rgba(20,26,32,.88);
+  --sf-line: rgba(201,164,74,.55);
+  --sf-shadow: 0 14px 40px rgba(0,0,0,.65);
+  --sf-inset: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* Better readability on busy backgrounds */
+body{
+  color-scheme: dark;
+}
+
+/* Text legibility: apply only to common UI containers */
+.panel, .layout, .wrap, .container, .content, .shop-container, .shop-panel,
+.inventory-panel, .stats-panel, .character-panel, .window, .box, .modal-content, .modalBox{
+  text-shadow: 0 2px 6px rgba(0,0,0,.85);
+}
+
+/* Decorative noise overlay (subtle) */
+body::after{
+  background:
+    radial-gradient(circle at center, rgba(0,0,0,0) 48%, rgba(0,0,0,0.42) 100%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, rgba(0,0,0,0) 3px);
+  mix-blend-mode: overlay;
+  opacity: .55;
+}
+
+/* Unified "panel" look for places that forget their own background */
+.window, .box, .panel, .shop-panel, .inventory-panel, .stats-panel, .character-panel{
+  background-color: var(--sf-panel);
+  border: 2px solid var(--sf-line);
+  box-shadow: var(--sf-shadow), var(--sf-inset);
+}
+
+/* Button feel (covers most pages without breaking custom skins) */
+button,
+.btn,
+.action-btn,
+.menu-btn,
+.menu-button,
+.achi-btn,
+.guild-btn,
+.sf-btn{
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:hover,
+.btn:hover,
+.action-btn:hover,
+.menu-btn:hover,
+.menu-button:hover,
+.achi-btn:hover,
+.guild-btn:hover,
+.sf-btn:hover{
+  filter: brightness(1.06) saturate(1.05);
+  box-shadow: 0 10px 22px rgba(0,0,0,.45);
+}
+
+button:active,
+.btn:active,
+.action-btn:active,
+.menu-btn:active,
+.menu-button:active,
+.achi-btn:active,
+.guild-btn:active,
+.sf-btn:active{
+  transform: translateY(1px) scale(.985);
+  filter: brightness(.98) saturate(1.02);
+}
+
+button:disabled,
+.btn.disabled,
+.action-btn.disabled,
+.menu-btn.disabled,
+.menu-button.disabled,
+.achi-btn.disabled,
+.guild-btn.disabled,
+.sf-btn.disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  filter: grayscale(.15);
+}
+
+/* Focus ring (keyboard users) */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible{
+  outline: 2px solid rgba(241,210,122,.85);
+  outline-offset: 2px;
+}
+
+/* Modals: nicer backdrop + consistent content edge */
+.modal{
+  backdrop-filter: blur(2px);
+}
+.modal-content, .modalBox{
+  border: 2px solid rgba(201,164,74,.7);
+  box-shadow: 0 18px 55px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* Toasts: unify guild/achi toasts without removing page-specific colors */
+[class$="-toast"],
+.toast{
+  border-radius: 12px;
+  border: 1px solid rgba(201,164,74,.35);
+  box-shadow: 0 14px 40px rgba(0,0,0,.55);
+}
+
+/* Small spacing polish for inventory grids (only if not already set) */
+.inventory-grid, .inv-grid, #inventoryGrid{
+  gap: 10px;
+}
+
+@media (max-width: 520px){
+  .stat-row, .stat-item, .stat-line{ font-size: 20px !important; }
+  .stat-row .value, .stat-item .value, .stat-line .value, .stat-value{ font-size: 22px !important; }
+}
+
+/* =========================================================
+   V14 UI ADD-ONS (GLOBAL, SAME STYLE)
+   - Unified headers / chips / icon buttons
+   - Inventory slot polish (hover + rarity edges)
+   - Cleaner small badges (counts, NEW, !)
+   Designed as safe overrides.
+   ========================================================= */
+
+/* Section headers (works if page uses any of these) */
+.section-header,
+.panel-header,
+.window-title,
+.box-title,
+.header-bar{
+  background: linear-gradient(180deg, rgba(201,164,74,.22), rgba(0,0,0,0));
+  border-bottom: 1px solid rgba(201,164,74,.35);
+  padding: 10px 12px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+/* Small chips / tags */
+.chip,
+.tag,
+.pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(201,164,74,.35);
+  background: rgba(0,0,0,.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* Icon buttons (gear, info, close) */
+.icon-btn,
+.btn-icon,
+.square-btn{
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid rgba(201,164,74,.45);
+  background: rgba(14,18,22,.85);
+  box-shadow: 0 10px 22px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.icon-btn:hover,
+.btn-icon:hover,
+.square-btn:hover{
+  filter: brightness(1.06) saturate(1.05);
+}
+
+/* Inventory / equip slots: consistent look where pages don't style them */
+.equip-slot,
+.item-frame,
+.slot,
+.inv-slot,
+.inventory-slot{
+  border-radius: 12px;
+  border: 1px solid rgba(201,164,74,.22);
+  background: rgba(0,0,0,.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+}
+
+.equip-slot:not(:empty):hover,
+.item-frame:not(:empty):hover,
+.slot:not(:empty):hover,
+.inv-slot:not(:empty):hover,
+.inventory-slot:not(:empty):hover{
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 12px 26px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+/* Rarity edges (only if these classes exist on items/slots) */
+.rarity-common{ --r: rgba(205,205,205,.28); }
+.rarity-uncommon{ --r: rgba(124,255,124,.28); }
+.rarity-rare{ --r: rgba(124,170,255,.30); }
+.rarity-epic{ --r: rgba(205,124,255,.30); }
+.rarity-legendary{ --r: rgba(255,195,90,.32); }
+
+.rarity-common,
+.rarity-uncommon,
+.rarity-rare,
+.rarity-epic,
+.rarity-legendary{
+  border-color: var(--r) !important;
+  box-shadow:
+    0 0 0 1px var(--r),
+    0 0 14px rgba(0,0,0,.35),
+    0 0 22px color-mix(in srgb, var(--r) 55%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* Visual "shine" for legendary (safe: only affects elements that already have the class) */
+@keyframes rarityShine {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  10%  { opacity: .18; }
+  35%  { opacity: .25; }
+  60%  { opacity: .10; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+
+/* Apply shine only to slot/card containers (NOT to small badges/pills) */
+.shop-item.rarity-legendary,
+.inv-slot.rarity-legendary,
+.inventory-slot.rarity-legendary,
+.equip-slot.rarity-legendary,
+.item-frame.rarity-legendary,
+.slot.rarity-legendary{
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-item.rarity-legendary::after,
+.inv-slot.rarity-legendary::after,
+.inventory-slot.rarity-legendary::after,
+.equip-slot.rarity-legendary::after,
+.item-frame.rarity-legendary::after,
+.slot.rarity-legendary::after{
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 0;
+  width: 60%;
+  height: 140%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+  filter: blur(0.2px);
+  animation: rarityShine 4.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Extra "glowing" vibe for EPIC + LEGENDARY */
+@keyframes sfSparkleSweep{
+  0%{ transform: translateX(-110%) translateY(0) rotate(0deg); opacity: 0; }
+  15%{ opacity: .25; }
+  50%{ opacity: .18; }
+  100%{ transform: translateX(170%) translateY(-6px) rotate(8deg); opacity: 0; }
+}
+
+/* Sparkle sweep only on slot/card containers (NOT on rarity badges/pills) */
+.shop-item.rarity-epic,
+.inv-slot.rarity-epic,
+.inventory-slot.rarity-epic,
+.equip-slot.rarity-epic,
+.item-frame.rarity-epic,
+.slot.rarity-epic,
+.shop-item.rarity-legendary,
+.inv-slot.rarity-legendary,
+.inventory-slot.rarity-legendary,
+.equip-slot.rarity-legendary,
+.item-frame.rarity-legendary,
+.slot.rarity-legendary{
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-item.rarity-epic::before,
+.inv-slot.rarity-epic::before,
+.inventory-slot.rarity-epic::before,
+.equip-slot.rarity-epic::before,
+.item-frame.rarity-epic::before,
+.slot.rarity-epic::before,
+.shop-item.rarity-legendary::before,
+.inv-slot.rarity-legendary::before,
+.inventory-slot.rarity-legendary::before,
+.equip-slot.rarity-legendary::before,
+.item-frame.rarity-legendary::before,
+.slot.rarity-legendary::before{
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: 0;
+  width: 70%;
+  height: 160%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+  filter: blur(0.4px);
+  animation: sfSparkleSweep 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Badges (counts, exclamation, NEW) */
+.badge,
+.count-badge,
+.notif-badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(255,255,255,.95);
+  background: rgba(201,164,74,.85);
+  border: 1px solid rgba(0,0,0,.45);
+  box-shadow: 0 8px 16px rgba(0,0,0,.45);
+}
+
+/* Subtle separators */
+hr,
+.divider{
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,164,74,.45), transparent);
+  opacity: .85;
+}
+
+
+/* ============================
+   Empty equipment slots: HIDE BOX (only show when equipped)
+   - keeps layout spacing, but removes the visible "empty square"
+   ============================ */
+.slot.is-empty,
+.slot-shop.is-empty{
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.slot.is-empty .slot-emoji,
+.slot-shop.is-empty .slot-emoji{
+  display: none !important;
+}
+
+/* ============================
+   V16: EMPTY SLOTS SHOULD BE VISIBLE (frame stays)
+   - user request: show empty slot box, but no item icon
+   ============================ */
+
+/* Re-enable rendering of empty slot containers (older rules hid them) */
+.equip-slot:empty,
+.item-frame:empty,
+.slot:empty{
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.equip-slot[data-empty="true"],
+.item-frame[data-empty="true"],
+.slot[data-empty="true"]{
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Visible empty frame styling */
+.slot.is-empty,
+.slot-shop.is-empty{
+  background: linear-gradient(180deg, rgba(26,32,38,.92), rgba(12,16,20,.92)) !important;
+  border-color: rgba(201,164,74,.55) !important;
+  box-shadow: 0 10px 22px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+
+/* If slot uses an emoji/placeholder element, keep it but fade it */
+.slot.is-empty .slot-emoji,
+.slot-shop.is-empty .slot-emoji{
+  display: inline-block !important;
+  opacity: .28;
+  filter: grayscale(0.6);
+}
+
+/* Never show item image/content when empty */
+.slot.is-empty img,
+.slot-shop.is-empty img,
+.slot.is-empty .item-icon,
+.slot-shop.is-empty .item-icon{
+  display: none !important;
+}
+
+/* ============================
+   S&F-like ITEM TOOLTIP (smaller, clearer)
+   Works for shop/postava/zebricek (all use .item-tooltip)
+   ============================ */
+.item-tooltip{
+  --sf-tooltip-scale: 0.78;
+  min-width: 170px !important;
+  max-width: 240px !important;
+  border-radius: 14px !important;
+  border-width: 3px !important;
+  box-shadow:
+    0 18px 55px rgba(0,0,0,0.85),
+    0 0 0 1px rgba(255,255,255,0.06) inset !important;
+  backdrop-filter: blur(6px);
+}
+
+.item-tooltip .tt-head{margin-bottom: 6px;}
+.item-tooltip .tt-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight: 1000;
+  letter-spacing: .2px;
+  color:#f1d27a;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.95);
+  font-size: calc(16px * var(--sf-tooltip-scale, 0.78));
+}
+.item-tooltip .tt-name{margin-left: 2px;}
+.item-tooltip .tt-sub{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.item-tooltip .tt-desc{
+  color: rgba(230,210,160,0.95);
+  line-height: 1.25;
+  font-size: calc(12px * var(--sf-tooltip-scale, 0.78));
+  opacity: .95;
+  margin: 6px 0 8px;
+}
+.item-tooltip .tt-pill{
+  display:inline-flex;
+  align-items:center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 2px solid rgba(201,164,74,0.35);
+  background: rgba(0,0,0,0.25);
+  font-weight: 1000;
+  font-size: calc(11px * var(--sf-tooltip-scale, 0.78));
+  color: rgba(255,255,255,0.92);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.95);
+}
+.item-tooltip .tt-price-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:6px;}
+.item-tooltip .tt-price{font-weight:1000;color:#f1d27a;text-shadow:0 2px 10px rgba(0,0,0,0.95);font-size: calc(14px * var(--sf-tooltip-scale, 0.78));}
+.item-tooltip .tt-sell{font-weight:1000;color:#ff7b7b;text-shadow:0 2px 10px rgba(0,0,0,0.95);font-size: calc(11px * var(--sf-tooltip-scale, 0.78));}
+.item-tooltip .tt-section{margin-top:10px;padding-top:10px;border-top:2px solid rgba(201,164,74,0.28);}
+
+.item-tooltip .tt-rarity--common{border-color: rgba(201,164,74,0.25);}
+.item-tooltip .tt-rarity--rare{border-color: rgba(47,120,255,0.6);}
+.item-tooltip .tt-rarity--epic{border-color: rgba(161,77,255,0.6);}
+.item-tooltip .tt-rarity--legendary{border-color: rgba(255,154,47,0.65);}
+
+/* ============================
+   EVENT BANNER (menu / hlavní lišta)
+   ============================ */
+.sf-event-banner{
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 3px solid rgba(201,164,74,0.45);
+  background: linear-gradient(135deg, rgba(40,30,20,0.92), rgba(18,22,26,0.92));
+  box-shadow: 0 12px 28px rgba(0,0,0,0.65);
+  font-weight: 1000;
+  font-size: 12px;
+  color: rgba(255,255,255,0.94);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.95);
+}
+.sf-event-banner .small{opacity:.9;font-weight:900;font-size:11px;}
+.sf-event-banner.open{border-color: rgba(74,170,255,0.55); box-shadow: 0 12px 28px rgba(0,0,0,0.65), 0 0 26px rgba(74,170,255,0.18);}
+.sf-event-banner.closed{border-color: rgba(255,107,107,0.55); box-shadow: 0 12px 28px rgba(0,0,0,0.65), 0 0 26px rgba(255,107,107,0.16);}
+
+/* ============================
+   RARITY ANIMATIONS
+   - rare: blue aura
+   - epic: purple pulse
+   ============================ */
+@keyframes sfRareAura {
+  0%{ box-shadow: 0 10px 22px rgba(0,0,0,0.55), 0 0 0 rgba(47,120,255,0.0); }
+  50%{ box-shadow: 0 10px 22px rgba(0,0,0,0.55), 0 0 26px rgba(47,120,255,0.35); }
+  100%{ box-shadow: 0 10px 22px rgba(0,0,0,0.55), 0 0 0 rgba(47,120,255,0.0); }
+}
+
+@keyframes sfEpicPulse {
+  0%{ transform: translateY(0); box-shadow: 0 10px 22px rgba(0,0,0,0.55), 0 0 0 rgba(161,77,255,0.0); }
+  50%{ transform: translateY(-1px); box-shadow: 0 12px 26px rgba(0,0,0,0.60), 0 0 30px rgba(161,77,255,0.35); }
+  100%{ transform: translateY(0); box-shadow: 0 10px 22px rgba(0,0,0,0.55), 0 0 0 rgba(161,77,255,0.0); }
+}
+
+@keyframes sfLegendaryGlow {
+  0%{ box-shadow: 0 12px 26px rgba(0,0,0,0.60), 0 0 18px rgba(255,154,47,0.18), 0 0 0 rgba(255,154,47,0.0); }
+  50%{ box-shadow: 0 14px 30px rgba(0,0,0,0.65), 0 0 34px rgba(255,154,47,0.32), 0 0 58px rgba(255,235,160,0.14); }
+  100%{ box-shadow: 0 12px 26px rgba(0,0,0,0.60), 0 0 18px rgba(255,154,47,0.18), 0 0 0 rgba(255,154,47,0.0); }
+}
+
+/* Apply broadly to common slot/card types */
+.shop-item.rarity-rare,
+.inv-slot.rarity-rare,
+.inventory-slot.rarity-rare,
+.equip-slot.rarity-rare,
+.item-frame.rarity-rare,
+.slot.rarity-rare{ animation: sfRareAura 1.8s ease-in-out infinite; }
+
+.shop-item.rarity-epic,
+.inv-slot.rarity-epic,
+.inventory-slot.rarity-epic,
+.equip-slot.rarity-epic,
+.item-frame.rarity-epic,
+.slot.rarity-epic{ animation: sfEpicPulse 1.7s ease-in-out infinite; }
+
+.shop-item.rarity-legendary,
+.inv-slot.rarity-legendary,
+.inventory-slot.rarity-legendary,
+.equip-slot.rarity-legendary,
+.item-frame.rarity-legendary,
+.slot.rarity-legendary{ animation: sfLegendaryGlow 2.2s ease-in-out infinite; }
+
+/* Reduce motion if user prefers */
+@media (prefers-reduced-motion: reduce){
+  .shop-item.rarity-rare,
+  .inv-slot.rarity-rare,
+  .inventory-slot.rarity-rare,
+  .equip-slot.rarity-rare,
+  .item-frame.rarity-rare,
+  .slot.rarity-rare,
+  .shop-item.rarity-epic,
+  .inv-slot.rarity-epic,
+  .inventory-slot.rarity-epic,
+  .equip-slot.rarity-epic,
+  .item-frame.rarity-epic,
+  .slot.rarity-epic,
+  .shop-item.rarity-legendary,
+  .inv-slot.rarity-legendary,
+  .inventory-slot.rarity-legendary,
+  .equip-slot.rarity-legendary,
+  .item-frame.rarity-legendary,
+  .slot.rarity-legendary{ animation: none !important; }
+}
+

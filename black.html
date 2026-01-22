@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta charset="utf-8">
+  <title>Černý trh - Black Market</title>
+  <link rel="stylesheet" href="black.css">
+  <script src="supabase_stub.js"></script>
+  <script src="items.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+<link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+
+  <!-- LEVÝ PANEL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- BLACK MARKET AREA -->
+  <main class="black-area">
+
+    <!-- NÁZEV + ČASOVAČ EVENTU -->
+    <div class="black-title-row">
+      <div class="black-title">💀 ČERNÝ TRH 💀</div>
+      <div class="black-timer-box" id="eventTimer">
+        <div class="timer-label">EVENT DOSTUPNÝ:</div>
+        <div class="timer-countdown" id="timerCountdown">--:--:--</div>
+      </div>
+    </div>
+
+    <!-- LOCKED OVERLAY (když není event aktivní) -->
+    <div class="black-locked" id="blackLocked">
+      <div class="locked-content">
+        <div class="locked-icon">🔒</div>
+        <div class="locked-title">ČERNÝ TRH UZAVŘEN</div>
+        <div class="locked-text">
+          Černý trh je dostupný pouze 3 dny v týdnu!<br>
+          Další otevření za: <span id="lockedCountdown">--:--:--</span>
+        </div>
+        <div class="locked-days">
+          <div class="day-badge" data-day="4">ČT</div>
+          <div class="day-badge" data-day="5">PÁ</div>
+          <div class="day-badge" data-day="6">SO</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OBSAH TRHU -->
+    <div class="black-container" id="blackContainer">
+
+      <!-- LEVÁ ČÁST - EXKLUZIVNÍ ITEMY -->
+      <div class="black-section exclusive">
+        <div class="section-header">
+          <h2>💎 EXKLUZIVNÍ ZBOŽÍ</h2>
+          <span class="premium-badge">+50% ATRIBUTY</span>
+        </div>
+
+        <div class="black-grid" id="exclusiveGrid">
+          <!-- Loaded by JS -->
+        </div>
+      </div>
+
+      <!-- PRAVÁ ČÁST - VÝMĚNY & SPECIÁLY -->
+      <div class="black-section trades">
+        
+        <!-- VÝMĚNA PENĚZ ZA CIGARETY -->
+        <div class="trade-card">
+          <div class="trade-header">
+            <h3>💰 VÝMĚNA MĚNY</h3>
+          </div>
+          <div class="trade-content">
+            <div class="trade-offer">
+              <div class="trade-give">
+                <span class="trade-icon">₽</span>
+                <span class="trade-amount">120,000</span>
+              </div>
+              <div class="trade-arrow">→</div>
+              <div class="trade-get">
+                <span class="trade-icon">🚬</span>
+                <span class="trade-amount">120</span>
+              </div>
+            </div>
+            <button class="trade-btn" id="tradeMoney">
+              VYMĚNIT
+            </button>
+            <div class="trade-info">
+              Výhodný kurz: 1000₽ = 1🚬
+            </div>
+          </div>
+        </div>
+
+        <!-- VÝMĚNA CIGARET ZA PENÍZE -->
+        <div class="trade-card">
+          <div class="trade-header">
+            <h3>🚬 ZPĚTNÁ VÝMĚNA</h3>
+          </div>
+          <div class="trade-content">
+            <div class="trade-offer">
+              <div class="trade-give">
+                <span class="trade-icon">🚬</span>
+                <span class="trade-amount">100</span>
+              </div>
+              <div class="trade-arrow">→</div>
+              <div class="trade-get">
+                <span class="trade-icon">₽</span>
+                <span class="trade-amount">80,000</span>
+              </div>
+            </div>
+            <button class="trade-btn" id="tradeCigs">
+              VYMĚNIT
+            </button>
+            <div class="trade-info">
+              Horší kurz: 1🚬 = 800₽
+            </div>
+          </div>
+        </div><!-- STATISTIKY EVENTU -->
+        <div class="event-stats">
+          <div class="stat-header">📊 STATISTIKY EVENTU</div>
+          <div class="stat-line">
+            <span>Zakoupeno itemů:</span>
+            <b id="statPurchases">0</b>
+          </div>
+          <div class="stat-line">
+            <span>Utraceno groše:</span>
+            <b id="statMoney">0₽</b>
+          </div>
+          <div class="stat-line">
+            <span>Zbývá do konce:</span>
+            <b id="statTimeLeft">--:--:--</b>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script src="black.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

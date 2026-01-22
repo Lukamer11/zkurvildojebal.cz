@@ -1,0 +1,691 @@
+/* black.css - Černý trh */
+@import url("mise.css");
+
+/* ===== BLACK MARKET AREA ===== */
+.black-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 0;
+  /* aby se nic "neuseklo" – scroll má mít konkrétní vnitřní box */
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.black-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.black-title {
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow:
+    0 0 20px rgba(139, 0, 0, 0.9),
+    0 0 40px rgba(139, 0, 0, 0.6),
+    0 4px 15px rgba(0,0,0,1),
+    0 8px 25px rgba(0,0,0,0.8);
+  padding: 10px 32px;
+  background:
+    linear-gradient(135deg,
+      rgba(20, 5, 5, 0.98) 0%,
+      rgba(40, 10, 10, 0.99) 50%,
+      rgba(20, 5, 5, 0.98) 100%);
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #8b0000, #dc143c, #8b0000) 1;
+  border-radius: 16px;
+  box-shadow:
+    0 12px 40px rgba(0,0,0,.9),
+    inset 0 -4px 20px rgba(0,0,0,0.6),
+    inset 0 4px 20px rgba(139, 0, 0, 0.3);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+}
+
+.black-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(220, 20, 60, 0.3),
+    transparent
+  );
+  animation: darkShine 4s infinite;
+}
+
+@keyframes darkShine {
+  0% { left: -100%; }
+  50%, 100% { left: 100%; }
+}
+
+.black-timer-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(20,5,5,0.95), rgba(10,2,2,0.98));
+  border: 3px solid #8b0000;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,.8);
+  min-width: 200px;
+}
+
+.timer-label {
+  font-size: 11px;
+  font-weight: 900;
+  color: #dc143c;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+  letter-spacing: 1px;
+}
+
+.timer-countdown {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow:
+    0 0 15px rgba(255, 68, 68, 0.8),
+    0 2px 6px rgba(0,0,0,.95);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== LOCKED OVERLAY ===== */
+.black-locked {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.black-locked.active {
+  display: flex;
+}
+
+.locked-content {
+  text-align: center;
+  padding: 40px;
+  background: linear-gradient(135deg, rgba(20,5,5,0.95), rgba(10,2,2,0.98));
+  border: 4px solid #8b0000;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.9);
+  max-width: 500px;
+}
+
+.locked-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.9));
+  animation: lockPulse 2s ease-in-out infinite;
+}
+
+@keyframes lockPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.locked-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow:
+    0 0 20px rgba(255, 68, 68, 0.8),
+    0 4px 10px rgba(0,0,0,.95);
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+.locked-text {
+  font-size: 16px;
+  font-weight: 900;
+  color: #dc143c;
+  line-height: 1.8;
+  margin-bottom: 30px;
+  text-shadow: 0 2px 8px rgba(0,0,0,.9);
+}
+
+#lockedCountdown {
+  color: #ff6666;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.locked-days {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.day-badge {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: #8b0000;
+  background: rgba(139, 0, 0, 0.2);
+  border: 3px solid #8b0000;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.5);
+}
+
+.day-badge.active {
+  background: linear-gradient(135deg, #8b0000, #dc143c);
+  color: #fff;
+  border-color: #ff4444;
+  box-shadow:
+    0 6px 20px rgba(139, 0, 0, 0.6),
+    0 0 30px rgba(220, 20, 60, 0.4);
+}
+
+/* ===== BLACK CONTAINER ===== */
+.black-container {
+  display: grid;
+  grid-template-columns: 1fr 450px;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ===== BLACK SECTIONS ===== */
+.black-section {
+  background:
+    linear-gradient(135deg, rgba(20,5,5,0.97), rgba(10,2,2,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #8b0000, #dc143c, #8b0000) 1;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow:
+    0 15px 45px rgba(0,0,0,.9),
+    inset 0 2px 10px rgba(220, 20, 60, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Levý panel (exkluzivní list) - nenechávej to "uříznout" uvnitř sekce.
+   Scroll řeší .black-grid, takže sekce může pustit vnitřní obsah (stíny, tlačítka). */
+.black-section.exclusive{
+  overflow: visible;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(220, 20, 60, 0.4);
+}
+
+.section-header h2 {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow:
+    0 0 10px rgba(255, 68, 68, 0.6),
+    0 2px 6px rgba(0,0,0,.9);
+}
+
+.premium-badge {
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffd700;
+  background: rgba(139, 0, 0, 0.6);
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 2px solid #8b0000;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+}
+
+/* ===== EXCLUSIVE ITEMS GRID ===== */
+.black-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* víc místa pro scrollbar + tlačítka */
+  padding-right: 20px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.black-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.black-grid::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.3);
+  border-radius: 10px;
+}
+
+.black-grid::-webkit-scrollbar-thumb {
+  background: rgba(139, 0, 0, 0.6);
+  border-radius: 10px;
+}
+
+.black-item {
+  background:
+    url('tlacitko_shop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 3px solid #8b0000;
+  border-radius: 12px;
+  /* víc prostoru vpravo/dole, aby se KOUPIT nikdy neřízlo */
+  padding: 8px 14px 10px 8px;
+  display: flex;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow:
+    0 5px 15px rgba(0,0,0,.6),
+    inset 0 2px 8px rgba(0,0,0,0.4);
+  position: relative;
+  /* nenechávej ořezávat obsah (tlačítko, stíny) */
+  overflow: visible;
+}
+
+.black-item::before {
+  content: '💎';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 20px;
+  opacity: 0.6;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.9));
+}
+
+.black-item:hover {
+  transform: translateY(-5px) scale(1.02);
+  border-color: #dc143c;
+  box-shadow:
+    0 10px 30px rgba(0,0,0,.8),
+    0 0 30px rgba(220, 20, 60, 0.4),
+    inset 0 2px 12px rgba(220, 20, 60, 0.2);
+}
+
+.black-item-icon {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  background: radial-gradient(circle at center, rgba(20,5,5,0.9), rgba(10,2,2,0.95));
+  border: 3px solid #dc143c;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  box-shadow:
+    inset 0 0 15px rgba(0,0,0,.5),
+    0 4px 12px rgba(0,0,0,.6);
+  font-size: 20px;
+}
+
+.black-item-icon img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.black-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.black-item-details h3 {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow:
+    0 0 10px rgba(255, 68, 68, 0.6),
+    0 2px 4px rgba(0,0,0,.9);
+}
+
+.black-item-bonus {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+  margin: 4px 0;
+}
+
+.black-item-desc {
+  font-size: 11px;
+  color: #dc143c;
+  margin-bottom: auto;
+}
+
+.black-item-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.black-price {
+  font-weight: 900;
+  font-size: 15px;
+  color: #ff6666;
+  text-shadow: 0 2px 4px rgba(0,0,0,.9);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.black-buy-btn {
+  /* menší tlačítko + nikdy nepřesahuje */
+  padding: 5px 12px;
+  background-image: url('tlacitko_shopik.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 3px solid rgba(220, 20, 60, 0.6);
+  border-radius: 8px;
+  color: #ff4444;
+  font-weight: 900;
+  font-size: 11px;
+  max-width: 120px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  box-shadow:
+    0 4px 10px rgba(0,0,0,.6),
+    inset 0 2px 5px rgba(220, 20, 60, 0.2);
+}
+
+.black-buy-btn:hover {
+  filter: brightness(1.3);
+  transform: translateY(-3px);
+  border-color: #ff4444;
+  box-shadow:
+    0 6px 15px rgba(0,0,0,.7),
+    0 0 20px rgba(220, 20, 60, 0.5);
+}
+
+/* ===== TRADE CARDS ===== */
+.trades {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trade-card {
+  background:
+    linear-gradient(135deg, rgba(30,10,10,0.95), rgba(15,5,5,0.98)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 3px solid #8b0000;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow:
+    0 6px 20px rgba(0,0,0,.7),
+    inset 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.trade-card.mystery {
+  border-color: #ffd700;
+  background:
+    linear-gradient(135deg, rgba(30,20,0,0.95), rgba(15,10,0,0.98)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+}
+
+.trade-header h3 {
+  font-size: 16px;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+  margin-bottom: 12px;
+}
+
+.trade-card.mystery .trade-header h3 {
+  color: #ffd700;
+}
+
+.trade-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trade-offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 16px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  border: 2px solid rgba(139, 0, 0, 0.4);
+}
+
+.trade-give,
+.trade-get {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.trade-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.9));
+}
+
+.trade-amount {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ff6666;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+}
+
+.trade-arrow {
+  font-size: 28px;
+  color: #dc143c;
+  font-weight: 900;
+}
+
+.trade-btn {
+  width: 100%;
+  padding: 12px;
+  background-image: url('tlacitko_shopik.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 3px solid rgba(220, 20, 60, 0.6);
+  border-radius: 10px;
+  color: #ff4444;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,.6),
+    inset 0 2px 5px rgba(220, 20, 60, 0.2);
+}
+
+.trade-btn:hover {
+  filter: brightness(1.3);
+  transform: translateY(-2px);
+  border-color: #ff4444;
+}
+
+.mystery-btn {
+  border-color: rgba(255, 215, 0, 0.6);
+  color: #ffd700;
+}
+
+.mystery-btn:hover {
+  border-color: #ffd700;
+}
+
+.trade-info {
+  font-size: 11px;
+  font-weight: 900;
+  color: #dc143c;
+  text-align: center;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+}
+
+/* ===== MYSTERY BOX ===== */
+.mystery-icon {
+  font-size: 60px;
+  text-align: center;
+  margin: 10px 0;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,.9));
+  animation: mysteryFloat 3s ease-in-out infinite;
+}
+
+@keyframes mysteryFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.mystery-desc {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffd700;
+  text-align: center;
+  line-height: 1.6;
+  margin: 10px 0;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+}
+
+.mystery-price {
+  text-align: center;
+  margin: 10px 0;
+}
+
+.price-amount {
+  font-size: 22px;
+  font-weight: 900;
+  color: #ff6666;
+  text-shadow:
+    0 0 10px rgba(255, 102, 102, 0.6),
+    0 2px 6px rgba(0,0,0,.95);
+}
+
+/* ===== EVENT STATS ===== */
+.event-stats {
+  background: rgba(0,0,0,0.5);
+  border: 2px solid rgba(139, 0, 0, 0.6);
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: auto;
+}
+
+.stat-header {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ff4444;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.stat-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(139, 0, 0, 0.3);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stat-line:last-child {
+  border-bottom: none;
+}
+
+.stat-line span {
+  color: #dc143c;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+}
+
+.stat-line b {
+  color: #ff6666;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1400px) {
+  .black-container {
+    grid-template-columns: 1fr;
+  }
+
+  .trades {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .event-stats {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .black-title-row {
+    flex-direction: column;
+  }
+
+  .trades {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== NOTIFICATIONS ===== */
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}

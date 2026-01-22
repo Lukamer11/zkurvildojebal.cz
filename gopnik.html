@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slav Clicker</title>
+  <link rel="stylesheet" href="gopnik.css">
+  <script src="supabase_stub.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+
+<body>
+
+<div class="layout">
+<aside class="left-panel">
+  
+</aside>
+<main class="content">
+
+  <!-- AUDIO -->
+  <audio id="clickSnd" src="go.mp3" preload="auto"></audio>
+  <audio id="bgMusic" src="go.mp3" preload="auto" loop></audio>
+
+  <!-- GAME -->
+  <div class="wrap">
+
+    <!-- LEVÝ SLOUPEC - PANÁČEK DOLE -->
+    <div class="leftcol">
+      <div class="ring" id="gopnik" style="pointer-events: auto; z-index: 9999;">
+        <img id="gopnikImg" src="./gopnik_A.png" alt="gopnik" style="pointer-events: auto; cursor: pointer;">
+      </div>
+    </div>
+
+    <!-- PRAVÝ PANEL -->
+    <div class="panel">
+
+      <div class="money-section">
+        <h2 id="t_moneyTitle">💰 PENÍZE</h2>
+        <div class="stat"><span id="t_moneyLabel">Peníze:</span><b id="clickerMoney">0</b></div>
+        <div class="stat"><span id="t_cpcLabel">Za klik:</span><b id="clickerCpc">1</b></div>
+        <div class="stat"><span id="t_cpsLabel">Za sekundu:</span><b id="clickerCps">0</b></div>
+      </div>
+
+      <div class="hud-section">
+        <div class="hud">
+          <div class="hudLine"><span id="t_comboLabel">Combo:</span> <b id="combo">x1.00</b></div>
+          <div class="hudLine"><span id="t_critLabel">Krit:</span> <b id="crit">10%</b></div>
+          <div class="hudLine hudEvent" id="eventLine">—</div>
+        </div>
+      </div>
+
+      <div class="shop-section-clicker">
+        <h2 id="t_shopTitle">🛒 OBCHOD</h2>
+
+        <div class="item">
+          <b id="t_itemCursor">Kurzor</b> • +0.2 / s
+          <button id="buyCursor" class="skinBtn">Koupit (25)</button>
+        </div>
+
+        <div class="item">
+          <b id="t_itemGranny">Babička</b> • +2 / s
+          <button id="buyGranny" class="skinBtn">Koupit (150)</button>
+        </div>
+
+        <div class="item">
+          <b id="t_itemClick">Síla kliku</b> • +1 za klik
+          <button id="buyClick" class="skinBtn">Vylepšit (80)</button>
+        </div>
+      </div>
+
+      <div class="prestige-section">
+        <h2 id="t_prestigeTitle">⭐ PRESTIGE</h2>
+
+        <div class="item prestigeBox">
+          <div class="prestigeStat"><span id="t_spLabel">Slav Points:</span><b id="sp">0</b></div>
+          <div class="prestigeStat"><span id="t_bonusLabel">Bonus celkem:</span><b id="bonus">+0%</b></div>
+
+          <div class="prestigeBonus">
+            <span id="t_gainLabel">Získáš při prestiži:</span> <b id="spGain">0</b>
+          </div>
+
+          <button id="btnPrestige" class="prestigeBtn skinBtn" disabled>
+            Prestige (reset)
+          </button>
+
+          <small id="t_prestigeHint" class="prestigeHint">
+            Resetuje peníze a upgradey, ale dá trvalý bonus.
+          </small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="gopnik.js"></script>
+
+  <script>
+  // Stejné chování hudby jako na ostatních stránkách (pokračování přes localStorage)
+  const music = document.getElementById("bgMusic");
+  if (music) {
+    music.volume = 0.4;
+
+    const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+    if (!Number.isNaN(savedTime) && savedTime > 0) {
+      try { music.currentTime = savedTime; } catch (_) {}
+    }
+
+    function safePlay() {
+      const p = music.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    }
+
+    safePlay();
+
+    document.addEventListener(
+      "click",
+      () => {
+        if (music.paused) safePlay();
+      },
+      { once: true }
+    );
+
+    setInterval(() => {
+      if (!music.paused) {
+        localStorage.setItem("musicTime", String(music.currentTime || 0));
+      }
+    }, 500);
+  }
+  </script>
+
+</main>
+</div>
+<script src="mobile_lock.js"></script>
+</body>
+</html>

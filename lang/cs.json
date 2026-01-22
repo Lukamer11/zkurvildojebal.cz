@@ -1,0 +1,28 @@
+{
+  "ui.sound": "Zvuk",
+  "ui.language": "Jazyk",
+  "ui.settings": "Nastavení",
+  "ui.close": "Zavřít",
+  "ui.on": "Zapnuto",
+  "ui.off": "Vypnuto",
+  "menu.character": "POSTAVA",
+  "menu.perks": "PERKY",
+  "menu.arena": "ARÉNA",
+  "menu.boss": "BOSS",
+  "menu.shop": "SHOP",
+  "menu.upgrade": "UPGRADE",
+  "menu.crypta": "CRYPTA",
+  "menu.guild": "GUILD",
+  "menu.mail": "MAIL",
+  "menu.leaderboard": "ŽEBŘÍČEK",
+  "menu.missions": "MISE",
+  "menu.cigarettes": "CIGARETÁŘ",
+  "menu.luck": "ŠTĚSTÍ",
+  "menu.clicker": "SLAV CLICKER",
+  "menu.blackmarket": "ČERNÝ TRH",
+  "menu.pets": "MAZLÍČCI",
+  "menu": {
+    "dealer": "DEALER",
+    "boss": "BOSS"
+  }
+}

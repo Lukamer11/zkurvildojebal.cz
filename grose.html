@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="cs">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+  <title>Grose - Premium Cigarety</title>
+  <link rel="stylesheet" href="grose.css">
+  <script src="supabase_stub.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+
+  <!-- LEVÝ PANEL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- GROSE AREA -->
+  <main class="shop-area">
+
+    <!-- NÁZEV SHOPU -->
+    <div class="shop-title">💰 PREMIUM GROSE SHOP 💰</div>
+
+    <div class="shop-container">
+
+      <!-- LEVÁ ČÁST - NABÍDKY -->
+      <div class="shop-section">
+        <div class="section-header">
+          <h2>🛒 DOSTUPNÉ BALÍČKY</h2>
+          <div class="section-header-right">
+            <div class="flash-sale-timer" id="flashTimer">
+              <span class="timer-icon">⚡</span>
+              <span class="timer-text">FLASH SALE končí za:</span>
+              <span class="timer-countdown" id="timerCountdown">23:45:12</span>
+            </div>
+            <div class="shop-tabs">
+              <button class="tab-btn active" data-category="starter">Starter</button>
+              <button class="tab-btn" data-category="monthly">Měsíční</button>
+              <button class="tab-btn" data-category="standard">Standard</button>
+              <button class="tab-btn" data-category="premium">Premium</button>
+              <button class="tab-btn" data-category="legendary">Legendary</button>
+            </div>
+            <div class="payment-note">
+              💳 Platba prozatím vypnutá
+            </div>
+          </div>
+        </div>
+
+        <div class="shop-grid" id="groseGrid">
+          <!-- Items will be loaded here by JS -->
+        </div>
+      </div>
+
+      <!-- PROSTŘEDNÍ ČÁST - INFO -->
+      <div class="inventory-wrapper">
+        <div class="inventory-section">
+          
+          <!-- INFO BOX -->
+          <div class="info-box">
+            <div class="info-header">
+              <h2>ℹ️ JAK TO FUNGUJE</h2>
+            </div>
+
+            <!-- URGENCY BANNER -->
+            <div class="urgency-banner">
+              <span class="urgency-icon">🔥</span>
+              <div class="urgency-text">
+                <strong>145 hráčů</strong> nakoupilo za posledních 24 hodin!
+              </div>
+            </div>
+            
+            <div class="info-content">
+              <div class="info-item">
+                <div class="info-icon">1️⃣</div>
+                <div class="info-text">
+                  <h3>Vyber balíček</h3>
+                  <p>Rozhodni se, kolik cigaret chceš koupit</p>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-icon">2️⃣</div>
+                <div class="info-text">
+                  <h3>Klikni na KOUPIT</h3>
+                  <p>Systém tě přesměruje na platební bránu</p>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-icon">3️⃣</div>
+                <div class="info-text">
+                  <h3>Zaplať</h3>
+                  <p>Platba kartou nebo převodem</p>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <div class="info-icon">4️⃣</div>
+                <div class="info-text">
+                  <h3>Získej cigarety</h3>
+                  <p>Cigarety se okamžitě přidají na tvůj účet!</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-warning">
+              ⚠️ <strong>Upozornění:</strong> Platební systém je momentálně ve vývoji. 
+              Prozatím nemůžeš provádět skutečné platby.
+            </div>
+          </div>
+
+          <!-- BENEFITS -->
+          <div class="benefits-box">
+            <div class="benefits-header">
+              <h2>✨ VÝHODY GROSE</h2>
+            </div>
+            
+            <div class="benefits-content">
+              <div class="benefit-item">
+                <span class="benefit-icon">⚡</span>
+                <span class="benefit-text">Okamžité doručení</span>
+              </div>
+              
+              <div class="benefit-item">
+                <span class="benefit-icon">🔒</span>
+                <span class="benefit-text">Bezpečná platba</span>
+              </div>
+              
+              <div class="benefit-item">
+                <span class="benefit-icon">💎</span>
+                <span class="benefit-text">Lepší hodnota ve větších balíčcích</span>
+              </div>
+              
+              <div class="benefit-item">
+                <span class="benefit-icon">🎁</span>
+                <span class="benefit-text">Bonusy při prvním nákupu</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- LIVE PURCHASES removed (rozbíjelo layout) -->
+
+        </div>
+      </div>
+
+      <!-- PRAVÁ ČÁST - STATISTIKY -->
+      <div class="character-stats-section">
+        
+        <!-- STATISTIKY NÁKUPŮ -->
+        <div class="stats-box">
+          <div class="section-header" style="border-bottom: 2px solid rgba(255,215,100,0.3); padding-bottom: 10px; margin-bottom: 14px;">
+            <h2>📊 TVOJE STATISTIKY</h2>
+          </div>
+          
+          <div class="stats-content">
+            <div class="stat">
+              <span>Celkem nakoupeno:</span>
+              <b id="totalPurchased">0</b>
+              <span class="stat-extra">🚬</span>
+            </div>
+            
+            <div class="stat">
+              <span>Celková hodnota:</span>
+              <b id="totalSpent">0</b>
+              <span class="stat-extra">Kč</span>
+            </div>
+            
+            <div class="stat">
+              <span>Počet nákupů:</span>
+              <b id="purchaseCount">0</b>
+              <span class="stat-extra">×</span>
+            </div>
+            
+            <div class="stat">
+              <span>Poslední nákup:</span>
+              <b id="lastPurchase" style="font-size: 11px;">Nikdy</b>
+              <span class="stat-extra">📅</span>
+            </div>
+
+            <div class="stat">
+              <span>Nejvíc za jednou:</span>
+              <b id="biggestPurchase">0</b>
+              <span class="stat-extra">🚬</span>
+            </div>
+
+            <div class="stat">
+              <span>Prům. balíček:</span>
+              <b id="avgPurchase">0</b>
+              <span class="stat-extra">🚬</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- POPULAR PACKAGES -->
+        <div class="popular-box">
+          <div class="section-header" style="border-bottom: 2px solid rgba(255,215,100,0.3); padding-bottom: 10px; margin-bottom: 14px;">
+            <h2>🔥 NEJOBLÍBENĚJŠÍ</h2>
+          </div>
+          
+          <div class="popular-content">
+            <div class="popular-item">
+              <span class="popular-rank">1.</span>
+              <span class="popular-name">MEGA PACK</span>
+              <span class="popular-value">1000 🚬</span>
+            </div>
+            
+            <div class="popular-item">
+              <span class="popular-rank">2.</span>
+              <span class="popular-name">ULTRA PACK</span>
+              <span class="popular-value">2500 🚬</span>
+            </div>
+            
+            <div class="popular-item">
+              <span class="popular-rank">3.</span>
+              <span class="popular-name">STANDARD</span>
+              <span class="popular-value">500 🚬</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<script src="grose.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

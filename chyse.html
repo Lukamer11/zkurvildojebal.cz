@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chýše & Bezdáci</title>
+  <link rel="stylesheet" href="chyse.css">
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="supabase_stub.js"></script>
+  <script src="menu.js" defer></script>
+  <link rel="stylesheet" href="sf_scale.css">
+  <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+  <!-- LEVÉ MENU -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- MAIN AREA -->
+  <main class="chyse-area">
+    <div class="chyse-title">🏚️ CHÝŠE & BEZDÁCI 🏚️</div>
+
+    <!-- STATS OVERVIEW -->
+    <div class="chyse-stats">
+      <div class="stat-overview">
+        <div class="stat-icon">🏚️</div>
+        <div class="stat-info">
+          <div class="stat-label">Celkem chýší</div>
+          <div class="stat-value" id="totalHuts">0</div>
+        </div>
+      </div>
+      <div class="stat-overview">
+        <div class="stat-icon">👤</div>
+        <div class="stat-info">
+          <div class="stat-label">Aktivní bezdáci</div>
+          <div class="stat-value" id="activeHomeless">0 / 0</div>
+        </div>
+      </div>
+      <div class="stat-overview special">
+        <div class="stat-icon">🚬</div>
+        <div class="stat-info">
+          <div class="stat-label">Příjem za sekundu</div>
+          <div class="stat-value" id="incomePerSec">0.00000000</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHÝŠE CONTAINER -->
+    <div class="chyse-container" id="chyseContainer"></div>
+  </main>
+</div>
+
+<script src="chyse.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener("click", () => {
+    if (music.paused) safePlay();
+  }, { once: true });
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

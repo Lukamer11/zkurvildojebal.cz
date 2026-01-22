@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="cs">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+  <title>Animace</title>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+      padding-top: 40px;
+    }
+    button {
+      font-size: 20px;
+      padding: 12px 30px;
+      background: #ff9800;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    img {
+      width: 600px;
+      max-width: 95%;
+    }
+  </style>
+  <link rel="stylesheet" href="mobile.css">
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang.js" defer></script>
+<script src="lang_pack.js"></script>
+</head>
+<body>
+
+  <h1>animace</h1>
+  <button onclick="fire()">CLICK</button><br>
+  <img id="ak" src="zbran1.png">
+
+  <script>
+  function fire() {
+    const img = document.getElementById("ak");
+    img.src = "zbran2.png";
+    setTimeout(() => img.src = "zbran1.png", 150);
+  }
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

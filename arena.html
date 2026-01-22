@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="cs">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+  <title>Arena</title>
+  <link rel="stylesheet" href="arena.css">
+  <script src="supabase_stub.js"></script>
+  <script src="items.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+
+  <!-- LEVÉ PANEL - GOPNIK STYL -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- STŘED - ARENA -->
+  <main class="arena-area">
+
+    <!-- NÁZEV + TLAČÍTKA -->
+    <div class="arena-title-row">
+      <div class="arena-title">⚔️ ARENA ⚔️</div>
+      <div class="arena-buttons">
+        <button id="attackBtn" class="arena-swap-btn" type="button">⚔️ ZAÚTOČIT</button>
+        <button id="nextEnemyBtn" class="arena-swap-btn" type="button">🔄 DALŠÍ SOUPEŘ</button>
+      </div>
+    </div>
+
+    <!-- VYHLEDÁVÁNÍ HRÁČE -->
+    <div class="search-player-section">
+      <input 
+        type="text" 
+        id="searchPlayerInput" 
+        class="search-input" 
+        placeholder="🔍 Vyhledat hráče podle jména..."
+      >
+      <button id="searchPlayerBtn" class="arena-swap-btn search-btn" type="button">🎯 VYHLEDAT</button>
+    </div>
+
+    <div class="arena-container">
+
+      <!-- LEVÝ HRÁČ -->
+      <div class="player-section">
+        <div class="character-name-arena" id="playerName">BORIS GOPNIKOV</div>
+
+        <div class="character-frame-arena">
+          <div class="character-arena" id="playerCharBox">
+            <div id="enemyClassBadge" class="class-badge"></div>
+            <div id="playerClassBadge" class="class-badge"></div>
+
+            <!-- HEALTH BAR -->
+            <div class="health-bar">
+              <div class="health-fill" id="playerHealthFill" style="width: 100%"></div>
+              <span class="health-text" id="playerHealthText">850 / 1000</span>
+            </div>
+
+            <!-- FLOATING DMG -->
+            <div class="dmg-float" id="playerDmg" aria-hidden="true"></div>
+
+            <!-- HIT DÍRY - 3x overlay pro postupné zobrazení -->
+            <img src="hit1.png" class="hit-overlay" alt="" aria-hidden="true">
+            <img src="hit2.png" class="hit-overlay" alt="" aria-hidden="true">
+            <img src="hit3.png" class="hit-overlay" alt="" aria-hidden="true">
+
+            <!-- WEAPON (AK) - hráč -->
+            <img src="zbran1.png" class="weapon weapon-player" alt="weapon" aria-hidden="true">
+
+            <img id="playerAvatar" src="avatar2.jpg" alt="character">
+            <div class="level-arena" id="playerLevelText">Level 1</div>
+          </div>
+        </div>
+
+        <!-- ATRIBUTY LEVÉHO HRÁČE -->
+        <div class="stats-section-arena">
+          <div class="stat-arena">
+            <span>⚔️ Strength</span>
+            <b id="pStr">18</b>
+            <div class="stat-right">
+              <span class="stat-extra" id="pStrExtra">+36 DMG</span>
+              <span class="stat-bonus" id="pStrBonus">🐾 +0%  💥 +0%</span>
+            </div>
+          </div>
+          <div class="stat-arena">
+            <span>🛡️ Defense</span>
+            <b id="pDef">14</b>
+            <div class="stat-right">
+              <span class="stat-extra" id="pDefExtra">50% Redukce</span>
+              <span class="stat-bonus" id="pDefBonus">🐾 +0%  💥 +0%</span>
+            </div>
+          </div>
+          <div class="stat-arena">
+            <span>💪 Constitution</span>
+            <b id="pCon">16</b>
+            <div class="stat-right">
+              <span class="stat-extra" id="pConExtra">900 HP</span>
+              <span class="stat-bonus" id="pConBonus">🐾 +0%  💥 +0%</span>
+            </div>
+          </div>
+          <div class="stat-arena">
+            <span>🍀 Luck</span>
+            <b id="pLuck">9</b>
+            <div class="stat-right">
+              <span class="stat-extra" id="pLuckExtra">9% / 100%</span>
+              <span class="stat-bonus" id="pLuckBonus">🐾 +0%  💥 +0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRAVÝ NEPŘÍTEL -->
+      <div class="player-section enemy-section">
+        <div class="character-name-arena enemy" id="enemyName">IVAN DESTROYER</div>
+
+        <div class="character-frame-arena">
+          <div class="character-arena" id="enemyCharBox">
+
+            <!-- HEALTH BAR -->
+            <div class="health-bar enemy">
+              <div class="health-fill" id="enemyHealthFill" style="width: 100%"></div>
+              <span class="health-text" id="enemyHealthText">650 / 1000</span>
+            </div>
+
+            <!-- FLOATING DMG -->
+            <div class="dmg-float enemy" id="enemyDmg" aria-hidden="true"></div>
+
+            <!-- HIT DÍRY - 3x overlay pro postupné zobrazení -->
+            <img src="hit1.png" class="hit-overlay" alt="" aria-hidden="true">
+            <img src="hit2.png" class="hit-overlay" alt="" aria-hidden="true">
+            <img src="hit3.png" class="hit-overlay" alt="" aria-hidden="true">
+
+            <!-- WEAPON (AK) - enemy -->
+            <img src="zbran1.png" class="weapon weapon-enemy" alt="weapon" aria-hidden="true">
+
+            <img id="enemyAvatar" src="avatar.jpg" alt="enemy">
+            <div class="level-arena enemy" id="enemyLevel">Level 3</div>
+          </div>
+        </div>
+
+        <!-- ATRIBUTY PRAVÉHO NEPŘÍTELE -->
+        <div class="stats-section-arena">
+          <div class="stat-arena enemy">
+            <span>⚔️ Strength</span>
+            <b id="eStr">24</b>
+            <div class="stat-right">
+              <span class="stat-extra" id="eStrExtra">+48 DMG</span>
+              <span class="stat-bonus" id="eStrBonus">🐾 +0%  💥 +0%</span>
+            </div>
+          </div>
+          <div class="stat-arena enemy">
+            <span>🛡️ Defense</span>
+            <b id="eDef">19</b>
+            <div class="stat-right">
+              <span class="stat-extra" id="eDefExtra">65% Redukce</span>
+              <span class="stat-bonus" id="eDefBonus">🐾 +0%  💥 +0%</span>
+            </div>
+          </div>
+          <div class="stat-arena enemy">
+            <span>💪 Constitution</span>
+            <b id="eCon">22</b>
+            <div class="stat-right">
+              <span class="stat-extra" id="eConExtra">1050 HP</span>
+              <span class="stat-bonus" id="eConBonus">🐾 +0%  💥 +0%</span>
+            </div>
+          </div>
+          <div class="stat-arena enemy">
+            <span>🍀 Luck</span>
+            <b id="eLuck">6</b>
+            <div class="stat-right">
+              <span class="stat-extra" id="eLuckExtra">6% / 100%</span>
+              <span class="stat-bonus" id="eLuckBonus">🐾 +0%  💥 +0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RESULT MODAL -->
+    <div id="resultModal" class="result-modal" aria-hidden="true">
+      <div class="result-box">
+        <div id="resultTitle" class="result-title">Výsledek</div>
+        <div id="resultText" class="result-text">...</div>
+        <button id="resultContinue" class="arena-swap-btn" type="button">POKRAČOVAT</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="arena.js"></script>
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+
+<script src="mobile_lock.js"></script>
+</body>
+</html>

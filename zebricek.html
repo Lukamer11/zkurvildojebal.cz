@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1410">
+  <title>Žebříček - Slav Fantasy</title>
+  <link rel="stylesheet" href="zebricek.css">
+  <script src="supabase_stub.js"></script>
+  <script src="items.js"></script>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="menu.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+<audio id="bgMusic" src="go.mp3" loop preload="auto"></audio>
+
+<div class="layout">
+  <!-- LEVÉ MENU -->
+  <aside class="left-panel">
+  
+</aside>
+
+  <!-- HLAVNÍ OBSAH -->
+  <main class="main-content">
+
+    <!-- ŽEBŘÍČEK -->
+    <div class="leaderboard-view" id="leaderboardView">
+      
+      <h1 class="leaderboard-title">🏆 HALL OF FAME 🏆</h1>
+
+      <div class="leaderboard-tabs" role="tablist">
+        <button class="tab-btn active" data-tab="level" role="tab" aria-selected="true">Level</button>
+        <button class="tab-btn" data-tab="wealth" role="tab" aria-selected="false">Bohatství</button>
+      </div>
+
+      <div class="leaderboard-content">
+        <!-- LEVEL ŽEBŘÍČEK -->
+        <div class="leaderboard-list active" data-content="level" id="levelList" role="tabpanel">
+          <div class="loading-spinner">Načítám...</div>
+        </div>
+
+        <!-- WEALTH ŽEBŘÍČEK -->
+        <div class="leaderboard-list" data-content="wealth" id="wealthList" role="tabpanel">
+          <div class="loading-spinner">Načítám...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PROFIL HRÁČE -->
+    <div class="player-view hidden" id="playerView">
+      
+      <button class="back-btn" id="backBtn">← Zpět na žebříček</button>
+
+      <div class="character-name" id="playerName">LOADING...</div>
+
+      <div class="player-meta" aria-label="Info o hráči">
+        <div>⭐ XP: <b id="playerXP">0</b></div>
+        <div>💰 Groše: <b id="playerMoney">0</b>🪙</div>
+      </div>
+
+      <div class="character-frame">
+
+        <div class="slots" id="leftSlots" aria-label="Levé sloty vybavení">
+          <div class="slot" data-slot="weapon" aria-label="Zbraň">
+            <span class="slot-emoji">🗡️</span>
+          </div>
+          <div class="slot" data-slot="shield" aria-label="Štít">
+            <span class="slot-emoji">🛡️</span>
+          </div>
+          <div class="slot" data-slot="ring" aria-label="Prsten">
+            <span class="slot-emoji">💍</span>
+          </div>
+          <div class="slot" data-slot="backpack" aria-label="Batoh">
+            <span class="slot-emoji">🎒</span>
+          </div>
+        </div>
+
+        <div class="center-stack">
+
+          <div class="trinket-row" aria-label="Trinkety nahoře">
+            <div class="slot slot-center" data-slot="trinket1" aria-label="Trinket 1">
+              <span class="slot-emoji">📿</span>
+            </div>
+            <div class="slot slot-center" data-slot="trinket3" aria-label="Trinket 3">
+              <span class="slot-emoji">🔮</span>
+            </div>
+          </div>
+
+          <div class="character">
+            <img src="avatar.jpg" alt="Postava hráče" id="playerAvatar" loading="lazy">
+            <div class="level" id="playerLevel">Level 1</div>
+          </div>
+
+          <div class="trinket-row" aria-label="Trinkety dole">
+            <div class="slot slot-center" data-slot="trinket2" aria-label="Trinket 2">
+              <span class="slot-emoji">🧿</span>
+            </div>
+            <div class="slot slot-center" data-slot="trinket4" aria-label="Trinket 4">
+              <span class="slot-emoji">🪬</span>
+            </div>
+          </div>
+
+        </div>
+
+
+
+        <div class="slots" id="rightSlots" aria-label="Pravé sloty vybavení">
+          <div class="slot" data-slot="helmet" aria-label="Helma">
+            <span class="slot-emoji">🎩</span>
+          </div>
+          <div class="slot" data-slot="armor" aria-label="Brnění">
+            <span class="slot-emoji">👕</span>
+          </div>
+          <div class="slot" data-slot="boots" aria-label="Boty">
+            <span class="slot-emoji">👢</span>
+          </div>
+          <div class="slot" data-slot="gloves" aria-label="Rukavice">
+            <span class="slot-emoji">🧤</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- STATISTIKY -->
+      <div class="stats-frame" id="playerStats">
+        
+        <div class="stat">
+          <span>⚔️ Strength</span>
+          <b id="statStrength">0</b>
+          <div class="stat-right">
+            <span class="stat-extra" id="statStrengthExtra">+0 DMG</span>
+            <span class="stat-bonus" id="statStrengthBonus">🐾 +0%  👥 +0%</span>
+          </div>
+        </div>
+
+        <div class="stat">
+          <span>🛡️ Defense</span>
+          <b id="statDefense">0</b>
+          <div class="stat-right">
+            <span class="stat-extra" id="statDefenseExtra">0% Redukce</span>
+            <span class="stat-bonus" id="statDefenseBonus">🐾 +0%  👥 +0%</span>
+          </div>
+        </div>
+        <div class="stat">
+          <span>💪 Constitution</span>
+          <b id="statConstitution">0</b>
+          <div class="stat-right">
+            <span class="stat-extra" id="statConstitutionExtra">500 HP</span>
+            <span class="stat-bonus" id="statConstitutionBonus">🐾 +0%  👥 +0%</span>
+          </div>
+        </div>
+
+        <div class="stat">
+          <span>🍀 Luck</span>
+          <b id="statLuck">0</b>
+          <div class="stat-right">
+            <span class="stat-extra" id="statLuckExtra">0% / 100%</span>
+            <span class="stat-bonus" id="statLuckBonus">🐾 +0%  👥 +0%</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Main script -->
+<script src="zebricek.js"></script>
+
+<!-- Audio handler -->
+<script>
+const music = document.getElementById("bgMusic");
+if (music) {
+  music.volume = 0.4;
+
+  const savedTime = parseFloat(localStorage.getItem("musicTime") || "0");
+  if (!Number.isNaN(savedTime) && savedTime > 0) {
+    try { music.currentTime = savedTime; } catch (_) {}
+  }
+
+  function safePlay() {
+    const p = music.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  }
+
+  safePlay();
+
+  document.addEventListener(
+    "click",
+    () => {
+      if (music.paused) safePlay();
+    },
+    { once: true }
+  );
+
+  setInterval(() => {
+    if (!music.paused) {
+      localStorage.setItem("musicTime", String(music.currentTime || 0));
+    }
+  }, 500);
+}
+</script>
+<script src="mobile_lock.js"></script>
+</body>
+</html>

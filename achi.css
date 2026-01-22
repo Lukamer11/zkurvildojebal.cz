@@ -1,0 +1,649 @@
+/* achi.css - ACHIEVEMENT SYSTEM */
+@import url("mise.css");
+
+/* ===== ACHIEVEMENTS AREA ===== */
+.achi-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.achi-title {
+  font-size: 24px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #f1d27a;
+  text-shadow: 
+    0 0 15px rgba(241, 210, 122, 0.6),
+    0 4px 10px rgba(0,0,0,.9);
+  padding: 10px 20px;
+  background: 
+    linear-gradient(135deg, rgba(40,35,25,0.95), rgba(25,20,12,0.98)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-blend-mode: overlay;
+  border: 3px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.8);
+  flex-shrink: 0;
+}
+
+.achi-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  background: 
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-blend-mode: overlay;
+  border: 3px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.8);
+}
+
+/* ===== STATS PANEL ===== */
+.achi-stats-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.achi-progress-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(0,0,0,0.4);
+  border: 2px solid #5a4520;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.achi-progress-card:hover {
+  border-color: #c9a44a;
+  background: rgba(0,0,0,0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.6);
+}
+
+.progress-icon {
+  font-size: 36px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.8));
+}
+
+.progress-info {
+  flex: 1;
+}
+
+.progress-label {
+  font-size: 10px;
+  color: #c9a44a;
+  text-transform: uppercase;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.progress-value {
+  font-size: 18px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+}
+
+/* ===== FILTERS ===== */
+.achi-filters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid #5a4520;
+  background: rgba(0,0,0,0.3);
+  color: #c9a44a;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+
+.filter-btn:hover {
+  border-color: #c9a44a;
+  background: rgba(0,0,0,0.4);
+  transform: translateY(-2px);
+}
+
+.filter-btn.active {
+  border-color: #f1d27a;
+  background: linear-gradient(135deg, rgba(201, 164, 74, 0.2), rgba(241, 210, 122, 0.1));
+  color: #f1d27a;
+  box-shadow: 0 0 20px rgba(241, 210, 122, 0.3);
+}
+
+.filter-icon {
+  font-size: 16px;
+}
+
+.filter-text {
+  font-size: 11px;
+}
+
+/* ===== ACHIEVEMENTS LIST ===== */
+.achi-list-container {
+  flex: 1;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.2);
+}
+
+.achi-list {
+  height: 100%;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  padding: 10px;
+}
+
+.achi-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.achi-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+}
+
+.achi-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* ===== ACHIEVEMENT CARD ===== */
+.achi-card {
+  background: url('tlacitko_shop.jpg');
+  background-size: cover;
+  border: 3px solid #5a4520;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.achi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
+  z-index: 0;
+}
+
+.achi-card:hover::before {
+  background: rgba(0,0,0,0.2);
+}
+
+.achi-card:hover {
+  border-color: #c9a44a;
+  transform: translateY(-3px);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.8),
+    0 0 30px rgba(241, 210, 122, 0.3);
+}
+
+.achi-card.unlocked {
+  border-color: #4a9eff;
+}
+
+.achi-card.unlocked::after {
+  content: '✅';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.8));
+  z-index: 2;
+  animation: checkBounce 0.5s ease;
+}
+
+@keyframes checkBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.achi-card.locked::after {
+  content: '🔒';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 20px;
+  opacity: 0.6;
+  z-index: 2;
+}
+
+.achi-card.claimable {
+  border-color: #ffd700;
+  animation: claimPulse 2s ease-in-out infinite;
+}
+
+@keyframes claimPulse {
+  0%, 100% {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 50px rgba(255, 215, 0, 0.8);
+  }
+}
+
+.achi-card.claimable::after {
+  content: '🎁';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 28px;
+  filter: drop-shadow(0 2px 8px rgba(255, 215, 0, 0.8));
+  z-index: 2;
+  animation: giftFloat 1.5s ease-in-out infinite;
+}
+
+@keyframes giftFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+/* ===== CARD CONTENT ===== */
+.achi-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.achi-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.achi-icon {
+  font-size: 60px;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,.8));
+  transition: all 0.3s ease;
+}
+
+.achi-card:hover .achi-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.achi-card.locked .achi-icon {
+  filter: grayscale(100%) opacity(0.4) drop-shadow(0 4px 10px rgba(0,0,0,.8));
+}
+
+.achi-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.achi-card.locked .achi-name {
+  color: #888;
+}
+
+.achi-desc {
+  font-size: 11px;
+  color: #c9a44a;
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.achi-card.locked .achi-desc {
+  color: #666;
+}
+
+.achi-progress-bar {
+  width: 100%;
+  height: 20px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  border: 2px solid #5a4520;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.achi-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a9eff, #2563eb);
+  transition: width 0.5s ease;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.achi-progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+}
+
+.achi-rewards {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.achi-reward {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 8px;
+  border: 2px solid #5a4520;
+}
+
+.achi-card.unlocked .achi-reward {
+  border-color: #4a9eff;
+  background: rgba(74, 158, 255, 0.15);
+}
+
+.achi-reward-icon {
+  font-size: 16px;
+}
+
+.achi-reward-value {
+  font-size: 12px;
+  font-weight: 900;
+  color: #f1d27a;
+}
+
+.achi-card.locked .achi-reward-value {
+  color: #888;
+}
+
+/* ===== MODAL ===== */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  animation: modalFadeIn 0.3s ease;
+  padding: 20px;
+}
+
+.modal.show {
+  display: flex;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: 
+    linear-gradient(135deg, rgba(40,35,25,0.98), rgba(25,20,12,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-blend-mode: overlay;
+  border: 3px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 14px;
+  padding: 16px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,.9);
+  animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-30px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  font-size: 18px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  text-align: center;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 6px rgba(0,0,0,.8);
+  flex-shrink: 0;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  padding-right: 4px;
+  min-height: 0;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+  flex-shrink: 0;
+}
+
+.modal-actions .achi-btn:only-child {
+  grid-column: span 2;
+}
+
+.achi-btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 2px solid #c9a44a;
+  background: 
+    linear-gradient(135deg, rgba(60,40,25,0.9), rgba(35,22,14,0.95)),
+    url('tlacitko.jpg');
+  background-size: cover;
+  font-weight: 900;
+  font-size: 12px;
+  color: #f1d27a;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.achi-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 215, 100, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.achi-btn:hover:not(:disabled)::after {
+  width: 250px;
+  height: 250px;
+}
+
+.achi-btn:hover:not(:disabled) {
+  border-color: #f1d27a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.5);
+}
+
+.achi-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.achi-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== TOAST ===== */
+.achi-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 900;
+  z-index: 99999;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  border: 2px solid rgba(255,255,255,0.12);
+  animation: toastSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 12px;
+  max-width: 90%;
+}
+
+.achi-toast.ok {
+  background: linear-gradient(135deg, rgba(20,120,60,0.95), rgba(12,80,40,0.95));
+  color: #fff;
+}
+
+.achi-toast.err {
+  background: linear-gradient(135deg, rgba(160,40,40,0.95), rgba(110,20,20,0.95));
+  color: #fff;
+}
+
+.achi-toast.unlocked {
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.95), rgba(37, 99, 235, 0.95));
+  color: #fff;
+  font-size: 14px;
+  padding: 16px 24px;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(-50%) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .achi-list {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .achi-area {
+    height: calc(100vh - 60px);
+  }
+  
+  .achi-title {
+    font-size: 20px;
+    padding: 8px 16px;
+  }
+  
+  .achi-stats-panel {
+    grid-template-columns: 1fr;
+  }
+  
+  .achi-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .achi-filters {
+    grid-template-columns: 1fr;
+  }
+  
+  .filter-text {
+    font-size: 10px;
+  }
+  
+  .achi-card {
+    min-height: 180px;
+  }
+  
+  .achi-icon {
+    font-size: 48px;
+  }
+}

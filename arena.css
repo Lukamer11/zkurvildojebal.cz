@@ -1,0 +1,649 @@
+/* arena.css */
+@import url("mise.css");
+
+/* ===== ARENA AREA ===== */
+.arena-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ===== SEARCH PLAYER SECTION ===== */
+.search-player-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  height: 56px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, rgba(30,36,42,0.95), rgba(18,22,26,0.98));
+  border: 3px solid rgba(201,164,74,.8);
+  border-radius: 12px;
+  color: #f1d27a;
+  font-weight: 900;
+  font-size: 16px;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,.5),
+    inset 0 2px 5px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+}
+
+.search-input::placeholder {
+  color: rgba(241, 210, 122, 0.5);
+  font-weight: 700;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #f1d27a;
+  box-shadow: 
+    0 6px 18px rgba(0,0,0,.6),
+    0 0 20px rgba(241, 210, 122, 0.3),
+    inset 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.search-btn {
+  min-width: 180px;
+}
+
+@media (max-width: 768px) {
+  .search-player-section {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .search-input {
+    width: 100%;
+  }
+  
+  .search-btn {
+    width: 100%;
+  }
+}
+
+.arena-title {
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow:
+    0 0 20px rgba(255, 215, 100, 0.8),
+    0 0 40px rgba(255, 215, 100, 0.5),
+    0 4px 15px rgba(0,0,0,1),
+    0 8px 25px rgba(0,0,0,0.8);
+  padding: 10px 32px;
+  background:
+    linear-gradient(135deg,
+      rgba(139, 69, 19, 0.95) 0%,
+      rgba(101, 67, 33, 0.98) 50%,
+      rgba(139, 69, 19, 0.95) 100%);
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #f1d27a, #c9a44a, #f1d27a) 1;
+  border-radius: 16px;
+  box-shadow:
+    0 12px 40px rgba(0,0,0,.8),
+    inset 0 -4px 20px rgba(0,0,0,0.5),
+    inset 0 4px 20px rgba(255,215,100,0.2);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.arena-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 215, 100, 0.3),
+    transparent
+  );
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  50%, 100% { left: 100%; }
+}
+
+.arena-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ===== PLAYER SECTION ===== */
+.player-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background:
+    linear-gradient(135deg, rgba(30,36,42,0.97), rgba(18,22,26,0.99)),
+    url('pozadi_menu.jpg');
+  background-size: cover;
+  background-position: center;
+  background-blend-mode: overlay;
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #7a5a23, #c9a44a, #7a5a23) 1;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow:
+    0 15px 45px rgba(0,0,0,.8),
+    inset 0 2px 10px rgba(255,215,100,0.1);
+  overflow: hidden;
+}
+
+.character-name-arena {
+  font-size: 22px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #f1d27a;
+  text-shadow:
+    0 0 10px rgba(241, 210, 122, 0.5),
+    0 0 20px rgba(241, 210, 122, 0.3),
+    0 4px 8px rgba(0,0,0,.8);
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(60,40,25,0.7), rgba(35,22,14,0.8));
+  border: 2px solid rgba(255, 215, 100, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.5);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.character-name-arena.enemy {
+  color: #ff6b6b;
+  text-shadow:
+    0 0 10px rgba(255, 107, 107, 0.5),
+    0 0 20px rgba(255, 107, 107, 0.3),
+    0 4px 8px rgba(0,0,0,.8);
+  border-color: rgba(255, 107, 107, 0.4);
+}
+
+.character-frame-arena {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Větší "rámeček" kolem postavy (víc jako Shakes & Fidget) */
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(30,36,42,0.9), rgba(18,22,26,0.95));
+  border: 6px solid #7a5a23;
+  border-radius: 16px;
+  box-shadow: 0 12px 35px rgba(0,0,0,.6);
+  flex-shrink: 0;
+}
+
+.character-arena {
+  position: relative;
+  /* Postava větší (S&F vibe) */
+  width: 320px;
+  height: 430px;
+  background: radial-gradient(circle at center, rgba(44,47,52,0.8), rgba(15,17,20,0.95));
+  border: 6px solid #c9a44a;
+  border-radius: 12px;
+  box-shadow: inset 0 0 30px rgba(0,0,0,.4);
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+/* Na menších displejích to stáhneme, aby se arena nerozpadla */
+@media (max-width: 980px){
+  .character-frame-arena{ padding: 16px; border-width: 4px; }
+  .character-arena{ width: 240px; height: 330px; border-width: 4px; }
+}
+
+.character-arena > img:not(.hit-overlay):not(.weapon) {
+  width: 100%;
+  flex: 1;
+  object-fit: contain;
+}
+
+/* HEALTH BAR */
+.health-bar {
+  position: relative;
+  width: calc(100% - 16px);
+  height: 24px;
+  margin: 8px 8px 0 8px;
+  background: linear-gradient(135deg, rgba(20,20,20,0.95), rgba(10,10,10,0.98));
+  border: 2px solid rgba(201,164,74,0.95);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 3px 8px rgba(0,0,0,0.6),
+    0 3px 8px rgba(0,0,0,0.4);
+}
+
+.health-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  transition: width 0.5s ease;
+  box-shadow:
+    inset 0 2px 6px rgba(255,255,255,0.3),
+    0 0 15px rgba(46, 204, 113, 0.6);
+}
+
+.health-bar.enemy .health-fill {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  box-shadow:
+    inset 0 2px 6px rgba(255,255,255,0.3),
+    0 0 15px rgba(231, 76, 60, 0.6);
+}
+
+.health-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow:
+    0 2px 4px rgba(0,0,0,0.9),
+    0 0 8px rgba(0,0,0,0.8);
+  z-index: 1;
+  letter-spacing: 0.2px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.30);
+  backdrop-filter: blur(2px);
+}
+
+/* Ikona třídy na avataru (pravý horní roh) */
+.character-arena{ position:relative; }
+.character-arena .class-badge{
+  position:absolute;
+  right: 10px;
+  top: 34px;
+  width: 34px;
+  height: 34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 18px;
+  background: rgba(0,0,0,0.55);
+  border: 2px solid rgba(201,164,74,.85);
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.55);
+  text-shadow: 0 2px 8px rgba(0,0,0,.95);
+  pointer-events:none;
+  z-index: 10;
+}
+
+/* Čitelnost textu */
+body{ text-shadow: 0 2px 10px rgba(0,0,0,.85); }
+
+/* FLOATING DMG */
+.dmg-float{
+  position: absolute;
+  left: 50%;
+  top: 54px;
+  transform: translateX(-50%);
+  font-weight: 1000;
+  font-size: 28px;
+  color: #ffd24a;
+  text-shadow:
+    0 2px 4px rgba(0,0,0,.95),
+    0 0 18px rgba(0,0,0,.8);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.65));
+}
+
+.dmg-float.enemy{ color:#ff6b6b; }
+
+.dmg-float.show{
+  animation: dmgPop 650ms ease-out forwards;
+}
+
+@keyframes dmgPop{
+  0%   { opacity: 0; transform: translateX(-50%) translateY(12px) scale(.9); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-40px) scale(1.15); }
+}
+
+/* CRIT styling se nastavuje inline v JS */
+
+.level-arena {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #f1d27a, #b8862b);
+  color: #2b1a0f;
+  font-weight: 900;
+  font-size: 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  border: 2px solid #fff0b0;
+  text-align: center;
+  min-width: 80px;
+  z-index: 10;
+}
+
+.level-arena.enemy {
+  background: linear-gradient(135deg, #ff6b6b, #d63031);
+  color: #fff;
+  border-color: #ff8787;
+}
+
+/* ===== STATS SECTION ARENA ===== */
+.stats-section-arena {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-arena {
+  display: grid;
+  grid-template-columns: 1fr 70px 160px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background-image: url('tlacitko.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: 2px solid #c9a44a;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow:
+    0 3px 8px rgba(0,0,0,.3),
+    inset 0 2px 0 rgba(255,255,255,.15);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+
+/* Pravá část statů: modrý řádek + bonusy pod ním (🐾 / 💥) */
+.stat-right{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:center;
+  min-width:0;
+}
+
+.stat-bonus{
+  margin-top:2px;
+  font-size:11px;
+  font-weight:900;
+  color:#ffffff;
+  opacity:0.95;
+  text-shadow:0 2px 4px rgba(0,0,0,.9);
+  white-space:nowrap;
+}
+
+.stat-arena:hover {
+  transform: translateX(3px);
+  border-color: #f1d27a;
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+
+.stat-arena.enemy {
+  border-color: #ff6b6b;
+}
+
+.stat-arena.enemy:hover {
+  border-color: #ff8787;
+}
+
+.stat-arena b {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: #f1d27a;
+  text-shadow: 0 2px 4px rgba(0,0,0,.8);
+}
+
+.stat-arena span {
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  text-shadow: 0 2px 4px rgba(0,0,0,.5);
+}
+
+.stat-arena .stat-extra {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 900;
+  color: #4af !important;
+  text-shadow: 
+    0 0 10px rgba(74, 170, 255, 0.8),
+    0 2px 4px rgba(0,0,0,.9),
+    0 0 20px rgba(74, 170, 255, 0.5) !important;
+}
+
+@media (max-width: 1200px) {
+  .arena-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Arena title row + swap button (tlacitko.jpg) ===== */
+.arena-title-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  margin-bottom: 14px;
+}
+
+/* RESULT MODAL */
+.result-modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.82);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.result-modal.show{ display:flex; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.result-box{
+  width: min(520px, 92vw);
+  padding: 28px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(25,18,12,.98), rgba(12,10,8,.98));
+  border: 4px solid rgba(201,164,74,.95);
+  box-shadow: 0 25px 70px rgba(0,0,0,.95), inset 0 2px 0 rgba(255,255,255,.08);
+  text-align: center;
+  animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.result-title{
+  font-size: 32px;
+  font-weight: 1000;
+  letter-spacing: 2px;
+  color: #f1d27a;
+  text-shadow: 
+    0 0 15px rgba(241, 210, 122, 0.6),
+    0 3px 10px rgba(0,0,0,.95);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.result-text{
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,.95);
+  margin: 0 0 24px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.arena-swap-btn{
+  min-width: 200px;
+  height: 56px;
+  border: 3px solid rgba(201,164,74,.8);
+  cursor: pointer;
+  background-image: url("tlacitko.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: #f1d27a;
+  font-weight: 1000;
+  font-size: 16px;
+  letter-spacing: 1px;
+  text-shadow: 
+    0 0 10px rgba(0,0,0,.9),
+    0 2px 4px rgba(0,0,0,.9);
+  padding: 0 20px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,.5),
+    inset 0 2px 5px rgba(255,215,100,0.15);
+  text-transform: uppercase;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.arena-swap-btn:hover{
+  filter: brightness(1.2);
+  transform: translateY(-2px);
+  border-color: #f1d27a;
+  box-shadow: 
+    0 6px 18px rgba(0,0,0,.6),
+    0 0 20px rgba(241, 210, 122, 0.4);
+}
+
+.arena-swap-btn:active{
+  transform: translateY(0);
+  filter: brightness(0.9);
+}
+
+.arena-swap-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+/* ===== HIT & ATTACK ANIMACE ===== */
+
+/* Shake při zásahu */
+.hit-shake {
+  animation: hitShake 0.35s ease;
+}
+
+@keyframes hitShake {
+  0% { transform: translate(0,0); }
+  20% { transform: translate(-6px, 0); }
+  40% { transform: translate(6px, 0); }
+  60% { transform: translate(-4px, 0); }
+  80% { transform: translate(4px, 0); }
+  100% { transform: translate(0,0); }
+}
+
+/* ===== WEAPON (AK-47) – lepší držení v rukách ===== */
+.weapon{
+  position: absolute;
+  width: 230px;          /* menší = víc sedí k rukám */
+  bottom: 130px;         /* výš = blíž k rukám */
+  opacity: 0;
+  pointer-events: none;
+  z-index: 40;
+  transition: opacity 0.15s ease;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,.7));
+}
+
+/* HRÁČ – držení zprava (PNG míří doleva, proto flip) */
+.weapon-player{
+  right: 100px;                 /* blíž k tělu */
+  bottom: 10px;   
+  transform: scaleX(-1) rotate(10deg);
+  transform-origin: right center;
+}
+
+/* ENEMY – držení zleva */
+.weapon-enemy{
+  left: -95px;                  /* blíž k tělu */
+  bottom: 50px; 
+  transform: rotate(12deg);
+  transform-origin: left center;
+}
+
+
+
+
+
+
+
+.show-weapon{
+  opacity: 1;
+}
+
+/* Pozn.: zbraň se má ukázat jen při útoku (třída .show-weapon). */
+
+/* ===== PROJEKTIL (házené zbraně / molotov) ===== */
+.projectile{
+  position: fixed; /* animace přes viewport (jednoduché počítání pozic) */
+  width: 90px;
+  height: auto;
+  z-index: 90;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,.85));
+  will-change: transform;
+}
+
+/* ===== HIT DÍRY (3x overlay) ===== */
+.hit-overlay{
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,.85));
+  transition: opacity 0.1s ease;
+}
+
+.show-hit{
+  opacity: 1 !important;
+  animation: hitAppear 250ms ease-out forwards;
+}
+
+@keyframes hitAppear{
+  0%   { opacity: 0; transform: scale(.75); }
+  40%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1); }
+}

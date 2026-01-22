@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profil hráče</title>
+  <script src="supabase_stub.js"></script>
+  <link rel="stylesheet" href="menu.css" />
+  <link rel="stylesheet" href="mobile.css">
+  <link rel="stylesheet" href="hrac.css" />
+  <script src="menu.js" defer></script>
+  <script src="hrac.js" defer></script>
+    <link rel="stylesheet" href="sf_scale.css">
+    <script src="sf_scale.js"></script>
+  <link rel="stylesheet" href="global.css">
+<script src="lang_pack.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="left-panel">
+  
+</aside>
+
+    <main class="profile-area">
+      <div class="profile-title">👤 PROFIL HRÁČE</div>
+
+      <div class="profile-card">
+        <div class="profile-header">
+          <div class="profile-avatar" id="playerIcon">👤
+            <div class="profile-class-badge" id="profileClassBadge" aria-hidden="true"></div>
+          </div>
+          <div class="profile-meta">
+            <div class="profile-name" id="playerName">Hráč</div>
+            <div class="profile-sub" id="playerSub">—</div>
+          </div>
+        </div>
+
+        <div class="profile-stats" id="statsGrid"></div>
+
+        <div class="profile-actions">
+          <button class="profile-btn" id="btnMail">✉️ NAPSAT MAIL</button>
+          <button class="profile-btn" id="btnFriend">🤝 PŘIDAT DO PŘÁTEL</button>
+          <button class="profile-btn" id="btnBack">⬅️ ZPĚT</button>
+        </div>
+
+        <div class="profile-note" id="note"></div>
+      </div>
+    </main>
+  </div>
+<script src="mobile_lock.js"></script>
+</body>
+</html>
