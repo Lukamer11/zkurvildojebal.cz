@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💀 MAN EATER - Multiplayer Tetris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        .skull-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-black">
+    <div id="app"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://jbfvoxlcociwtyobaotz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZnZveGxjb2Npd3R5b2Jhb3R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3OTQ3MTgsImV4cCI6MjA4MzM3MDcxOH0.ydY1I-rVv08Kg76wI6oPgAt9fhUMRZmsFxpc03BhmkA';
+        
+        const ROWS = 20;
+        const COLS = 10;
+        const BLOCK_SIZE = 25;
+
+        const PIECES = [
+            { shape: [[1,1,1,1]], color: '#8B0000' },
+            { shape: [[1,1],[1,1]], color: '#FF4500' },
+            { shape: [[0,1,0],[1,1,1]], color: '#DC143C' },
+            { shape: [[1,0,0],[1,1,1]], color: '#B22222' },
+            { shape: [[0,0,1],[1,1,1]], color: '#CD5C5C' },
+            { shape: [[0,1,1],[1,1,0]], color: '#A52A2A' },
+            { shape: [[1,1,0],[0,1,1]], color: '#800000' },
+        ];
+
+        class SupabaseClient {
+            async fetch(endpoint, options = {}) {
+                const response = await fetch(`${SUPABASE_URL}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        ...options.headers,
+                    },
+                });
+                return response.json();
+            }
+
+            async getRooms() {
+                return this.fetch('/rest/v1/rooms?status=in.(waiting,playing)&order=created_at.desc');
+            }
+
+            async getPlayers(roomId) {
+                return this.fetch(`/rest/v1/players?room_id=eq.${roomId}&order=joined_at.asc`);
+            }
+
+            async getRoom(roomId) {
+                const data = await this.fetch(`/rest/v1/rooms?id=eq.${roomId}`);
+                return data[0];
+            }
+
+            async createRoom(name, hostName) {
+                return this.fetch('/rest/v1/rooms', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name,
+                        host_name: hostName,
+                        status: 'waiting',
+                        max_players: 4,
+                        player_count: 0
+                    }),
+                    headers: { 'Prefer': 'return=representation' }
+                });
+            }
+
+            async createPlayer(roomId, name) {
+                return this.fetch('/rest/v1/players', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        room_id: roomId,
+                        name,
+                        ready: false
+                    }),
+                    headers: { 'Prefer': 'return=representation' }
+                });
+            }
+
+            async updateRoom(roomId, data) {
+                return this.fetch(`/rest/v1/rooms?id=eq.${roomId}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(data)
+                });
+            }
+
+            async updatePlayer(playerId, data) {
+                return this.fetch(`/rest/v1/players?id=eq.${playerId}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(data)
+                });
+            }
+
+            async deletePlayer(playerId) {
+                return this.fetch(`/rest/v1/players?id=eq.${playerId}`, {
+                    method: 'DELETE'
+                });
+            }
+        }
+
+        const supabase = new SupabaseClient();
+
+        class Game {
+            constructor() {
+                this.screen = 'menu';
+                this.playerName = '';
+                this.playerId = null;
+                this.rooms = [];
+                this.currentRoom = null;
+                this.players = [];
+                this.isReady = false;
+                this.countdown = null;
+                this.gameStarted = false;
+                this.board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+                this.currentPiece = null;
+                this.position = { x: 3, y: 0 };
+                this.score = 0;
+                this.gameOver = false;
+                this.pollInterval = null;
+                this.gameInterval = null;
+                
+                this.render();
+                this.setupKeyboard();
+            }
+
+            setupKeyboard() {
+                document.addEventListener('keydown', (e) => {
+                    if (!this.gameStarted || this.gameOver) return;
+                    
+                    if (e.key === 'ArrowLeft') this.movePiece(-1, 0);
+                    if (e.key === 'ArrowRight') this.movePiece(1, 0);
+                    if (e.key === 'ArrowDown') this.movePiece(0, 1);
+                    if (e.key === 'ArrowUp') this.rotatePiece();
+                });
+            }
+
+            async startPolling() {
+                if (this.pollInterval) clearInterval(this.pollInterval);
+                
+                this.pollInterval = setInterval(async () => {
+                    if (this.screen === 'roomlist') {
+                        await this.loadRooms();
+                    } else if (this.screen === 'room') {
+                        await this.loadPlayers();
+                        await this.checkRoomStatus();
+                    }
+                }, 1000);
+            }
+
+            stopPolling() {
+                if (this.pollInterval) {
+                    clearInterval(this.pollInterval);
+                    this.pollInterval = null;
+                }
+            }
+
+            async loadRooms() {
+                this.rooms = await supabase.getRooms();
+                this.render();
+            }
+
+            async loadPlayers() {
+                if (!this.currentRoom) return;
+                this.players = await supabase.getPlayers(this.currentRoom.id);
+                this.render();
+            }
+
+            async checkRoomStatus() {
+                if (!this.currentRoom) return;
+                const room = await supabase.getRoom(this.currentRoom.id);
+                if (room && room.status === 'countdown' && this.countdown === null) {
+                    this.startCountdown();
+                }
+            }
+
+            async createRoom() {
+                const roomName = `${this.playerName}'s Room`;
+                const roomData = await supabase.createRoom(roomName, this.playerName);
+                const room = roomData[0];
+
+                const playerData = await supabase.createPlayer(room.id, this.playerName);
+                const player = playerData[0];
+
+                await supabase.updateRoom(room.id, {
+                    host_id: player.id,
+                    player_count: 1
+                });
+
+                this.playerId = player.id;
+                this.currentRoom = { ...room, host_id: player.id };
+                this.screen = 'room';
+                this.startPolling();
+                this.render();
+            }
+
+            async joinRoom(room) {
+                const playerData = await supabase.createPlayer(room.id, this.playerName);
+                const player = playerData[0];
+
+                await supabase.updateRoom(room.id, {
+                    player_count: (room.player_count || 0) + 1
+                });
+
+                this.playerId = player.id;
+                this.currentRoom = room;
+                this.screen = 'room';
+                this.startPolling();
+                this.render();
+            }
+
+            async leaveRoom() {
+                if (this.playerId && this.currentRoom) {
+                    await supabase.deletePlayer(this.playerId);
+                    await supabase.updateRoom(this.currentRoom.id, {
+                        player_count: Math.max(0, (this.currentRoom.player_count || 1) - 1)
+                    });
+                }
+                this.playerId = null;
+                this.currentRoom = null;
+                this.screen = 'roomlist';
+                this.render();
+            }
+
+            async toggleReady() {
+                this.isReady = !this.isReady;
+                await supabase.updatePlayer(this.playerId, { ready: this.isReady });
+                this.render();
+            }
+
+            async startGame() {
+                const allReady = this.players.every(p => p.ready || p.id === this.playerId);
+                if (!allReady) return;
+
+                await supabase.updateRoom(this.currentRoom.id, { status: 'countdown' });
+            }
+
+            startCountdown() {
+                let count = 5;
+                this.countdown = count;
+                this.render();
+                
+                const timer = setInterval(() => {
+                    count--;
+                    this.countdown = count;
+                    this.render();
+                    
+                    if (count === 0) {
+                        clearInterval(timer);
+                        this.countdown = null;
+                        this.initGame();
+                    }
+                }, 1000);
+            }
+
+            initGame() {
+                this.gameStarted = true;
+                this.board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+                this.score = 0;
+                this.gameOver = false;
+                this.spawnPiece();
+                this.render();
+                
+                this.gameInterval = setInterval(() => {
+                    this.movePiece(0, 1);
+                }, 1000);
+            }
+
+            spawnPiece() {
+                this.currentPiece = PIECES[Math.floor(Math.random() * PIECES.length)];
+                this.position = { x: 3, y: 0 };
+                this.render();
+            }
+
+            checkCollision(piece, pos) {
+                return piece.shape.some((row, y) =>
+                    row.some((cell, x) => {
+                        if (!cell) return false;
+                        const newY = pos.y + y;
+                        const newX = pos.x + x;
+                        return (
+                            newX < 0 || newX >= COLS || newY >= ROWS ||
+                            (newY >= 0 && this.board[newY][newX])
+                        );
+                    })
+                );
+            }
+
+            movePiece(dx, dy) {
+                if (!this.currentPiece || this.gameOver) return;
+
+                const newPos = { x: this.position.x + dx, y: this.position.y + dy };
+                
+                if (!this.checkCollision(this.currentPiece, newPos)) {
+                    this.position = newPos;
+                    this.render();
+                } else if (dy > 0) {
+                    this.placePiece();
+                }
+            }
+
+            rotatePiece() {
+                if (!this.currentPiece || this.gameOver) return;
+
+                const rotated = this.currentPiece.shape[0].map((_, i) =>
+                    this.currentPiece.shape.map(row => row[i]).reverse()
+                );
+                
+                const rotatedPiece = { ...this.currentPiece, shape: rotated };
+                
+                if (!this.checkCollision(rotatedPiece, this.position)) {
+                    this.currentPiece = rotatedPiece;
+                    this.render();
+                }
+            }
+
+            placePiece() {
+                const newBoard = this.board.map(row => [...row]);
+                
+                this.currentPiece.shape.forEach((row, y) => {
+                    row.forEach((cell, x) => {
+                        if (cell && this.position.y + y >= 0) {
+                            newBoard[this.position.y + y][this.position.x + x] = this.currentPiece.color;
+                        }
+                    });
+                });
+
+                const fullRows = [];
+                newBoard.forEach((row, i) => {
+                    if (row.every(cell => cell)) fullRows.push(i);
+                });
+
+                fullRows.forEach(rowIndex => {
+                    newBoard.splice(rowIndex, 1);
+                    newBoard.unshift(Array(COLS).fill(null));
+                });
+
+                this.score += fullRows.length * 100;
+                this.board = newBoard;
+
+                if (this.position.y <= 0) {
+                    this.gameOver = true;
+                    if (this.gameInterval) clearInterval(this.gameInterval);
+                    this.render();
+                } else {
+                    this.spawnPiece();
+                }
+            }
+
+            renderBoard() {
+                const displayBoard = this.board.map(row => [...row]);
+                
+                if (this.currentPiece) {
+                    this.currentPiece.shape.forEach((row, y) => {
+                        row.forEach((cell, x) => {
+                            if (cell && this.position.y + y >= 0 && this.position.y + y < ROWS && this.position.x + x >= 0 && this.position.x + x < COLS) {
+                                displayBoard[this.position.y + y][this.position.x + x] = this.currentPiece.color;
+                            }
+                        });
+                    });
+                }
+
+                let html = '<div class="inline-block bg-black/80 p-4 rounded-lg border-4 border-red-900 shadow-2xl">';
+                displayBoard.forEach(row => {
+                    html += '<div class="flex">';
+                    row.forEach(cell => {
+                        const bgColor = cell || '#1a0000';
+                        const shadow = cell ? 'inset 0 0 10px rgba(139,0,0,0.5)' : 'none';
+                        html += `<div class="border border-red-900/30 skull-block" style="width:${BLOCK_SIZE}px;height:${BLOCK_SIZE}px;background-color:${bgColor};box-shadow:${shadow}">`;
+                        if (cell) html += '💀';
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                });
+                html += '</div>';
+                return html;
+            }
+
+            render() {
+                const app = document.getElementById('app');
+                
+                if (this.screen === 'menu') {
+                    app.innerHTML = `
+                        <div class="min-h-screen bg-gradient-to-b from-red-950 via-black to-red-950 flex items-center justify-center">
+                            <div class="text-center space-y-8 p-8">
+                                <h1 class="text-7xl font-bold text-red-600 animate-pulse" style="text-shadow: 0 0 30px rgba(139,0,0,0.8)">
+                                    💀 MAN EATER 💀
+                                </h1>
+                                <p class="text-2xl text-red-400">Multiplayer Tetris</p>
+                                
+                                <div class="space-y-4">
+                                    <input
+                                        id="playerNameInput"
+                                        type="text"
+                                        placeholder="Tvoje jméno..."
+                                        value="${this.playerName}"
+                                        class="px-6 py-3 bg-black/70 text-red-400 border-2 border-red-800 rounded-lg w-64 text-center focus:outline-none focus:border-red-600"
+                                        maxlength="20"
+                                    />
+                                    
+                                    <button
+                                        id="multiplayerBtn"
+                                        class="block w-64 mx-auto px-8 py-4 bg-red-900 hover:bg-red-800 disabled:bg-gray-800 disabled:cursor-not-allowed text-white font-bold text-xl rounded-lg border-2 border-red-600 shadow-lg hover:shadow-red-900/50 transition-all"
+                                    >
+                                        MULTIPLAYER
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const input = document.getElementById('playerNameInput');
+                    const btn = document.getElementById('multiplayerBtn');
+                    
+                    input.addEventListener('input', (e) => {
+                        this.playerName = e.target.value;
+                        btn.disabled = !this.playerName.trim();
+                    });
+                    
+                    btn.disabled = !this.playerName.trim();
+                    btn.addEventListener('click', () => {
+                        if (this.playerName.trim()) {
+                            this.screen = 'roomlist';
+                            this.startPolling();
+                            this.loadRooms();
+                        }
+                    });
+                }
+                else if (this.screen === 'roomlist') {
+                    app.innerHTML = `
+                        <div class="min-h-screen bg-gradient-to-b from-red-950 via-black to-red-950 p-8">
+                            <div class="max-w-4xl mx-auto">
+                                <button id="backBtn" class="mb-6 px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800">
+                                    ← Zpět
+                                </button>
+                                
+                                <h2 class="text-5xl font-bold text-red-600 mb-8 text-center" style="text-shadow: 0 0 20px rgba(139,0,0,0.8)">
+                                    💀 Herní Místnosti 💀
+                                </h2>
+                                
+                                <button id="createRoomBtn" class="w-full mb-6 px-6 py-4 bg-red-800 hover:bg-red-700 text-white font-bold text-xl rounded-lg border-2 border-red-600 shadow-lg">
+                                    + Vytvořit novou místnost
+                                </button>
+                                
+                                <div class="space-y-4" id="roomsList">
+                                    ${this.rooms.length === 0 ? 
+                                        '<p class="text-center text-red-400 text-xl">Žádné aktivní místnosti</p>' :
+                                        this.rooms.map(room => `
+                                            <div class="bg-black/70 border-2 border-red-800 rounded-lg p-6 flex justify-between items-center">
+                                                <div>
+                                                    <h3 class="text-2xl font-bold text-red-500">${room.name}</h3>
+                                                    <p class="text-red-400">
+                                                        Hráči: ${room.player_count || 0} / ${room.max_players}
+                                                        ${room.status === 'playing' ? ' (Ve hře)' : ''}
+                                                    </p>
+                                                    <p class="text-red-300 text-sm">Vedoucí: ${room.host_name}</p>
+                                                </div>
+                                                <button
+                                                    class="join-room-btn px-6 py-3 bg-red-900 hover:bg-red-800 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold rounded-lg"
+                                                    data-room='${JSON.stringify(room)}'
+                                                    ${room.status === 'playing' || (room.player_count || 0) >= room.max_players ? 'disabled' : ''}
+                                                >
+                                                    ${room.status === 'playing' ? 'Ve hře' : 'Připojit se'}
+                                                </button>
+                                            </div>
+                                        `).join('')
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('backBtn').addEventListener('click', () => {
+                        this.stopPolling();
+                        this.screen = 'menu';
+                        this.render();
+                    });
+                    
+                    document.getElementById('createRoomBtn').addEventListener('click', () => {
+                        this.stopPolling();
+                        this.createRoom();
+                    });
+                    
+                    document.querySelectorAll('.join-room-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const room = JSON.parse(btn.dataset.room);
+                            this.stopPolling();
+                            this.joinRoom(room);
+                        });
+                    });
+                }
+                else if (this.screen === 'room') {
+                    const isHost = this.currentRoom.host_id === this.playerId;
+                    
+                    if (this.gameStarted) {
+                        app.innerHTML = `
+                            <div class="min-h-screen bg-gradient-to-b from-red-950 via-black to-red-950 flex flex-col items-center justify-center p-8">
+                                <h1 class="text-5xl font-bold text-red-600 mb-4" style="text-shadow: 0 0 20px rgba(139,0,0,0.8)">
+                                    💀 MAN EATER 💀
+                                </h1>
+                                
+                                <div class="flex gap-8 items-start">
+                                    <div class="bg-black/70 p-6 rounded-lg border-2 border-red-800">
+                                        <h3 class="text-2xl text-red-500 font-bold mb-4">Skóre: ${this.score}</h3>
+                                        <div class="space-y-2 text-red-400">
+                                            <p>← → Pohyb</p>
+                                            <p>↓ Zrychlit</p>
+                                            <p>↑ Otočit</p>
+                                        </div>
+                                    </div>
+
+                                    <div id="gameBoard"></div>
+
+                                    <div class="bg-black/70 p-6 rounded-lg border-2 border-red-800">
+                                        <h3 class="text-2xl text-red-500 font-bold mb-4">Hráči</h3>
+                                        <div class="space-y-2">
+                                            ${this.players.map(p => `
+                                                <div class="text-red-400 ${p.id === this.playerId ? 'font-bold' : ''}">
+                                                    ${p.name} ${p.id === this.currentRoom.host_id ? '👑' : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                ${this.gameOver ? `
+                                    <div class="mt-8 text-center">
+                                        <h2 class="text-4xl font-bold text-red-600 mb-4">GAME OVER!</h2>
+                                        <p class="text-2xl text-red-400">Skóre: ${this.score}</p>
+                                    </div>
+                                ` : ''}
+
+                                ${this.countdown !== null ? `
+                                    <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+                                        <div class="text-9xl font-bold text-red-600 animate-pulse" style="text-shadow: 0 0 50px rgba(139,0,0,1)">
+                                            ${this.countdown}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                        
+                        document.getElementById('gameBoard').innerHTML = this.renderBoard();
+                    } else {
+                        app.innerHTML = `
+                            <div class="min-h-screen bg-gradient-to-b from-red-950 via-black to-red-950 p-8">
+                                <div class="max-w-4xl mx-auto">
+                                    <button id="leaveBtn" class="mb-6 px-4 py-2 bg-red-900 text-white rounded-lg hover:bg-red-800">
+                                        ← Opustit místnost
+                                    </button>
+                                    
+                                    <h2 class="text-5xl font-bold text-red-600 mb-8 text-center" style="text-shadow: 0 0 20px rgba(139,0,0,0.8)">
+                                        💀 ${this.currentRoom.name} 💀
+                                    </h2>
+
+                                    <div class="bg-black/70 border-2 border-red-800 rounded-lg p-8">
+                                        <h3 class="text-3xl text-red-500 font-bold mb-6">Hráči v místnosti</h3>
+                                        
+                                        <div class="space-y-3 mb-8">
+                                            ${this.players.map(player => `
+                                                <div class="flex justify-between items-center bg-red-900/30 p-4 rounded-lg">
+                                                    <div class="flex items-center gap-3">
+                                                        <span class="text-2xl">💀</span>
+                                                        <span class="text-xl text-red-400 font-bold">${player.name}</span>
+                                                        ${player.id === this.currentRoom.host_id ? '<span class="text-2xl">👑</span>' : ''}
+                                                    </div>
+                                                    <span class="px-4 py-2 rounded-lg font-bold ${player.ready ? 'bg-green-900 text-green-400' : 'bg-gray-800 text-gray-400'}">
+                                                        ${player.ready ? 'READY' : 'Not Ready'}
+                                                    </span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+
+                                        <div class="flex gap-4">
+                                            <button
+                                                id="readyBtn"
+                                                class="flex-1 px-6 py-4 font-bold text-xl rounded-lg border-2 transition-all ${
+                                                    this.isReady 
+                                                        ? 'bg-green-900 border-green-600 text-green-400 hover:bg-green-800' 
+                                                        : 'bg-red-900 border-red-600 text-white hover:bg-red-800'
+                                                }"
+                                            >
+                                                ${this.isReady ? '✓ READY' : 'READY?'}
+                                            </button>
+
+                                            ${isHost ? `
+                                                <button
+                                                    id="startBtn"
+                                                    class="flex-1 px-6 py-4 bg-red-800 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold text-xl rounded-lg border-2 border-red-600"
+                                                    ${!this.players.every(p => p.ready || p.id === this.playerId) ? 'disabled' : ''}
+                                                >
+                                                    SPUSTIT HRU
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.getElementById('leaveBtn').addEventListener('click', () => {
+                            this.stopPolling();
+                            this.leaveRoom();
+                        });
+                        
+                        document.getElementById('readyBtn').addEventListener('click', () => {
+                            this.toggleReady();
+                        });
+                        
+                        if (isHost) {
+                            document.getElementById('startBtn').addEventListener('click', () => {
+                                this.startGame();
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Start the game
+        new Game();
+    </script>
+</body>
+</html>
