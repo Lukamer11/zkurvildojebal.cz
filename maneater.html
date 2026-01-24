@@ -57,7 +57,16 @@
                         ...options.headers,
                     },
                 });
-                return response.json();
+                
+                const text = await response.text();
+                if (!text) return null;
+                
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error('JSON parse error:', text);
+                    return null;
+                }
             }
 
             async getRooms() {
@@ -235,18 +244,30 @@
             }
 
             async joinRoom(room) {
-                const playerData = await supabase.createPlayer(room.id, this.playerName);
-                const player = playerData[0];
+                try {
+                    const playerData = await supabase.createPlayer(room.id, this.playerName);
 
-                await supabase.updateRoom(room.id, {
-                    player_count: (room.player_count || 0) + 1
-                });
+                    if (!playerData || !playerData[0]) {
+                        alert('Chyba: Nelze připojit hráče!');
+                        console.error('Player creation failed:', playerData);
+                        return;
+                    }
 
-                this.playerId = player.id;
-                this.currentRoom = room;
-                this.screen = 'room';
-                this.startPolling();
-                this.render();
+                    const player = playerData[0];
+
+                    await supabase.updateRoom(room.id, {
+                        player_count: (room.player_count || 0) + 1
+                    });
+
+                    this.playerId = player.id;
+                    this.currentRoom = room;
+                    this.screen = 'room';
+                    this.startPolling();
+                    this.render();
+                } catch (error) {
+                    console.error('Join room error:', error);
+                    alert('Chyba při připojování do místnosti! Otevři konzoli (F12) pro detaily.');
+                }
             }
 
             async leaveRoom() {
