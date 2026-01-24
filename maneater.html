@@ -485,7 +485,7 @@
                                 <div class="space-y-4" id="roomsList">
                                     ${this.rooms.length === 0 ? 
                                         '<p class="text-center text-red-400 text-xl">Žádné aktivní místnosti</p>' :
-                                        this.rooms.map(room => `
+                                        this.rooms.map((room, index) => `
                                             <div class="bg-black/70 border-2 border-red-800 rounded-lg p-6 flex justify-between items-center">
                                                 <div>
                                                     <h3 class="text-2xl font-bold text-red-500">${room.name}</h3>
@@ -497,7 +497,7 @@
                                                 </div>
                                                 <button
                                                     class="join-room-btn px-6 py-3 bg-red-900 hover:bg-red-800 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold rounded-lg"
-                                                    data-room='${JSON.stringify(room)}'
+                                                    data-room-index="${index}"
                                                     ${room.status === 'playing' || (room.player_count || 0) >= room.max_players ? 'disabled' : ''}
                                                 >
                                                     ${room.status === 'playing' ? 'Ve hře' : 'Připojit se'}
@@ -523,7 +523,8 @@
                     
                     document.querySelectorAll('.join-room-btn').forEach(btn => {
                         btn.addEventListener('click', () => {
-                            const room = JSON.parse(btn.dataset.room);
+                            const roomIndex = parseInt(btn.dataset.roomIndex);
+                            const room = this.rooms[roomIndex];
                             this.stopPolling();
                             this.joinRoom(room);
                         });
