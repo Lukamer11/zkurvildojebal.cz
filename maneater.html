@@ -170,6 +170,7 @@
                 
                 this.pollInterval = setInterval(async () => {
                     if (this.screen === 'roomlist') {
+                        await this.cleanupData();
                         await this.loadRooms();
                     } else if (this.screen === 'room') {
                         await this.loadPlayers();
@@ -185,6 +186,20 @@
                 }
             }
 
+            async cleanupData() {
+                // Zavolat cleanup funkce v Supabase
+                try {
+                    await supabase.fetch('/rest/v1/rpc/cleanup_inactive_players', {
+                        method: 'POST'
+                    });
+                    await supabase.fetch('/rest/v1/rpc/cleanup_empty_rooms', {
+                        method: 'POST'
+                    });
+                } catch (e) {
+                    // Tiché selhání - není kritické
+                }
+            }
+
             async loadRooms() {
                 this.rooms = await supabase.getRooms();
                 this.render();
@@ -193,6 +208,14 @@
             async loadPlayers() {
                 if (!this.currentRoom) return;
                 this.players = await supabase.getPlayers(this.currentRoom.id);
+                
+                // Aktualizovat last_seen pro tohoto hráče
+                if (this.playerId) {
+                    await supabase.updatePlayer(this.playerId, { 
+                        last_seen: new Date().toISOString()
+                    });
+                }
+                
                 this.render();
             }
 
