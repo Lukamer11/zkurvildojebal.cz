@@ -196,23 +196,42 @@
             }
 
             async createRoom() {
-                const roomName = `${this.playerName}'s Room`;
-                const roomData = await supabase.createRoom(roomName, this.playerName);
-                const room = roomData[0];
+                try {
+                    const roomName = `${this.playerName}'s Room`;
+                    const roomData = await supabase.createRoom(roomName, this.playerName);
+                    
+                    if (!roomData || !roomData[0]) {
+                        alert('Chyba: Nelze vytvořit místnost. Zkontroluj Supabase nastavení!');
+                        console.error('Room creation failed:', roomData);
+                        return;
+                    }
+                    
+                    const room = roomData[0];
 
-                const playerData = await supabase.createPlayer(room.id, this.playerName);
-                const player = playerData[0];
+                    const playerData = await supabase.createPlayer(room.id, this.playerName);
+                    
+                    if (!playerData || !playerData[0]) {
+                        alert('Chyba: Nelze vytvořit hráče!');
+                        console.error('Player creation failed:', playerData);
+                        return;
+                    }
+                    
+                    const player = playerData[0];
 
-                await supabase.updateRoom(room.id, {
-                    host_id: player.id,
-                    player_count: 1
-                });
+                    await supabase.updateRoom(room.id, {
+                        host_id: player.id,
+                        player_count: 1
+                    });
 
-                this.playerId = player.id;
-                this.currentRoom = { ...room, host_id: player.id };
-                this.screen = 'room';
-                this.startPolling();
-                this.render();
+                    this.playerId = player.id;
+                    this.currentRoom = { ...room, host_id: player.id };
+                    this.screen = 'room';
+                    this.startPolling();
+                    this.render();
+                } catch (error) {
+                    console.error('Create room error:', error);
+                    alert('Chyba při vytváření místnosti! Otevři konzoli (F12) pro detaily.');
+                }
             }
 
             async joinRoom(room) {
